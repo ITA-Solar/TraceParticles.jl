@@ -215,7 +215,7 @@ function ∇(field::Array{T, 3} where {T<:Real},
            )
         
     ∂f∂x, ∂f∂y, ∂f∂z = scheme(field, xx, yy, zz)
-    return [∂f∂x, ∂f∂x, ∂f∂x]
+    return [∂f∂x, ∂f∂y, ∂f∂z]
 end # function ∇
 
 
