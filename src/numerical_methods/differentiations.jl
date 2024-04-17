@@ -11,7 +11,7 @@
 
 
 """
-    dervateupwind(
+    upwind1storder(
         field::Array{T, 3} where {T<:Real},
         dx   ::Vector{T} where {T<:Real},
         axis ::Tuple{Integer, Integer, Integer}
@@ -21,7 +21,7 @@ scheme. The grid size may be variable, hence given as the vector `dx`. End point
 of result will be ill-calculated and the derivative will be defined at half grid
 point higher than the input field.
 """
-function derivateupwind(
+function upwind1storder(
     field::Array{T, 3} where {T<:Real},
     xx   ::Vector{T} where {T<:Real},
     yy   ::Vector{T} where {T<:Real},
@@ -61,6 +61,114 @@ function derivateupwind(
     
     return ddx, ddy, ddz
 end #function derivateUpwind
+
+
+function central4thorder(
+    field::Array{T, 3} where {T<:Real},
+    xx   ::Vector{T} where {T<:Real},
+    yy   ::Vector{T} where {T<:Real},
+    zz   ::Vector{T} where {T<:Real},
+    ;
+    wfp::DataType=typeof(field[1])
+    )
+    ni, nj, nk = size(field)
+    a = 0.08333333333333333f0
+    b = 0.6666666666666666f0
+    #
+    if length(xx) > 1
+        dx = diff(xx)[1]
+        dfdx = (-a*circshift(field, (-2,0,0)) + b*circshift(field, (-1,0,0)) -
+            b*circshift(field, (1,0,0)) + a*circshift(field, (2,0,0)))/dx
+    else
+        dfdx = zeros(wfp, ni,nj,nk)
+    end
+    if length(yy) > 1
+        dy = diff(yy)[1]
+        dfdy = (-a*circshift(field, (0,-2,0)) + b*circshift(field, (0,-1,0)) -
+            b*circshift(field, (0,1,0)) + a*circshift(field, (0,2,0)))/12.0dy
+    else
+        dfdy = zeros(wfp, ni,nj,nk)
+    end
+    if length(zz) > 1
+        dz = diff(zz)[1]
+        dfdz = (-a*circshift(field, (0,0,-2)) + b*circshift(field, (0,0,-1)) -
+            b*circshift(field, (0,0,1)) + a*circshift(field, (0,0,2)))/dz
+    else
+        dfdz = zeros(wfp, ni,nj,nk)
+    end
+    return dfdx, dfdy, dfdz
+end
+
+"""
+    bifrostscheme(
+        field::Array{T, 3} where {T<:Real},
+        xx   ::Vector{T} where {T<:Real},
+        yy   ::Vector{T} where {T<:Real},
+        zz   ::Vector{T} where {T<:Real},
+        ;
+        wfp::DataType=typeof(field[1])
+    )
+Differentiates a 3D `field` with respect to a specified `axis` using a 6th
+order scheme, the same as the one used in the Bifrost code.
+
+The grid size may be variable, hence given as the vector `dx`. End point
+of result will be ill-calculated and the derivative will be defined at half grid
+point higher than the input field.
+"""
+function bifrostscheme(
+    field::Array{T, 3} where {T<:Real},
+    xx   ::Vector{T} where {T<:Real},
+    yy   ::Vector{T} where {T<:Real},
+    zz   ::Vector{T} where {T<:Real},
+    ;
+    wfp::DataType=typeof(field[1])
+    )
+    ni, nj, nk = size(field)
+    # 6th order upwind finite difference scheme coefficients:
+    c = 3/640
+    b = (-1 - 120c)/24
+    a = 1 - 3b - 5c
+    # Differentiate along x-axis:
+    if length(xx) > 1
+        df1 =  a*(-field + circshift(field, (-1,0,0)))
+        df2 =  b*(-circshift(field, (1,0,0)) + circshift(field, (-2,0,0)))
+        df3 =  c*(-circshift(field, (2,0,0)) + circshift(field, (-3,0,0)))
+        # Pad the Δx array with a copy of the first value at the end. I.e. assume
+        # periodic boundary conditions
+        dx = circshift(xx, -1) - xx
+        dfdx = (df1 + df2 + df3) ./ dx
+    else
+        dfdx = zeros(wfp, ni,nj,nk)
+    end
+    # Differentiate along y-axis:
+    if length(yy) > 1
+        df1 = a*(-field + circshift(field, (0,-1,0)))
+        df2 = b*(-circshift(field, (0,1,0)) + circshift(field, (0,-2,0)))
+        df3 = c*(-circshift(field, (0,2,0)) + circshift(field, (0,-3,0)))
+        # Pad the Δx array with a copy of the first value at the end. I.e. assume
+        # periodic boundary conditions
+        dy = circshift(yy, -1) - yy
+        dfdy = (df1 + df2 + df3) ./ dy'
+    else
+        dfdy = zeros(wfp, ni, nj, nk)
+    end
+    # Differentiate along z-axis:
+    if length(zz) > 1
+        df1 = a*(-field + circshift(field, (0,0,-1)))
+        df2 = b*(-circshift(field, (0,0,1)) + circshift(field, (0,0,-2)))
+        df3 = c*(-circshift(field, (0,0,2)) + circshift(field, (0,0,-3)))
+        # I don't know of a fast method for the 3rd dimension
+        dz = circshift(zz, -1) - zz
+        dfdz = Array{wfp, 3}(undef, ni, nj, nk)
+        for k = 1:nk
+            dfdz[:,:,k] = (df1[:,:,k] + df2[:,:,k] + df3[:,:,k]) / dz[k]
+        end
+    else
+        dfdz = zeros(wfp, ni, nj, nk)
+    end
+
+    return dfdx, dfdy, dfdz
+end #function bifrostscheme
 
 
 """
@@ -331,3 +439,113 @@ function LinearAlgebra.cross(
     end
     return crossproduct
 end # function cross
+
+
+"""
+    gradient(
+        coords::Vector{<:Real},
+        itpvec::Vector{AbstractInterpolation},
+        )
+Compute the local gradient of the strength of a vector field given by an vector
+of interpolation objects.
+"""
+function gradient(
+    coords::Vector{<:Real},
+    itpvec::Vector{<:AbstractInterpolation},
+    )
+    res = ForwardDiff.gradient(coords) do x
+        sqrt(sum([itp(x...) for itp in itpvec] .^ 2))
+    end
+end
+
+
+"""
+    jacobian(
+        coords::Vector{<:Real},
+        itpvec::Vector{AbstractInterpolation},
+        )
+Compute the local Jacobian of a vector field given by an vector
+of interpolation objects.
+"""
+function jacobian(
+    coords::Vector{<:Real},
+    itpvec::Vector{<:AbstractInterpolation},
+    )
+    res = ForwardDiff.jacobian(coords) do x
+        [itp(x...) for itp in itpvec]
+    end
+end
+
+
+function local_grid_fdm(
+    fdm::FiniteDifferences.FiniteDifferenceMethod,
+    A::Vector{<:Real},
+    idx::Integer,
+    dx::Real,
+    )
+    diff = 0.0
+    for (i, coef) in zip(fdm.grid, fdm.coefs)
+        #diff += coef*A[idx + i]
+        diff += coef*(circshift(A, -i)[idx])
+    end
+    return diff/dx
+end
+
+
+function local_grid_fdm(
+    fdm::FiniteDifferences.FiniteDifferenceMethod,
+    A::Array{<:Real, 3},
+    x::Real,
+    y::Real,
+    z::Real,
+    xaxis::Vector{<:Real},
+    yaxis::Vector{<:Real},
+    zaxis::Vector{<:Real},
+    )
+    wfp = Float64
+    i = locate_cell(xaxis, x)
+    j = locate_cell(yaxis, y)
+    k = locate_cell(zaxis, z)
+    dx = diff(xaxis)[1]
+    dy = diff(yaxis)[1]
+    dz = diff(zaxis)[1]
+    #
+    gradx = Array{wfp, 3}(undef, 2, 2, 2)
+    gradx[1] = local_grid_fdm(fdm, A[:,j  ,k  ], i  , dx)
+    gradx[2] = local_grid_fdm(fdm, A[:,j  ,k  ], i+1, dx)
+    gradx[3] = local_grid_fdm(fdm, A[:,j+1,k  ], i  , dx)
+    gradx[4] = local_grid_fdm(fdm, A[:,j+1,k  ], i+1, dx)
+    gradx[5] = local_grid_fdm(fdm, A[:,j  ,k+1], i  , dx)
+    gradx[6] = local_grid_fdm(fdm, A[:,j  ,k+1], i+1, dx)
+    gradx[7] = local_grid_fdm(fdm, A[:,j+1,k+1], i  , dx)
+    gradx[8] = local_grid_fdm(fdm, A[:,j+1,k+1], i+1, dx)
+    #
+    grady = Array{wfp, 3}(undef, 2, 2, 2)
+    grady[1] = local_grid_fdm(fdm, A[i  ,:,k  ], j  , dy)
+    grady[2] = local_grid_fdm(fdm, A[i+1,:,k  ], j  , dy)
+    grady[3] = local_grid_fdm(fdm, A[i  ,:,k  ], j+1, dy)
+    grady[4] = local_grid_fdm(fdm, A[i+1,:,k  ], j+1, dy)
+    grady[5] = local_grid_fdm(fdm, A[i  ,:,k+1], j  , dy)
+    grady[6] = local_grid_fdm(fdm, A[i+1,:,k+1], j  , dy)
+    grady[7] = local_grid_fdm(fdm, A[i  ,:,k+1], j+1, dy)
+    grady[8] = local_grid_fdm(fdm, A[i+1,:,k+1], j+1, dy)
+    #
+    gradz = Array{wfp, 3}(undef, 2, 2, 2)
+    gradz[1] = local_grid_fdm(fdm, A[i  ,j  ,:], k  , dz)
+    gradz[2] = local_grid_fdm(fdm, A[i+1,j  ,:], k  , dz)
+    gradz[3] = local_grid_fdm(fdm, A[i  ,j+1,:], k  , dz)
+    gradz[4] = local_grid_fdm(fdm, A[i+1,j+1,:], k  , dz)
+    gradz[5] = local_grid_fdm(fdm, A[i  ,j  ,:], k+1, dz)
+    gradz[6] = local_grid_fdm(fdm, A[i+1,j  ,:], k+1, dz)
+    gradz[7] = local_grid_fdm(fdm, A[i  ,j+1,:], k+1, dz)
+    gradz[8] = local_grid_fdm(fdm, A[i+1,j+1,:], k+1, dz)
+    #
+    xx = xaxis[i]:dx:xaxis[i+1]
+    yy = yaxis[j]:dy:yaxis[j+1]
+    zz = zaxis[k]:dz:zaxis[k+1]
+    axes = (xx,yy,zz)
+    itpx = linear_interpolation(axes, gradx)
+    itpy = linear_interpolation(axes, grady)
+    itpz = linear_interpolation(axes, gradz)
+    return [itpx(x,y,z), itpy(x,y,z), itpz(x,y,z)]
+end

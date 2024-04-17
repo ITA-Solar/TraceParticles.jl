@@ -35,6 +35,33 @@ function Base.dropdims(axes::Tuple{Vararg{Vector}})
 end
 
 
+"""
+    locateCell(coords, point)
+
+Finds the position of `point` in the vector `coords` using binary search.
+Returns its lower neighbour.
+"""
+function locate_cell(coords::Vector{T} where {T<:Real},
+                    point ::Number
+                    )
+    # Initial bounds
+    low = 1
+    high = length(coords)
+    while  high > low + 1 # While we haven't found the cell
+        mid  = floor(Int64, (high + low)/2)
+        if point > coords[mid]
+            low = mid
+        elseif point < coords[mid]
+            high = mid
+	else
+	    low = mid - 1
+	    high = mid
+        end # if
+    end # while
+    return low
+end # function locate_cell
+
+
 #----------------------------------------#
 # Vector potential generation            #
 # Mesh generation from analytical fields #
