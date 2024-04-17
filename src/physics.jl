@@ -347,6 +347,37 @@ end
 
 
 """
+    get_guidingcentre_2Dxz(
+        pos          ::Vector{<:Real},
+        vel          ::Vector{<:Real},
+        emfields_itpvec::Vector{<:AbstractInterpolation},
+        charge       ::Real,
+        mass         ::Real
+        )
+"""
+function get_guidingcentre_2Dxz(
+    pos          ::Vector{<:Real},
+    vel          ::Vector{<:Real},
+    emfields_itpvec::Vector{<:AbstractInterpolation},
+    charge       ::Real,
+    mass         ::Real
+    )
+    posx, poz = pos[1], pos[3]
+    magneticfield = [emfields_itpvec[i](posx, poz) for i = 1:3]
+    electricfield = [emfields_itpvec[i](posx, poz) for i = 4:6]
+    ExBdrift, B, b_vec = exbdrift(magneticfield, electricfield)
+    vel_in_E_frame = vel - ExBdrift
+    # Calculate the guiding centre posistion
+    R = pos - mass/(charge*B) * (vel_in_E_frame × b_vec)
+    # Calculate the velocity parallell to the magnetic field -- vparal
+    vparal = vel ⋅ b_vec
+    # Calculate mangetic moment -- mu
+    vperp = vel_in_E_frame - vparal*b_vec
+    mu = magneticmoment(norm(vperp), mass, B)
+    return R, vparal, mu
+end
+
+"""
     get_fullorbit(
         magneticfield::Vector{<:Real},
         electricfield::Vector{<:Real},
@@ -541,10 +572,12 @@ function gcagradients_from_emfield(
     )
     wfp = typeof(bField[1])
     nx, ny, nz, ncomp = size(bField)
+    println("---> Creating mesh of B")
     BB = norm4(bField, axis=4)
     b̂ = zeros(wfp, nx, ny, nz, ncomp)
     ExBdrift = zeros(wfp, nx, ny, nz, ncomp)
     # I guess this could be done much more efficiently
+    println("---> Creating mesh of b, and ExB")
     for i = 1:nx
         for j= 1:ny
             for k = 1:nz
@@ -556,8 +589,11 @@ function gcagradients_from_emfield(
             end
         end
     end
+    println("---> Differentiating B")
     ∇B = ∇(BB, xCoords, yCoords, zCoords, scheme)
+    println("---> Differentiating b")
     ∇b̂ = ∇(b̂,  xCoords, yCoords, zCoords, scheme)
+    println("---> Differentiating ExB")
     ∇ExBdrift= ∇(ExBdrift, xCoords, yCoords, zCoords, scheme)
     return ∇B, ∇b̂, ∇ExBdrift
 end
