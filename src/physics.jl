@@ -12,6 +12,32 @@
 #  Contains physics of charge particles in plasma.
 #-------------------------------------------------------------------------------
 
+"""
+    larmorradius(mass, vperp, charge, magneticfieldstrength)
+Return the Larmor radius of a charged particle.
+"""
+function larmorradius(mass, vperp, charge, magneticfieldstrength)
+    return abs(mass*vperp/(charge*magneticfieldstrength))
+end
+
+
+"""
+    gyrofrequency(mass, charge, magneticfieldstrength)
+Return the gyrofrequency of a charged particle.
+"""
+function gyrofrequency(mass, charge, magneticfieldstrength)
+    return abs(charge*magneticfieldstrength/mass)
+end
+
+
+"""
+    characteristicfieldlength(fieldstrength, fieldstrengthgradient)
+Return the characteristic length of a field.
+"""
+function characteristicfieldlength(fieldstrength, fieldstrengthgradient)
+    return fieldstrength / norm(fieldstrengthgradient)
+end
+
 
 """
     kineticenergy(velocity, mass)
@@ -129,6 +155,7 @@ function kineticenergy(
     kineticenergy(vparal, vperp, drifts...)
 end
 
+
 """
     perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength)
 Return the perpendicular velocity of a charged particle in a magnetic field.
@@ -192,8 +219,8 @@ field strength `∇B`, inverse of particle charge `q_inv` and magnetic moment `�
 function gradbdrift(
     b̂    ::Vector{<:Real}, # The direction of the magnetic fielda
     ∇B   ::Vector{<:Real}, # The gradient of the magnetic field strength
-    B_inv::Real, # The inverse of the magnetic field strength
     μ    ::Real, # the magnetic moment of the particle
+    B_inv::Real, # The inverse of the magnetic field strength
     q_inv::Real  # The inverse of the charge of the particle
     )
     return q_inv*B_inv*μ*(b̂ × ∇B)
@@ -246,138 +273,43 @@ end
 
 
 """
-    drifts_and_vperp(
-        R     ::Vector{<:Real},
-        vparal::Real,
-        q     ::Real, # Particle charge
-        m     ::Real, # Particle mass
-        μ     ::Real, # Particle magnetic moment
-        itpvec::Vector{<:AbstractInterpolation}, # electromagnetic field interpolators
+    magneticmirror_acceleration(
+        b̂ ::Vector{<:Real},
+        ∇B::Vector{<:Real},
+        μ ::Real,
+        m ::Real,
         )
-Evaluate the drifts of a particle at location `R` in an electromagnetic field
-given by a vector of interpolation objects.
+Calculate the magnetic mirror force acting on a guiding centre particle in a
+magnetic field, given by the magnetic field direction `b̂`, the gradient of the
+magnetic field strength `∇B`, the magnetic moment `μ` and the particle mass `m`.
 """
-function drifts_and_vperp(
-    R     ::Vector{<:Real},
-    vparal::Real,
-    q     ::Real, # Particle charge
-    m     ::Real, # Particle mass
-    μ     ::Real, # Particle magnetic moment
-    itpvec::Vector{<:AbstractInterpolation}, # electromagnetic field interpolators
+function magneticmirror_acceleration(
+    b̂ ::Vector{<:Real},  # The direction of the magnetic fielda
+    ∇B::Vector{<:Real},  # The gradient of the magnetic field strength
+    μ ::Real, # The magnetic moment of the particle
+    m ::Real, # The particle mass
     )
-    # NOTE: Comments are copied from 3D implementation. Running times are
-    # not correct in this case since this is 2D version.
-    #
-    q_inv = 1/q # Inverse of q - to replace division with multiplication
-    # Use the gyrocentre position interpolate the vectors
-    # scalars from the interpolation objects.
-    B_vec = [itpvec[i](R...) for i in 1:3]
-    E_vec = [itpvec[i](R...) for i in 4:6]
-    ExBdrift, B, B_inv, b = exbdrift(B_vec, E_vec)
-
-    # Calculate the gradient of the magnetic field strength
-    ∇B = ForwardDiff.gradient(R) do x
-        sqrt(itpvec[1](x...)^2 + itpvec[2](x...)^2 + itpvec[3](x...)^2)
-    end
-    ∇B = [∇B[1], 0f0, ∇B[2]]
-    #
-    # Calculate the gradient of the magnetic field direction
-    jacobian_matrix = stack(
-        [Interpolations.gradient(itp, R...) for itp in itpvec],
-        dims=1
-        )
-    # Add zeros-column representing derivatives along the y-axis
-    jacobian_matrix = [
-        jacobian_matrix[:,1];;
-        jacobian_matrix[:,2];;
-        jacobian_matrix[:,3]
-        ]
-    ∇B_vec = jacobian_matrix[1:3,:]
-    ∇b = (∇B_vec - b * ∇B')*B_inv
-    #
-    # Calculate the Jacobian matrix of the ExB-drift
-    ∇E_vec = jacobian_matrix[4:6,:]
-    skewE = skewsymmetric_matrix(E_vec)
-    skewb = skewsymmetric_matrix(b)
-    ∇ExB = (-skewb*∇E_vec + skewE*∇b - ExBdrift * ∇B')*B_inv
-
-    # Total time derivatives. Assumes ∂/∂t = 0,
-    dbdt = vparal * (∇b * b) + ∇b*ExBdrift
-    dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift
-
-    # Calculate other drifts
-    ∇Bdrift = gradbdrift(b, ∇B, B_inv, μ, q_inv)
-    Rdrift = curvaturedrift(b, dbdt, vparal, B_inv, q_inv, m)
-    Pdrift = polarisationdrift(b, dExBdt, B_inv, q_inv, m)
-    # Compute the perpendicular velocity
-    vperp = √(2B*μ/m)
-
-    return vperp, [ExBdrift, ∇Bdrift, Rdrift, Pdrift]
+    return -μ*b̂⋅∇B/m
 end
 
 
-function drifts_and_vperp_2Dxz(
-    R     ::Vector{<:Real},
-    vparal::Real,
-    q     ::Real, # Particle charge
-    m     ::Real, # Particle mass
-    μ     ::Real, # Particle magnetic moment
-    itpvec::Vector{<:AbstractInterpolation}, # electromagnetic field interpolators
-    )
-    # NOTE: Comments are copied from 3D implementation. Running times are
-    # not correct in this case since this is 2D version.
-    #
-    Rx, Rz = R[1], R[3]
-    # Extract parameters
-    q_inv = 1/q # Inverse of q - to replace division with multiplication
-    # Use the gyrocentre position interpolate the vectors
-    # scalars from the interpolation objects.
-    B_vec = [itpvec[i](Rx, Rz) for i in 1:3]
-    E_vec = [itpvec[i](Rx, Rz) for i in 4:6]
-    B = norm(B_vec)   # The magnetic field strength
-    B_inv = 1/B       # Inverse of B - to replace divition with multiplication
-    b = B_vec*B_inv   # An unit vector pointing in the direction of the
-                      #  magnetic field
-    ExBdrift = (E_vec × b)/B # The E cross B-drift
-
-    # Calculate the gradient of the magnetic field strength
-    ∇B = ForwardDiff.gradient([Rx, Rz]) do x
-        sqrt(itpvec[1](x...)^2 + itpvec[2](x...)^2 + itpvec[3](x...)^2)
-    end
-    ∇B = [∇B[1], 0f0, ∇B[2]]
-    #
-    # Calculate the gradient of the magnetic field direction
-    jacobian_matrix = stack(
-        [Interpolations.gradient(itp, Rx, Rz) for itp in itpvec],
-        dims=1
+"""
+    parallel_acceleration(
+        b̂    ::Vector{<:Real},
+        E_vec::Vector{<:Real},
+        q    ::Real,
+        m    ::Real,
         )
-    # Add zeros-column representing derivatives along the y-axis
-    jacobian_matrix = [
-        jacobian_matrix[:,1];;
-        zeros(typeof(Rx), 6);;
-        jacobian_matrix[:,2]
-        ]
-    ∇B_vec = jacobian_matrix[1:3,:]
-    ∇b = (∇B_vec - b * ∇B')*B_inv
-    #
-    # Calculate the Jacobian matrix of the ExB-drift
-    ∇E_vec = jacobian_matrix[4:6,:]
-    skewE = skewsymmetric_matrix(E_vec)
-    skewb = skewsymmetric_matrix(b)
-    ∇ExB = (-skewb*∇E_vec + skewE*∇b - ExBdrift * ∇B')*B_inv
-
-    # Total time derivatives. Assumes ∂/∂t = 0,
-    dbdt = vparal * (∇b * b) + ∇b*ExBdrift
-    dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift
-
-    # Calculate other drifts
-    ∇Bdrift = gradbdrift(b, ∇B, B_inv, μ, q_inv)
-    Rdrift = curvaturedrift(b, dbdt, vparal, B_inv, q_inv, m)
-    Pdrift = polarisationdrift(b, dExBdt, B_inv, q_inv, m)
-    # Compute the perpendicular velocity
-    vperp = √(2B*μ/m)
-
-    return vperp, [ExBdrift, ∇Bdrift, Rdrift, Pdrift]
+Calculate the acceleration of a charged particle due to electric fields
+`E_vec` parallal to the magnetic field direction `b̂`.
+"""
+function parallel_acceleration(
+    b̂    ::Vector{<:Real},  # The direction of the magnetic fielda
+    E_vec::Vector{<:Real},# The electric field
+    q    ::Real, # The charge of the particle
+    m    ::Real, # The particle mass
+    )
+    return q*(E_vec⋅b̂)/m
 end
 
 
@@ -447,12 +379,12 @@ function get_fullorbit(
     v_exb, B, b = exbdrift(magneticfield, electricfield) # get E cross B drift,
     # magnetic field strength and magnetic field direction
     vperp = perpendicular_velocity(μ, mass, B)
-    larmorradius = mass*vperp/(charge*B)
+    r_L = larmorradius(mass, vperp, charge, B)
     e₁ = (R × b)/norm(R)
     e₂ = e₁ × b
     cθ = cos(phaseangle)
     sθ = sin(phaseangle)
-    position = R + larmorradius*(cθ*e₁ + sθ*e₂)
+    position = R + r_L*(cθ*e₁ + sθ*e₂)
     velocity = vparal*b + v_exb + vperp*(cθ*e₂ - sθ*e₁)
     return [position; velocity]
 end
@@ -630,6 +562,18 @@ function gcagradients_from_emfield(
     return ∇B, ∇b̂, ∇ExBdrift
 end
 
+"""
+    lorentzfactor(speed::Real)
+The relativistic Lorentz factor in SI units.
+"""
+function lorentzfactor(speed::Real)
+    return 1/√(1-speed^2*tp.cSqrdInv)
+end
 
-
-
+"""
+    kineticspeed(kineticenergy::Real, mass::Real)
+Calculate the speed of a particle from its `kineticenergy` and `mass`.
+"""
+function kineticspeed(kineticenergy::Real, mass::Real)
+    return √(2kineticenergy/mass)
+end
