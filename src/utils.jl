@@ -39,7 +39,7 @@ end
 # Vector potential generation            #
 # Mesh generation from analytical fields #
 #-------------------------------------------------------------------------------
-function createaxes(
+function create3Daxes(
     (x0, y0, z0)::Tuple{Real, Real, Real},
     (xf, yf, zf)::Tuple{Real, Real, Real},
     (nx, ny, nz)::Tuple{Integer, Integer, Integer}
@@ -60,42 +60,35 @@ function createaxes(
 end # function createaxes
 
 
-function discretise!(
-    field::Array{T, 4} where {T<:Real},
-    xx   ::Vector{T} where {T<:Real},
-    yy   ::Vector{T} where {T<:Real},
-    zz   ::Vector{T} where {T<:Real},
+"""
+    discretise(
+        func::Function,
+        xx  ::Vector{T} where {T<:Real},
+        yy  ::Vector{T} where {T<:Real},
+        zz  ::Vector{T} where {T<:Real},
+        args...
+        )
+Discretise a `func`tion onto a mesh with grid points given by
+`xx`, `yy` and `zz`.
+"""
+function discretise(
     func::Function,
-    args...
-    )
-    for i in eachindex(xx)
-        for j in eachindex(yy)
-            for k in eachindex(zz)
-                f = func(xx[i], yy[j], zz[k], args...)
-                field[:,i,j,k] .= f
-            end
-        end
-    end
-end # function discretise
-#|
-function discretise!(
-    field::Array{T, 3} where {T<:Real},
     xx  ::Vector{T} where {T<:Real},
     yy  ::Vector{T} where {T<:Real},
     zz  ::Vector{T} where {T<:Real},
-    func::Function,
     args...
     )
+    f111 = func(xx[1], yy[1], zz[1], args...)
+    field = Array{eltype(f111), 3}(undef, length(xx), length(yy), length(zz))
     for i in eachindex(xx)
         for j in eachindex(yy)
             for k in eachindex(zz)
-                f = func(xx[i], yy[j], zz[k], args...)
-                field[i,j,k] = f
+                field[i,j,k] = func(xx[i], yy[j], zz[k], args...)
             end
         end
     end
+    return field
 end # function discretise
-
 
 
 """
