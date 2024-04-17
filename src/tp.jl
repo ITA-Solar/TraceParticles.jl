@@ -19,6 +19,7 @@ using Random
 
 using DifferentialEquations
 using ForwardDiff
+using FiniteDifferences
 using Interpolations
 
 using Printf
@@ -43,6 +44,7 @@ include("physics.jl")
 include("equations_of_motion.jl")
 include("solvers.jl")
 include("callbacks.jl")
+include("problem_functions.jl")
 include("dataprocessing.jl")
 include("numerical_methods/ode_schemes.jl")
 include("numerical_methods/sde_schemes.jl")
@@ -51,6 +53,7 @@ include("numerical_methods/interpolations.jl")
 include("io/save.jl")
 include("io/load.jl")
 include("io/bifrost_input.jl")
+include("gcastate.jl")
 
 
 #---------#
@@ -83,6 +86,22 @@ export  get_br_emfield_interpolator,
 export  dropdims,
         createaxes,
         discretise!
+# gcastate.jl
+export GCAState
+export get_drifts,
+        get_x,
+        get_y,
+        get_z,
+        get_vparallel,
+        get_mu,
+        get_time,
+        get_energy,
+        get_vperp,
+        get_larmorradius,
+        get_gyrofrequency,
+        get_bfield,
+        get_efield,
+        get_L_B
 
 
 #-------------------------------------------------------------------------------
