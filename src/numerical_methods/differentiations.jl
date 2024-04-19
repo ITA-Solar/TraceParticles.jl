@@ -442,19 +442,19 @@ end # function cross
 
 
 """
-    gradient(
+    ∇(
         coords::Vector{<:Real},
         itpvec::Vector{AbstractInterpolation},
         )
 Compute the local gradient of the strength of a vector field given by an vector
 of interpolation objects.
 """
-function gradient(
+function ∇(
     coords::Vector{<:Real},
     itpvec::Vector{<:AbstractInterpolation},
     )
     res = ForwardDiff.gradient(coords) do x
-        sqrt(sum([itp(x...) for itp in itpvec] .^ 2))
+        norm([itp(x...) for itp in itpvec])
     end
 end
 

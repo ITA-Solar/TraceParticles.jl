@@ -19,6 +19,17 @@ Return the Larmor radius of a charged particle.
 function larmorradius(mass, vperp, charge, magneticfieldstrength)
     return abs(mass*vperp/(charge*magneticfieldstrength))
 end
+function larmorradius(
+        R::Vector{<:Real},
+        μ::Real,
+        q::Real,
+        m::Real,
+        itpvec::Vector{<:AbstractInterpolation}
+        )
+    B = norm([itp(R...) for itp in itpvec])
+    vperp = perpendicular_velocity(μ, m, B)
+    return larmorradius(m, vperp, q, B)
+end
 
 
 """
@@ -31,13 +42,41 @@ end
 
 
 """
+    perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength)
+Return the perpendicular velocity of a charged particle in a magnetic field.
+"""
+function perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength)
+    sqrt(2magnetic_moment*magneticfieldstrength/mass)
+end
+
+
+"""
+    magneticmoment(perpendicular_velocity, mass, magneticfieldstrength)
+Return the magnetic moment of a chargred particle in a magnetic field.
+"""
+function magneticmoment(perpendicular_velocity, mass, magneticfieldstrength)
+    0.5mass*perpendicular_velocity^2/magneticfieldstrength
+end
+
+
+"""
     characteristicfieldlength(fieldstrength, fieldstrengthgradient)
 Return the characteristic length of a field.
 """
-function characteristicfieldlength(fieldstrength, fieldstrengthgradient)
+function characteristicfieldlength(
+        fieldstrength::Real,
+        fieldstrengthgradient::Vector{<:Real}
+        )
     return fieldstrength / norm(fieldstrengthgradient)
 end
-
+function characteristicfieldlength(
+        position::Vector{<:Real},
+        itpvec::Vector{<:AbstractInterpolation}
+        )
+    fieldstrength = norm([itpvec[i](position...) for i in 1:3])
+    grad = ∇(position, itpvec)
+    return characteristicfieldlength(fieldstrength, grad)
+end
 
 """
     kineticenergy(velocity, mass)
@@ -155,23 +194,6 @@ function kineticenergy(
     kineticenergy(vparal, vperp, drifts...)
 end
 
-
-"""
-    perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength)
-Return the perpendicular velocity of a charged particle in a magnetic field.
-"""
-function perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength)
-    sqrt(2magnetic_moment*magneticfieldstrength/mass)
-end
-
-
-"""
-    magneticmoment(perpendicular_velocity, mass, magneticfieldstrength)
-Return the magnetic moment of a chargred particle in a magnetic field.
-"""
-function magneticmoment(perpendicular_velocity, mass, magneticfieldstrength)
-    0.5mass*perpendicular_velocity^2/magneticfieldstrength
-end
 
 
 """

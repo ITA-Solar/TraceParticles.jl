@@ -21,6 +21,7 @@ using DifferentialEquations
 using ForwardDiff
 using FiniteDifferences
 using Interpolations
+using Optimization, OptimizationNLopt
 
 using Printf
 using JLD2
@@ -45,7 +46,7 @@ include("equations_of_motion.jl")
 include("solvers.jl")
 include("callbacks.jl")
 include("problem_functions.jl")
-include("dataprocessing.jl")
+include("output_functions.jl")
 include("numerical_methods/ode_schemes.jl")
 include("numerical_methods/sde_schemes.jl")
 include("numerical_methods/differentiations.jl")
@@ -53,7 +54,8 @@ include("numerical_methods/interpolations.jl")
 include("io/save.jl")
 include("io/load.jl")
 include("io/bifrost_input.jl")
-include("gcastate.jl")
+include("dataprocessing/dataprocessing.jl")
+include("dataprocessing/gcastate.jl")
 
 
 #---------#
@@ -101,7 +103,8 @@ export get_drifts,
         get_gyrofrequency,
         get_bfield,
         get_efield,
-        get_L_B
+        get_fieldlength,
+        get_scalesratio
 
 
 #-------------------------------------------------------------------------------

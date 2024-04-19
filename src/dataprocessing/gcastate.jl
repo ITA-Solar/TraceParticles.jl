@@ -228,8 +228,11 @@ end
 function get_efield(gcastates::Vector{GCAState})
     [gcastate.efield for gcastate in gcastates]
 end
-function get_L_B(gcastates::Vector{GCAState})
+function get_fieldlength(gcastates::Vector{GCAState})
     [gcastate.L_B for gcastate in gcastates]
+end
+function get_scalesratio(gcastates::Vector{GCAState})
+    [gcastate.r_L/gcastate.L_B for gcastate in gcastates]
 end
 function get_drifts(gcastate::GCAState)
     return [
