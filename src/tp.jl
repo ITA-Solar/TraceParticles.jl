@@ -23,6 +23,7 @@ using FiniteDifferences
 using Interpolations
 using Optimization, OptimizationNLopt
 using DataFrames
+using CSV
 using StatsBase
 
 using Printf
@@ -49,6 +50,7 @@ include("solvers.jl")
 include("callbacks.jl")
 include("problem_functions.jl")
 include("output_functions.jl")
+include("reduction_functions.jl")
 include("numerical_methods/ode_schemes.jl")
 include("numerical_methods/sde_schemes.jl")
 include("numerical_methods/differentiations.jl")
@@ -79,7 +81,7 @@ export  maxwellianvelocitysample
 export  euler_maruyama,
         milstein_central
 # solvers.jl
-export  solve,
+export  #solve,
         solve_stoppingtime
 # io/bifrost_input.jl
 export  get_br_emfield_interpolator,
@@ -88,8 +90,11 @@ export  get_br_emfield_interpolator,
         get_br_var_interpolator
 # utils.jl
 export  dropdims,
-        createaxes,
-        discretise!
+        create3Daxes,
+        discretise,
+        UserData,
+        MaxValue,
+        MinValue
 # gcastate.jl
 export GCAState
 export get_drifts,
@@ -107,6 +112,9 @@ export get_drifts,
         get_efield,
         get_fieldlength,
         get_scalesratio
+# statistics.jl
+export binmap,
+        rejectionsample
 
 
 #-------------------------------------------------------------------------------

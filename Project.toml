@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 BifrostTools = "526b3974-5bd8-47e8-be8d-381be867b53b"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
