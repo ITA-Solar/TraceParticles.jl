@@ -22,6 +22,8 @@ using ForwardDiff
 using FiniteDifferences
 using Interpolations
 using Optimization, OptimizationNLopt
+using DataFrames
+using StatsBase
 
 using Printf
 using JLD2
