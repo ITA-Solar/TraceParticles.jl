@@ -9,6 +9,27 @@
 # Contains functions for processing results.
 #-------------------------------------------------------------------------------
 """
+    getinitialstate(df::DataFrame)
+Return the initial state (or initial condition) of particle simulation stored
+as a DataFrame.
+"""
+function getinitialstate(df::DataFrame)
+    return df[:,[:x0, :y0, :z0, :vparal0]]
+end
+function getfinalstate(df::DataFrame)
+    return df[:,[:xf, :yf, :zf, :vparalf]]
+end
+function getmagneticmoments(df::DataFrame)
+    return df.magneticmoment
+end
+function getinitialtimes(df::DataFrame)
+    return df.t0
+end
+function getfinaltimes(df::DataFrame)
+    return df.tf
+end
+
+"""
     getinitialstate(
         u::Vector{<:ODESolution},
         )

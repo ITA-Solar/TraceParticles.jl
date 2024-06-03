@@ -9,6 +9,7 @@
         perpvelocity     ::Real,
         larmorradius     ::Real,
         gyrofrequency    ::Real,
+        cosofpitchangle  ::Real,
         exbdrift         ::Vector{<:Real},
         ∇Bdrift          ::Vector{<:Real},
         curvaturedrift   ::Vector{<:Real},
@@ -56,8 +57,20 @@ _______________________________________________________________________________
         ;
         time=nothing
         )
-Constructs a partially filled GCAState object, neglectin all drifts except
+Constructs a partially filled GCAState object, neglecting all drifts except
 the ExB-drift.
+
+_______________________________________________________________________________
+
+    GCAState(
+        solution::DataFrame,
+        fields::Vector{<:AbstractInterpolation}
+        ;
+        kwargs...
+        )
+From DataFrame test-particle solution and the field interpolation vector used in
+the simulation, construct two ensembles of `GCAState`s. One for the initial
+states of the particles and one for the final states.
 """
 struct GCAState
     state::Vector{<:Real}
@@ -69,6 +82,7 @@ struct GCAState
     vperp::Real
     r_L::Real
     ω_c::Real
+    β::Real
     exbdrift::Vector{<:Real}
     ∇Bdrift::Vector{<:Real}
     curvaturedrift::Vector{<:Real}
@@ -109,33 +123,25 @@ struct GCAState
             ∇b̂ = reshape([itpvec[i](R...) for i in 10:18], 3, 3)
             ∇ExB = reshape([itpvec[i](R...) for i in 19:27], 3, 3)
         elseif length(itpvec) == 6
-            # Calculate the gradient of the magnetic field strength
-            ∇B = ForwardDiff.gradient(R) do x
-                sqrt(itpvec[1](x...)^2 + itpvec[2](x...)^2 + itpvec[3](x...)^2)
+            jacobian_matrix = ForwardDiff.jacobian(R) do x
+                vec = [itp(x...) for itp in itpvec]
+                B_vec_fd = vec[1:3]
+                E_vec_fd = vec[4:6]
+                B_fd = norm(B_vec_fd)
+                b̂_fd = B_vec_fd/B_fd
+                return [b̂_fd; E_vec_fd × b̂_fd/B_fd; B_fd]
             end
-            ∇B = [∇B[1], 0f0, ∇B[2]]
-            #
-            # Calculate the gradient of the magnetic field direction
-            jacobian_matrix = stack(
-                [Interpolations.gradient(itp, R...) for itp in itpvec],
-                dims=1
-                )
             # Add zeros-column representing derivatives along the y-axis
             if dimensionality == "2Dxz"
                 jacobian_matrix = [
                     jacobian_matrix[:,1];;
-                    zeros(eltype(R), 6);;
+                    zeros(eltype(R), 7);;
                     jacobian_matrix[:,2]
                     ]
             end
-            ∇B_vec = jacobian_matrix[1:3,:]
-            ∇b̂ = (∇B_vec - b̂ * ∇B')*B⁻¹
-            #
-            # Calculate the Jacobian matrix of the ExB-drift
-            ∇E_vec = jacobian_matrix[4:6,:]
-            skewE = skewsymmetric_matrix(E_vec)
-            skewb = skewsymmetric_matrix(b̂)
-            ∇ExB = (-skewb*∇E_vec + skewE*∇b̂ - ExBdrift * ∇B')*B⁻¹
+            ∇b̂ = jacobian_matrix[1:3,:]
+            ∇ExB = jacobian_matrix[4:6,:]
+            ∇B = jacobian_matrix[7,:]
         end
     
         # Total time derivatives. Assumes ∂/∂t = 0,
@@ -158,11 +164,12 @@ struct GCAState
         L_B = characteristicfieldlength(B, ∇B)
         r_L = larmorradius(m, vperp, q, B)
         ω_c = gyrofrequency(m, q, B)
+        β = cosineof_pitchangle(B_vec, vparal, m, μ)
     
         return new(
             state,
             q, m, μ, time,
-            Ek, vperp, r_L, ω_c,
+            Ek, vperp, r_L, ω_c, β,
             ExBdrift, ∇Bdrift, Rdrift, Pdrift,
             mirroracc, paralacc,
             B_vec, E_vec,
@@ -170,7 +177,7 @@ struct GCAState
             )
     end
 
-    function GCAState(
+   function GCAState(
         state    ::Vector{<:Real},
         q        ::Real,
         m        ::Real,
@@ -185,8 +192,19 @@ struct GCAState
         vperp = perpendicular_velocity(μ, m, B)
         Ek = kineticenergy(vparallel, vperp, v_E, m)
         new(
-            state, q, m, μ, time, Ek, vperp, -1,-1, v_E,
-            [-1], [-1], [-1], -1, -1, bfield, efield, -1
+            state, q, m, μ, time, Ek, vperp, -1,-1, -1, v_E,
+            -1ones(3), -1ones(3), -1ones(3), -1, -1, bfield, efield, -1
+            )
+    end
+
+    function GCAState(
+        solution::DataFrame,
+        fields::Vector{<:AbstractInterpolation}
+        ;
+        kwargs...
+        )
+        return init_and_final_ensembleofgcastates(
+            solution, fields; kwargs...
             )
     end
 end
@@ -219,6 +237,9 @@ end
 function get_larmorradius(gcastates::Vector{GCAState})
     [gcastate.r_L for gcastate in gcastates]
 end
+function get_beta(gcastates::Vector{GCAState})
+    [gcastate.β for gcastate in gcastates]
+end
 function get_gyrofrequency(gcastates::Vector{GCAState})
     [gcastate.ω_c for gcastate in gcastates]
 end
@@ -245,33 +266,66 @@ end
 
 
 """
-    kineticenergy(
-        gcastate::GCAState,
-        )
-Calculates the kinetic energy of a charged particle given the state of the
-particle in the guiding centre approximation.
+    DataFrame(gcastates::Vector{GCAState})
+Constructs a DataFrame from a vector of `GCAState` objects. The DataFrame
+contains the fields of the `GCAState` objects as columns. Vector fields are
+collapsed into one column per component.
 """
-function kineticenergy(
-    gcastate::GCAState,
+function DataFrame(gcastates::Vector{GCAState})
+    df = DataFrame(
+        Dict(
+            field => [getfield(state, field) for state in gcastates]
+                for field in fieldnames(GCAState)
+        )
     )
-    if any(isnothing, get_drifts(gcastate))
-        kineticenergy(
-            gcastate.state[4],
-            gcastate.vperp,
-            gcastate.exbdrift,
-            gcastate.mass
-            )
-    else
-        kineticenergy(
-            gcastate.state[4],
-            gcastate.vperp,
-            gcastate.exbdrift,
-            gcastate.∇Bdrift,
-            gcastate.curvaturedrift,
-            gcastate.polarisationdrift,
-            gcastate.mass
-            )
+    newcols = Dict(
+        :Rx => (:state, 1),
+        :Ry => (:state, 2),
+        :Rz => (:state, 3),
+        :vparal => (:state, 4),
+        :bx => (:bfield, 1),
+        :by => (:bfield, 2),
+        :bz => (:bfield, 3),
+        :ex => (:efield, 1),
+        :ey => (:efield, 2),
+        :ez => (:efield, 3),
+        :exbdrift_x => (:exbdrift, 1),
+        :exbdrift_y => (:exbdrift, 2),
+        :exbdrift_z => (:exbdrift, 3),
+        :∇Bdrift_x => (:∇Bdrift, 1),
+        :∇Bdrift_y => (:∇Bdrift, 2),
+        :∇Bdrift_z => (:∇Bdrift, 3),
+        :curvaturedrift_x => (:curvaturedrift, 1),
+        :curvaturedrift_y => (:curvaturedrift, 2),
+        :curvaturedrift_z => (:curvaturedrift, 3),
+        :polarisationdrift_x => (:polarisationdrift, 1),
+        :polarisationdrift_y => (:polarisationdrift, 2),
+        :polarisationdrift_z => (:polarisationdrift, 3),
+    )
+    # Create new columns for the vector field components
+    for (field, (source, idx)) in newcols
+        column = stack(df[:, source])
+        data = column[idx, :]
+        df[!, field] = data
     end
+    # Remove the vector fields
+    for source in values(newcols)
+        try select!(df, Not(source[1]))
+        catch
+        end
+    end
+    # Change order of columns
+    select!(df,
+        [
+        :Rx, :Ry, :Rz, :vparal, :charge, :mass, :μ, :time, :energy, :vperp,
+        :r_L, :ω_c, :β, :exbdrift_x, :exbdrift_y,
+        :exbdrift_z, :∇Bdrift_x, :∇Bdrift_y, :∇Bdrift_z, :curvaturedrift_x,
+        :curvaturedrift_y, :curvaturedrift_z, :polarisationdrift_x,
+        :polarisationdrift_y, :polarisationdrift_z, :mirroracc, :paralacc,
+        :bx, :by, :bz, :ex, :ey, :ez, :L_B
+        ]
+        )
+    return df
 end
 
 
@@ -316,9 +370,15 @@ function timeseriesofgcastates(
                 dimensionality=dimensionality
                 )
         else
-            itpvec = solution.prob.p[4]
-            bfield = [itpvec[i](R...) for i in 1:3]
-            efield = [itpvec[i](R...) for i in 4:6]
+            itpvec = solution.prob.fields
+            if dimensionality == "2Dxz"
+                Rx = interpolated_solution[1]
+                Rz = interpolated_solution[3]
+                bfield = [itpvec[i](Rx, Rz) for i in 1:3]
+                efield = [itpvec[i](Rx, Rz) for i in 4:6]
+            else
+                error("Dimensionality not implemented")
+            end
             timeseries[i] = GCAState(
                 interpolated_solution,
                 solution.prob.p[1],
@@ -336,11 +396,124 @@ end
 
 
 """
+    init_and_final_ensembleofgcastates(
+        solution::Vector{Tuple{Vararg{Any}}},
+        itpvec::Vector{<:AbstractInterpolation},
+        ;
+        components="all",
+        charge=tp.e,
+        mass=tp.m_e,
+        )
+Caclulate ensembles of `GCAState` objects from the initial and final states of
+an ensemble solution, using the electromangetic field interpolation objects
+`itpvec`.
+
+The solution is assumed to be a vector of a tuple of any type
+(e.g. an output function). The function needs to be able to extract the initial
+and final states of the solution using the `getinitialstates` and
+`getfinalstates` functions. The function also needs to be able to extact the
+magnetic moment out of the solution using the function `getmagneticmoments`.
+
+Set components to "all" to calculate include all drift components in the
+calculation. Otherwise, the function will only use the ExB-drift component.
+"""
+function init_and_final_ensembleofgcastates(
+    solution::Any,
+    itpvec::Vector{<:AbstractInterpolation},
+    ;
+    kwargs...
+    )
+    initialstates = getinitialstate(solution)
+    finalstates = getfinalstate(solution)
+    initialtimes = getinitialtimes(solution)
+    finaltimes = getfinaltimes(solution)
+    magneticmoments = getmagneticmoments(solution)
+    initialgcastates = ensembleofgcastates(
+        initialstates,
+        magneticmoments,
+        initialtimes,
+        itpvec
+        ;
+        kwargs...
+        )
+    finalgcastates = ensembleofgcastates(
+        finalstates,
+        magneticmoments,
+        finaltimes,
+        itpvec
+        ;
+        kwargs...
+        )
+    return initialgcastates, finalgcastates
+end
+
+
+"""
+    ensembleofgcastates(
+        solution::DataFrame,
+        magneticmoments::Vector{<:Real},
+        times::Vector{<:Real},
+        args...
+        ;
+        kwargs...
+        )
+    ensembleofgcastates(
+        solution::Vector{<:Vector{<:Real}},
+        magneticmoments::Vector{<:Real},
+        times::Vector{<:Real},
+        itpvec::Vector{<:AbstractInterpolation},
+        ;
+        components="exb",
+        charge=tp.e,
+        mass=tp.m_e,
+        dimensionality="2Dxz"
+        )
+
+Construct a ensemble of `GCAState`s from a `solution` of a simulation using the
+GCA. The `solution` contains multiple GCA state-vectors. `magneticmoments` and
+`times` contain their respective magnetic moments and times.
+
+Require the electromagnetic field interpolation object vector as a additional
+argument.
+
+________________________________________________________________________________
+
+    ensembleofgcastates(
+        solution::Vector{Tuple{Any, Any, Any, Vector, Vector, Vector, Vector, Any, Any}}
+        ;
+        components="exb",
+        charge=tp.e,
+        mass=tp.m_e,
+        dimensionality="2Dxz"
+        )
+Harcoded for evaluating a particular deprecated output function which stored
+a vector of (u0, uf, mu, B0, E0, Bf, Ef, nt, time)
+
 """
 function ensembleofgcastates(
-    solution::Vector{Vector{<:Real}},
+    solution::DataFrame,
     magneticmoments::Vector{<:Real},
-    time::Vector{<:Real},
+    times::Vector{<:Real},
+    args...
+    ;
+    kwargs...
+    )
+    nrows = size(solution, 1)
+    gcastates = ensembleofgcastates(
+        [Vector(solution[i,:]) for i in 1:nrows],
+        magneticmoments,
+        times,
+        args...
+        ;
+        kwargs...
+    )
+    DataFrame(gcastates)
+end
+
+function ensembleofgcastates(
+    solution::Vector{<:Vector{<:Real}},
+    magneticmoments::Vector{<:Real},
+    times::Vector{<:Real},
     itpvec::Vector{<:AbstractInterpolation},
     ;
     components="exb",
@@ -359,12 +532,18 @@ function ensembleofgcastates(
                 magneticmoments[i],
                 itpvec
                 ;
-                time=time[i],
+                time=times[i],
                 dimensionality=dimensionality
                 )
         elseif components == "exb"
-            bfield = [itpvec[i](solution[i][1]...) for i in 1:3]
-            efield = [itpvec[i](solution[i][1]...) for i in 4:6]
+            if dimensionality == "2Dxz"
+                Rx = solution[i][1]
+                Rz = solution[i][3]
+                bfield = [itpvec[i](Rx, Rz) for i in 1:3]
+                efield = [itpvec[i](Rx, Rz) for i in 4:6]
+            else
+                error("Dimensionality not implemented")
+            end
             particlestates[i] = GCAState(
                 solution[i],
                 charge,
@@ -373,13 +552,12 @@ function ensembleofgcastates(
                 bfield,
                 efield
                 ;
-                time=time[i]
+                time=times[i]
                 )
         end
     end
     return particlestates
 end
-
 
 function ensembleofgcastates(
     solution::Vector{Tuple{Any, Any, Any, Vector, Vector, Vector, Vector, Any, Any}}
@@ -422,56 +600,4 @@ function ensembleofgcastates(
 end
 
 
-"""
-    init_and_final_ensembleofgcastates(
-        solution::Vector{Tuple{Vararg{Any}}},
-        itpvec::Vector{<:AbstractInterpolation},
-        ;
-        components="all",
-        charge=tp.e,
-        mass=tp.m_e,
-        )
-Caclulate ensembles of `GCAState` objects from the initial and final states of
-an ensemble solution, using the electromangetic field interpolation objects
-`itpvec`.
 
-The solution is assumed to be a vector of a tuple of any type
-(e.g. an output function). The function needs to be able to extract the initial
-and final states of the solution using the `getinitialstates` and
-`getfinalstates` functions. The function also needs to be able to extact the
-magnetic moment out of the solution using the function `getmagneticmoments`.
-
-Set components to "all" to calculate include all drift components in the
-calculation. Otherwise, the function will only use the ExB-drift component.
-"""
-function init_and_final_ensembleofgcastates(
-    solution::Vector{Tuple{Vararg{Any}}},
-    itpvec::Vector{<:AbstractInterpolation},
-    ;
-    components="",
-    charge=tp.e,
-    mass=tp.m_e,
-    )
-    initialstates = getinitialstates(solution)
-    finalstates = getfinalstates(solution)
-    initialtimes = getinitialtimes(solution)
-    finaltimes = getfinaltimes(solution)
-    magneticmoments = getmagneticmoments(solution)
-    initialgcastates = ensembleofgcastates(
-        initialstates,
-        magneticmoments,
-        initialtimes,
-        itpvec
-        ;
-        components=components, charge=charge, mass=mass
-        )
-    finalgcastates = ensembleofgcastates(
-        finalstates, 
-        magneticmoments,
-        finaltimes,
-        itpvec
-        ;
-        components=components, charge=charge, mass=mass
-        )
-    return initialgcastates, finalgcastates
-end
