@@ -218,14 +218,15 @@ function Base.rand(
     return a .+ rand(rng, precision, dims...) .* (b - a)
 end
 function Base.rand(
-    domain::Matrix{T} where {T<:Real}
+    rng      ::AbstractRNG,
+    domain::Vector{<:Tuple{Real,Real}}
     )
-    numaxes = size(domain)[1]
+    numaxes = length(domain)
     r = zeros(numaxes)
     for i = 1:numaxes
-        a = domain[i,1]
-        b = domain[i,2]
-        r[i] = a .+ rand() .* (b - a)
+        a = domain[i][1]
+        b = domain[i][2]
+        r[i] = a .+ rand(rng) .* (b - a)
     end
     return  r
 end # function rand
@@ -272,33 +273,80 @@ function importancesampling(
 end # function importancesampling
 
 
-function rejectionsampling(
-    target    ::Function,
+"""
+    rejectionsample(
+        target  ::Any,
+        maxvalue::Real,
+        domain  ::Vector{<:Tuple{Real,Real}},
+        rng     ::AbstractRNG
+        )
+Sample a point from the `target`-distribution using rejection sampling. The
+`target` function must be callable with dimension (the number of arguments)
+equal to the length of `domain`. The `maxvalue` determines the upper bound
+of the uniform "proposal" distribution. Make sure sure that this value
+is equal to or larger than the maximum possible value of the target
+distribution. If not, the point will not be a true sample of the
+target distribution.
+
+The function returns the sampled point and the number of rejections.
+
+The rejection sample algorithm draws independent and identically distributed
+random variables, at the cost of a potentially large number of rejections.
+The number of rejectiosn icreases with dimension.
+"""
+function rejectionsample(
+    target  ::Any,
+    maxvalue::Real,
+    domain  ::Vector{<:Tuple{Real,Real}},
+    rng     ::AbstractRNG
+    )
+    numrejections = 0
+    pos     = rand(rng, domain)
+    yguess  = rand(rng, 0.0, maxvalue)
+    ytarget = target(pos...)[1] # Target should return a single float, but in
+    while yguess > ytarget
+        numrejections += 1
+        pos     = rand(rng, domain)
+        yguess  = rand(rng, 0.0, maxvalue)
+        ytarget = target(pos...)[1]
+    end
+    return pos, numrejections
+end
+
+
+"""
+    rejectionsample(
+        target    ::Function,
+        maxvalue  ::Real,
+        domain    ::Vector{<:Tuple{Real,Real}},
+        rng       ::AbstractRNG,
+        numsamples::Integer,
+        )
+Draws `numsamples` points from the `target`-distribution using the rejection
+algorithm. See [`rejectionsample`](@ref) for more information.
+"""
+function rejectionsample(
+    target,
     maxvalue  ::Real,
+    domain    ::Vector{<:Tuple{Real,Real}},
+    rng       ::AbstractRNG,
     numsamples::Integer,
-    domain    ::Matrix{T} where {T<:Real}
     )
     numdims = size(domain)[1]
     positions = zeros((numdims, numsamples))
-    accepted = 0
-    rejected = 0
-    while accepted < numsamples
-        pos     = rand(domain)
-        yguess  = rand(0.0, maxvalue, 1)
-        ytarget = target(pos)[1] # Target should return a single float, but in
-        # case this float is in a 1-element Vector we specify the first index.
-        if yguess < ytarget
-            accepted += 1
-            positions[:,accepted] .= pos
-        else
-            rejected += 1
-        end
+    numaccepted = 0
+    numrejected = 0
+    while numaccepted < numsamples
+        pos, rejections = rejectionsample(target, maxvalue, domain, rng)
+        numaccepted += 1
+        numrejected += rejections
+        positions[:,numaccepted] .= pos
     end
-    acceptencerate = accepted/rejected
+    acceptancerate = numaccepted/(numaccepted + numrejected)
     if numdims == 1
-        return positions[1,:], acceptencerate
+        return positions[1,:], acceptancerate
     else
-        return positions, acceptencerate
+        return positions, acceptancerate
     end
 end # function rejection sampling
 
