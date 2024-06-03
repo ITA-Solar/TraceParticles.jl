@@ -29,7 +29,32 @@ function normaldistr(
     )
     return @.  1/(σ*√(2π))*exp(-0.5((x - μ)/σ)^2)
 end # normaldistr
+function normaldistr(
+    x::Real,
+    μ::Real,
+    σ::Real
+    )
+    return 1/(σ*√(2π))*exp(-0.5((x - μ)/σ)^2)
+end
 
+function bivariate_normaldistr(
+    x::Real,
+    y::Real,
+    μx::Real,
+    μy::Real,
+    σx::Real,
+    σy::Real,
+    corr::Real # correlation
+    )
+    normfactor = 1/(2π*σx*σy*√(1 - corr^2))
+    return normfactor * exp(
+        -1/(2*(1 - corr^2)) * (
+            (x - μx)^2/σx^2 +
+            (y - μy)^2/σy^2 -
+            2*corr*(x - μx)*(y - μy)/(σx*σy)
+            )
+        )
+end
 
 """
     uniformdistr(
@@ -53,6 +78,27 @@ function uniformdistr(
     prob[mask] .= stepheight
     return prob
 end # function uniformdistr
+
+
+"""
+    bivarate_uniformdistr(x,y,a,b,c,d)
+Return the probability of (`x`,`y`) in the bivariate uniform distribution
+f(x,y) = U(a,b) x U(c,d)
+"""
+function bivariate_uniformdistr(
+    x::Real,
+    y::Real
+    ;
+    a::Real=0.0,
+    b::Real=1.0,
+    c::Real=0.0,
+    d::Real=1.0
+    )
+    Δx = b - a
+    Δy = d - c
+    probability = abs(1/(Δx*Δy))
+    return a < x <= b && c < y <= d ? probability : 0.0
+end
 
 
 #----------------#
