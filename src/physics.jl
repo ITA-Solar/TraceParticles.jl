@@ -77,6 +77,15 @@ function characteristicfieldlength(
     grad = ∇(position, itpvec)
     return characteristicfieldlength(fieldstrength, grad)
 end
+function characteristicfieldlength(
+        position::Vector{<:Real},
+        itpvec_strength::Vector{<:AbstractInterpolation},
+        itpvec_grad::Vector{<:AbstractInterpolation}
+        )
+    fieldstrength = norm([itp(position...) for i in itpvec_strength])
+    grad = [itp(position...) for i in itpvec_grad]
+    return characteristicfieldlength(fieldstrength, grad)
+end
 
 """
     kineticenergy(velocity, mass)
@@ -221,7 +230,7 @@ function exbdrift(magneticfield::Vector{<:Real}, electricfield::Vector{<:Real})
     B = norm(magneticfield) # Magnetic field strength
     B_inv = 1/B
     b̂ = magneticfield*B_inv     # Magnetic field direction (unit vector)
-    return exbdrift(b̂, electricfield, B_inv), B, B_inv, b̂
+    return exbdrift(b̂, electricfield, B_inv), B,  b̂
 end
 
 
@@ -355,7 +364,7 @@ function get_guidingcentre(
     charge       ::Real,
     mass         ::Real
     )
-    ExBdrift, B, _, b_vec = exbdrift(magneticfield, electricfield)
+    ExBdrift, B, b_vec = exbdrift(magneticfield, electricfield)
     vel_in_E_frame = vel - ExBdrift
     # Calculate the guiding centre posistion 
     R = pos - mass/(charge*B) * (vel_in_E_frame × b_vec)
