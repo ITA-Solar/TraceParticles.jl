@@ -378,15 +378,17 @@ end
 
 
 """
-    get_guidingcentre_2Dxz(
+    get_guidingcentre_2Dxzitp(
         pos          ::Vector{<:Real},
         vel          ::Vector{<:Real},
         emfields_itpvec::Vector{<:AbstractInterpolation},
         charge       ::Real,
         mass         ::Real
         )
+Same as `get_guidingcentre` but with interpolation vector for the
+electromagnetic fields.
 """
-function get_guidingcentre_2Dxz(
+function get_guidingcentre_2Dxzitp(
     pos          ::Vector{<:Real},
     vel          ::Vector{<:Real},
     emfields_itpvec::Vector{<:AbstractInterpolation},
@@ -406,6 +408,23 @@ function get_guidingcentre_2Dxz(
     vperp = vel_in_E_frame - vparal*b_vec
     mu = magneticmoment(norm(vperp), mass, B)
     return R, vparal, mu
+end
+
+
+function get_gca_velocities(
+    vel          ::Vector{<:Real},
+    magneticfield::Vector{<:Real},
+    electricfield::Vector{<:Real},
+    mass         ::Real
+    )
+    ExBdrift, B, b_vec = exbdrift(magneticfield, electricfield)
+    vel_in_E_frame = vel - ExBdrift
+    # Calculate the velocity parallell to the magnetic field -- vparal
+    vparal = vel ⋅ b_vec
+    # Calculate mangetic moment -- mu
+    vperp = vel_in_E_frame - vparal*b_vec
+    mu = magneticmoment(norm(vperp), mass, B)
+    return vparal, mu, vel_in_E_frame
 end
 
 """
