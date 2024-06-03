@@ -291,7 +291,7 @@ function ∇(field::Array{T, 2} where {T<:Real},
 end # function ∇ 
     
 """
-Newer versions of the gradient, allowing for non-uniform structured grid.
+NEW VERSIONS of the gradient and curl, allowing for non-uniform structured grid.
 """
 function ∇(field::Array{T, 4} where {T<:Real},
            xx   ::Vector{T} where {T<:Real},
@@ -368,9 +368,9 @@ The scheme is given as a function type, e.g. Schemes.derivateCentral.
 """
 function curl(
     field      ::Array{T, 4} where {T<:Real},
-    dx         ::Vector{T} where {T<:Real},
-    dy         ::Vector{T} where {T<:Real},
-    dz         ::Vector{T} where {T<:Real},
+    xx         ::Vector{T} where {T<:Real},
+    yy         ::Vector{T} where {T<:Real},
+    zz         ::Vector{T} where {T<:Real},
     derivscheme::Function
     ;
     wfp::DataType=typeof(field[1])
@@ -378,22 +378,8 @@ function curl(
     fx = field[1,:,:,:]
     fy = field[2,:,:,:]
     fz = field[3,:,:,:]
-    derivx = (1,0,0)
-    derivy = (0,1,0)
-    derivz = (0,0,1)
-    ∂fx∂y = derivscheme(fx, dy, derivy)
-    ∂fx∂z = derivscheme(fx, dz, derivz)
-    ∂fy∂x = derivscheme(fy, dx, derivx)
-    ∂fy∂z = derivscheme(fy, dz, derivz)
-    ∂fz∂x = derivscheme(fz, dx, derivx)
-    ∂fz∂y = derivscheme(fz, dy, derivy)
-    _, nx, ny, nz = size(field)
-    result = zeros(wfp, 3, nx, ny, nz)
-    result[1, :, :, :] = ∂fz∂y .- ∂fy∂z
-    result[2, :, :, :] = ∂fx∂z .- ∂fz∂x
-    result[3, :, :, :] = ∂fy∂x .- ∂fx∂y
-    return result
-end # function curl
+    return curl(fx, fy, fz, xx, yy, zz, derivscheme; wfp=wfp)
+end
 #|
 function curl(
     fx         ::Array{T, 3} where {T<:Real},
@@ -404,7 +390,7 @@ function curl(
     zz         ::Vector{T} where {T<:Real},
     derivscheme::Function
     ;
-    wfp::DataType=typeof(field[1])
+    wfp::DataType=eltype(fx)
     )
     ∂fx∂x, ∂fx∂y, ∂fx∂z = derivscheme(fx, xx, yy, zz)
     ∂fy∂x, ∂fy∂y, ∂fy∂z = derivscheme(fy, xx, yy, zz)
