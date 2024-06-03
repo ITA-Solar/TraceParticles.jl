@@ -62,6 +62,40 @@ function locate_cell(coords::Vector{T} where {T<:Real},
 end # function locate_cell
 
 
+#____/\_____/\_________________________________________________________________
+"""
+Convenience struct for storing user data in the parameters of a
+`DifferentialEquations` problem.
+
+For now contains only a return message `retmsg` to be edited by user-defined
+callbacks that terminate the simulation.
+"""
+mutable struct UserData
+    retmsg::String
+end
+
+"""
+Convenience structure for storing the maximum value of some quantity during
+a `Differentialequations` simulation.
+"""
+mutable struct MaxValue{T1, T2, T3}
+    max::T1
+    max_u::T2
+    max_t::T3
+end
+
+
+"""
+Convenience structure for storing the minimum value of some quantity during
+a `Differentialequations` simulation.
+"""
+mutable struct MinValue{T1, T2, T3}
+    min::T1
+    min_u::T2
+    min_t::T3
+end
+
+
 #----------------------------------------#
 # Vector potential generation            #
 # Mesh generation from analytical fields #
