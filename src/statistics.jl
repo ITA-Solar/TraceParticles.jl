@@ -351,3 +351,212 @@ function rejectionsample(
 end # function rejection sampling
 
 
+"""
+    binindex(values::AbstractVector, edges::AbstractVector)
+Bins `values` into the bins defined by `edges`. Returns the indices of the bins.
+"""
+function binindex(values::AbstractVector, edges::AbstractVector)
+    indices = zeros(Int, length(values))
+    nbins = length(edges) - 1
+    for i in eachindex(values)
+        if values[i] == edges[end]
+            indices[i] = nbins
+            continue
+        end
+        for j in 1:nbins
+            if edges[j] <= values[i] < edges[j+1]
+                indices[i] = j
+                break
+            end
+        end
+    end
+    return indices
+end
+
+
+"""
+    binmap(
+        data,
+        weights=ones(length(data)),
+        mapfunc::Function = (x,w) -> sum(w),
+        args...
+        ;
+        xvalues=nothing,
+        xedges=nothing,
+        nbins= 100,
+        logx=false,
+        logf=false,
+        normalise=false,
+        )
+Maps a binning of the `data` to the function `mapfunc`. The default mapping
+is the sum of the weights of the data in each bin. The defualt weighing is 1.
+
+If no edges or data-corresponding x-values are given, we bin the data in a
+linear, uniform range between its minimum and maximum value.
+
+Returns the midpoints of the bins and the mapped values of the bins.
+"""
+function binmap(
+    data,
+    weights=ones(length(data)),
+    mapfunc::Function = (x,w) -> sum(w),
+    args...
+    ;
+    xvalues=nothing,
+    xedges=nothing,
+    nbins= 100,
+    logx=false,
+    logf=false,
+    normalise=false,
+    )
+    if isnothing(xedges) && isnothing(xvalues)
+        # If no edges or data-corresponding x-values are given, we bin the
+        # data in a linear, uniform range between its minimum and maximum
+        # value.
+        if logx
+            log10data = log10.(data)
+            minx = minimum(log10data)
+            maxx = maximum(log10data)
+        else
+            minx = minimum(data)
+            maxx = maximum(data)
+        end
+        xedges = LinRange(minx, maxx, nbins+1)
+    elseif isnothing(xedges)
+        # If data-corresponding x-values are given, we use these to bin the
+        # data.
+        if logx
+            log10data = log10.(xvalues)
+            minx = minimum(log10data)
+            maxx = maximum(log10data)
+        else
+            minx = minimum(xvalues)
+            maxx = maximum(xvalues)
+        end
+        xedges = LinRange(minx, maxx, nbins+1)
+    else
+        # If edges are given, we use these to bin the data.
+        nbins = length(xedges) - 1
+    end
+    # Bin the data
+    if logx
+        binindex_x = binindex(data, 10 .^ xedges)
+    else
+        binindex_x = binindex(data, xedges)
+    end
+
+    # Here comes maping of each bin.
+    # First,
+    # construct a DataFrame with the data and its corresponding binindex
+    # and weight as columns.
+    df = DataFrame(
+        x=data,
+        binindex_x=binindex_x,
+        weight=weights
+        )
+    # Second,
+    # group the data by binindex
+    gdf = groupby(df, :binindex_x)
+    # Third,
+    # Apply the mapfunc to each exisiting group (some bins might be empty and
+    # hence not present in the groupby object).
+    binvalues = Vector{eltype(data)}(undef, nbins)
+    for i = 1:nbins
+        try groupdf = gdf[(binindex_x=i,)]
+            binvalues[i] = mapfunc(groupdf.x, groupdf.weight, args...)
+        catch
+            binvalues[i] = mapfunc([], [0.0], args...)
+        end
+    end
+
+    # Some post-processing. Normalise the binvalues if requested.
+    if normalise
+        dx = diff(xedges)[1]
+        binvalues = binvalues ./ (dx*sum(binvalues))
+    end
+    if logf
+        binvalues = log10.(binvalues)
+    end
+    return midpoints(xedges), binvalues
+end
+
+
+"""
+    binmap(
+        xvalues,
+        yvalues,
+        zvalues,
+        mapfunc::Function = x -> length(x),
+        args...
+        ;
+        nbinsx=100,
+        nbinsy=100,
+        logaxes=false,
+        logx=false,
+        logy=false,
+        logz=false,
+        normalise=false,
+        )
+Maps a 2D binning of the `zvalues` to the function `mapfunc`. Does not support
+weighing of the `zvalues`.
+
+Returns the 2D midpoints of the bins and their mapped values.
+"""
+function binmap(
+    xvalues,
+    yvalues,
+    zvalues,
+    mapfunc::Function = x -> length(x),
+    args...
+    ;
+    nbinsx=100,
+    nbinsy=100,
+    logaxes=false,
+    logx=false,
+    logy=false,
+    logz=false,
+    normalise=false,
+    )
+    if logaxes
+        xvalues = log10.(xvalues)
+        yvalues = log10.(yvalues)
+    elseif logx
+        xvalues = log10.(xvalues)
+    elseif logy
+        yvalues = log10.(yvalues)
+    end
+    xedges = LinRange(minimum(xvalues), maximum(xvalues), nbinsx+1)
+    yedges = LinRange(minimum(yvalues), maximum(yvalues), nbinsy+1)
+    binindex_x = binindex(xvalues, xedges)
+    binindex_y = binindex(yvalues, yedges)
+    df = DataFrame(
+        x=xvalues,
+        y=yvalues,
+        z=zvalues,
+        binindex_x=binindex_x,
+        binindex_y=binindex_y
+        )
+    gdf = groupby(df, [:binindex_x, :binindex_y])
+
+    binvalues = Matrix{eltype(zvalues)}(undef, nbinsx, nbinsy)
+    for i in 1:nbinsx
+        for j in 1:nbinsy
+            try binvalues[i,j] = mapfunc(
+                gdf[(binindex_x=i, binindex_y=j,)].z, args...
+                )
+            catch
+                binvalues[i] = mapfunc([], args...)
+            end
+        end
+    end
+    if normalise
+        dx = diff(xedges)[1]
+        dy = diff(yedges)[1]
+        dA = dx*dy
+        binvalues = binvalues ./ (dA*sum(binvalues))
+    end
+    if logz
+        binvalues = log10.(binvalues)
+    end
+    return midpoints(xedges), midpoints(yedges), binvalues
+end
