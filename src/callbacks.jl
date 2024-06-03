@@ -14,6 +14,7 @@ function DiscreteTPCallback()
     return DiscreteTPCallback(condition, affect!)
 end
 
+
 # -----------------------------------------------------------------------------
 # Out of bounds
 # -----------------------------------------------------------------------------
@@ -33,7 +34,8 @@ function outside2dnullpointzoom(u,_,_) # (u, t, integrator)
             u[3] <= -7.79e6 || u[3] >= -3.88e6
 end
 
-function killparticle!(integrator)
+function outofdomainaffect!(integrator)
+    integrator.p.userdata.retmsg = "OutofDomain"
     terminate!(integrator)
 end
 
@@ -41,14 +43,69 @@ end
 # -----------------------------------------------------------------------------
 # Hybrid switching
 # -----------------------------------------------------------------------------
-function gcabreakdown_highmem2Dxz(u, t, integrator)
-    ratio = scalesratio_highmem_2Dxz(u, t, integrator.p)
-    return ratio > integrator.p.switchtol
+"""
+    gcabrakdown(u, t, integrator)
+Callback condition for checking GCA assumption. Returns `true` if the ratio
+between the particle Larmor radius and the characteristic length of the
+magnetic field is higher than a tolerance `switchtol`, given by the problem
+parameters.
+"""
+struct GCABreakDownCondition_2Dxz
+    tolerance::Real
 end
-function gcabreakdown_2Dxz(u, t, integrator)
+function (functor::GCABreakDownCondition_2Dxz)(u, t, integrator)
     ratio = scalesratio_2Dxz(u, t, integrator.p)
-    return ratio > integrator.p.switchtol
+    return ratio > functor.tolerance
 end
+
+struct GCABreakDownCondition_highmem_2Dxz
+    tolerance::Real
+end
+function (functor::GCABreakDownCondition_highmem_2Dxz)(u, t, integrator)
+    ratio = scalesratio_highmem_2Dxz(u, t, integrator.p)
+    return ratio > functor.tolerance
+end
+
+
+function GCABreakDownCB(
+    method::String,
+    dimensionality::String
+    ;
+    tolerance::Real=1.0
+    )
+    if method*dimensionality == "lowmem2Dxz"
+        condition = GCABreakDownCondition_2Dxz(tolerance)
+    elseif method*dimensionality == "highmem2Dxz"
+        condition = GCABreakDownCondition_highmem_2Dxz(tolerance)
+    else
+        error("Unknown method.")
+    end
+    return DiscreteCallback(condition, gcabreakdownaffect!)
+end
+
+function gcabreakdownaffect!(integrator)
+    integrator.p.userdata.retmsg = "GCABreakDown"
+    terminate!(integrator)
+end
+
+"""
+    scalesratio(
+        R::Vector{<:Real},
+        itpvec::Vector{<:AbstractInterpolation},
+        ∇B::Vector{<:Real},
+        params::NamedTuple
+        )
+Calculates the ratio between the Larmor radius and the characteristic field
+length of the magnetic field.
+
+# Arguments
+- `R`, the guiding centre location.
+- `itpvec`, the magnetic field, as a vector of interpolation objects for each
+    component
+- `∇B`, the gradient of the magnetic field, as a vector of components.
+- `params`, `NamedTuple` containing the parameters charge, mass and magnetic
+    moment.
+"""
 function scalesratio(
     R::Vector{<:Real},
     itpvec::Vector{<:AbstractInterpolation},
@@ -73,7 +130,7 @@ end
 function scalesratio_highmem_2Dxz(u, t, params)
     R = [u[1], u[3]]
     itpvec = params.fields
-    ∇B = [itpvec[i](R) for i in 7:9]
+    ∇B = [itpvec[i](R...) for i in 7:9]
     scalesratio(R, itpvec, ∇B, params)
 end
 
@@ -82,19 +139,6 @@ function hybridswitch_affect!(integrator)
     integrator.p.gca = !integrator.p.gca
 end
 
-
-#____/\_____/\_________________________________________________________________
-# Save maximum values
-mutable struct MaxValue{T1, T2, T3}
-    max::T1
-    max_u::T2
-    max_t::T3
-end
-mutable struct MinValue{T1, T2, T3}
-    min::T1
-    min_u::T2
-    min_t::T3
-end
 
 #------------------------------------------------------------------------------
 # MAX callback for LARMOR RADIUS
