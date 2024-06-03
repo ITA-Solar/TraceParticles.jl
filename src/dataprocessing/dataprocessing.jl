@@ -88,6 +88,40 @@ function getfinaltime(
 end
 
 
+"""
+    generate_probdistr(
+        xvalues,
+        yvalues,
+        zvalues,
+        ;
+        kwargs...
+        )
+Generate a 2D probability distribution from discrete values of f_z(x,y).
+
+The algorithm bins the `zvalues` on the xy-plane and uses the mean z-value
+of each bin as the value of the distribution function at that point.
+Finally it normalizes the distribution function to 1 and constructs a linear
+interpolation object from the discrete probability distribution.
+
+Returns the interpolation object, and the bin edges in x and y.
+"""
+function generate_probdistr(
+    xvalues,
+    yvalues,
+    zvalues,
+    ;
+    kwargs...
+    )
+    xx, yy, bm = binmap(xvalues, yvalues, zvalues, x -> mean(x); kwargs...)
+    dxs = [diff(xx)[1], diff(yy)[1]]
+    proddxs = prod(dxs)
+    normfactor = sum(bm)*proddxs
+    normbm = bm/normfactor
+    itp = linear_interpolation((xx, yy), normbm, extrapolation_bc=Flat())
+    return itp, xx, yy
+end
+
+
 function theoretical_energygain_2Dxz(
     solution::ODESolution
     )
