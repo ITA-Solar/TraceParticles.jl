@@ -10,7 +10,10 @@ for each particle in the EnsembleProblem, but the particle independent `eom`,
 """
 prob = ODEProblem(
     eom,
-    zeros(1), # This is a dummy initial condition
+    try u0
+    catch
+        zeros(1) # Dummy initial condition
+    end,
     tspan,
     (
         charge = charge,

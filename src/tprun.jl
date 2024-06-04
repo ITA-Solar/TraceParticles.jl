@@ -17,10 +17,22 @@ chosen by the user.
 
 ## Requirements
 As a bare minimum, the `expparams.jl` file must define the following variables:
-- `tp_expname::String` : The name of the experiment.
+- `tp_expname::String` : The name of the test particle experiment.
+- `eom::Function` : The equation of motion of the test particles.
+- `fields_itp::Vector{<:AbstractInterpolation} : The interpolated fields
+    that the test particles will be evolved in.
+- `charger::Real` : The charge of the test particles.
+- `mass::Real` : The mass of the test
+- `tspan::Tuple{Real, Real}` : The time span of the simulation.
+- `prob_func::Function` or `u0::Vector{<:Real}`: The function that generates
+    the initial conditions of the test particles or an initial condition to be
+    used for all test particles.
 """
 params = ARGS[1]
 include(joinpath(pwd(), basename(params)))
+try mkdir("data")
+catch
+end
 paramsbackup = pwd() * "/data/" * tp_expname * ".jl"
 cp(params, paramsbackup)
 
