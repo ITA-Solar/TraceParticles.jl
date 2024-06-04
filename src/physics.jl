@@ -345,6 +345,36 @@ end
 
 
 """
+    drift_dbdt_acceleration(
+        ExBdrift::Vector{<:Real},
+        ∇Bdrift::Vector{<:Real},
+        dbdt   ::Vector{<:Real},
+        )
+    drift_dbdt_acceleration(
+        ExBdrift::Vector{<:Real},
+        dbdt   ::Vector{<:Real},
+        )
+Calculate the acceleration of a charged particle due to the marterial
+derivative of the magnetic field direction. See Birn et al. 2004 and
+Ripperda et al. 2018 for reference. Although they don't comment this
+term much, so I'm not to sure what it represents.
+"""
+function drift_dbdt_acceleration(
+    ExBdrift::Vector{<:Real},
+    ∇Bdrift::Vector{<:Real},
+    dbdt   ::Vector{<:Real},
+    )
+    return (ExBdrift + ∇Bdrift) ⋅ dbdt
+end
+function drift_dbdt_acceleration(
+    ExBdrift::Vector{<:Real},
+    dbdt   ::Vector{<:Real},
+    )
+    return ExBdrift ⋅ dbdt
+end
+
+
+"""
     get_guidingcentre(
         pos          ::Vector{<:Real},
         vel          ::Vector{<:Real},

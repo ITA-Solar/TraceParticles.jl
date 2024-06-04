@@ -243,10 +243,11 @@ function gca_2Dxz!(du, u, p, _)
     #dRperpdt = b̂/B × (-E⃗ + μ/q*∇B + m/q*(vparal*db̂dt + dExBdt))  # old
 
     # Compute the acceleration 
-    dvparaldt = (q*Eparal - μ*b⋅∇B)/m # along the magnetic field lines
+    #dvparaldt = (q*Eparal - μ*b⋅∇B)/m + ExBdrift⋅dbdt
     # With correction proposed by Birn et al., 2004:
-    #dvparaldt = (q*Eparal - μ*b̂⋅∇B)/m + ExBdrift⋅db̂dt + ∇Bdrift⋅db̂dt
-    #dRperpdt = b̂/B × (-c*E⃗ + μ*c/q * ∇B) #old
+    dvparaldt = (q*Eparal - μ*b⋅∇B)/m + (ExBdrift + ∇Bdrift) ⋅ dbdt
+    # Old version:
+    #dvparaldt = (q*Eparal - μ*b⋅∇B)/m # along the magnetic field lines
 
     # Compute the velocity
     dRdt = vparal*b + dRperpdt
@@ -375,11 +376,12 @@ function gca_highmemory_2Dxz!(du, u, p, _)
     # Compute the perpendicular velcoity
     dRperpdt = ExBdrift + ∇Bdrift + m*b/(q*B) × (vparal*dbdt + dExBdt)
 
-    # Compute the acceleration along the magnetic field
-    dvparaldt = (q*Eparal - mu*b⋅gradB)/m
+    # Compute the acceleration
+    #dvparaldt = (q*Eparal - μ*b⋅∇B)/m + ExBdrift⋅dbdt
     # With correction proposed by Birn et al., 2004:
-    #dvparaldt = (q*Eparal - μ*b̂⋅∇B)/m + ExBdrift⋅db̂dt + ∇Bdrift⋅db̂dt
-    #dRperpdt = b̂/B × (-c*E⃗ + μ*c/q * ∇B) #old
+    dvparaldt = (q*Eparal - μ*b⋅∇B)/m + (ExBdrift + ∇Bdrift) ⋅ dbdt
+    # Old version:
+    #dvparaldt = (q*Eparal - μ*b⋅∇B)/m # along the magnetic field lines
 
     # Compute the total velocity of the guiding centre
     dRdt = vparal*b + dRperpdt

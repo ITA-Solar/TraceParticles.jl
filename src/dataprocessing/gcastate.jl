@@ -89,6 +89,7 @@ struct GCAState
     polarisationdrift::Vector{<:Real}
     mirroracc::Real
     paralacc::Real
+    dbdtacc::Real
     bfield::Vector{<:Real}
     efield::Vector{<:Real}
     L_B::Real
@@ -155,6 +156,7 @@ struct GCAState
         # Compute parallel acceleration
         mirroracc = magneticmirror_acceleration(b̂, ∇B, μ, m)
         paralacc = parallel_acceleration(b̂, E_vec, q, m)
+        dbdtacc = drift_dbdt_acceleration(ExBdrift, ∇Bdrift, dbdt)
         # Compute the perpendicular velocity
         # Other auxiliary quantities
         vperp = √(2B*μ/m) # The perpendicular velocity
@@ -171,7 +173,7 @@ struct GCAState
             q, m, μ, time,
             Ek, vperp, r_L, ω_c, β,
             ExBdrift, ∇Bdrift, Rdrift, Pdrift,
-            mirroracc, paralacc,
+            mirroracc, paralacc, dbdtacc,
             B_vec, E_vec,
             L_B,
             )
@@ -193,7 +195,7 @@ struct GCAState
         Ek = kineticenergy(vparallel, vperp, v_E, m)
         new(
             state, q, m, μ, time, Ek, vperp, -1,-1, -1, v_E,
-            -1ones(3), -1ones(3), -1ones(3), -1, -1, bfield, efield, -1
+            -1ones(3), -1ones(3), -1ones(3), -1, -1, -1, bfield, efield, -1
             )
     end
 
@@ -322,7 +324,7 @@ function DataFrame(gcastates::Vector{GCAState})
         :exbdrift_z, :∇Bdrift_x, :∇Bdrift_y, :∇Bdrift_z, :curvaturedrift_x,
         :curvaturedrift_y, :curvaturedrift_z, :polarisationdrift_x,
         :polarisationdrift_y, :polarisationdrift_z, :mirroracc, :paralacc,
-        :bx, :by, :bz, :ex, :ey, :ez, :L_B
+        :dbdtacc, :bx, :by, :bz, :ex, :ey, :ez, :L_B
         ]
         )
     return df
