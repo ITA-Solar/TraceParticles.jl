@@ -67,15 +67,16 @@ struct DposMBvel{RealT}
 end
 function (self::DposMBvel)(prob, i, repeat)
     print("Particle $i \r")
-    (Rx, Rz), acceptanceratio = rejectionsample(
+    (Rx, Rz), nrejections = rejectionsample(
         self.proposal_distr,
         self.max_value,
         self.domain,
         self.rng
         )
+    acceptanceratio = 1/nrejections
     weight = self.target_distr(Rx, Rz) / self.proposal_distr(Rx, Rz)
     R = [Rx, 1e6, Rz] # !!! Hardcoded y-value
-    
+
     # Velocity
     charge = prob.p.charge
     mass = prob.p.mass
