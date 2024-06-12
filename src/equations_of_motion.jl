@@ -52,10 +52,14 @@ interpolation functor giving the magnetic and electric field by passing the
 position coordinates.
 """
 function lorentzforce!(du, u, p, _)
-    q, m, field_itp = p
+    q, m, fields_itp = p
     x = u[1:3] # The position vector
     v = u[4:6] # The velocity vector
-    fields = field_itp(x...)
+    if typeof(fields_itp) <: Vector
+        fields = [itp(x...) for itp in fields_itp]
+    else
+        fields = fields_itp(x...)
+    end
     B = fields[1:3]
     E = fields[4:6]
     dvdt = q/m * (E + v × B) 
@@ -95,85 +99,40 @@ function guidingcentreapproximation!(du, u, p, _)
     R = u[1:3]
     vparal = u[4] # Particle velocity parallel to the magnetic field
     # Extract parameters
-    q, m, μ, fields_itp = p
-    q_inv = 1/q # Inverse of q - to replace division with multiplication
+    q, m, μ, itpvec = p
     # Use the gyrocentre position interpolate the vectors
     # scalars from the interpolation objects.
-    fields = fields_itp(R...)
+    #fields = itpvec(R...)
+    if typeof(itpvec) <: Vector
+        fields = [itp(R...) for itp in itpvec]
+    else
+        fields = itpvec(R...)
+    end
     B_vec = fields[1:3]
     E_vec = fields[4:6]
-    B = norm(B_vec)   # The magnetic field strength
-    B_inv = 1/B       # Inverse of B - to replace divition with multiplication
-    b = B_vec*B_inv   # An unit vector pointing in the direction of the
-                      #  magnetic field
-    ExBdrift = (E_vec × b)/B # The E cross B-drift
 
-    # Calculate the gradient of the magnetic field strength
-    ∇B = ForwardDiff.gradient(R) do x
-        norm(fields_itp(x...)[1:3])
+     # Calculate the field gradients.
+    jacobian_matrix = ForwardDiff.jacobian(R) do x
+        if typeof(itpvec) <: Vector
+            vec = [itp(x...) for itp in itpvec]
+        else
+            vec = itpvec(x...)
+        end
+        B_vec_fd = vec[1:3]
+        E_vec_fd = vec[4:6]
+        B_fd = norm(B_vec_fd)
+        b_fd = B_vec_fd/B_fd
+        return [b_fd; E_vec_fd × b_fd/B_fd; B_fd]
     end
-    #
-    # Calculate the gradient of the magnetic field direction
-    #____
-    # The following two lines is according to a @Benchmark test with 201^3 
-    # grid points 1.17 faster than the ForwardDiff.jacobian method (commented 
-    # below). The results of both methods where exactly the same.  
-    #
-    # Edit: B_itp replaced by field_itp, which means that calculating the 
-    # gradient also gives the jacobian matric of the electric field at the same
-    # time. Will save time in total but this step might take som extra time.
-    #
-    #∇b = ForwardDiff.jacobian(R) do x
-    #    B_vec = B_itp(x...)
-    #    return B_vec/norm(B_vec)
-    #end
-    #____
-    jacobian_matrix = stack(Interpolations.gradient(fields_itp, R...))
-    ∇B_vec = jacobian_matrix[1:3,:]
-    ∇b = (∇B_vec - b * ∇B')*B_inv
-    #
-    # Calculate the Jacobian matrix of the ExB-drift
-    #____ 
-    # The following five lines is according to a @Benchmark test with 201^3
-    # grid points 1.53 faster than the ForwardDiff.jacobian method (commented 
-    #  below). The results of both methods where exactly the same.  
-    #ForwardDiff.jacobian(R) do x
-    #    B_vec = B_vec(x...)
-    #    E_vec = E_vec(x...)
-    #    return (E_vec × B_vec)/(norm(B_vec)^2)
-    #end
-    #____
-    ∇E_vec = jacobian_matrix[4:6,:]
-    skewE = skewsymmetric_matrix(E_vec)
-    skewb = skewsymmetric_matrix(b)
-    ∇ExB = (-skewb*∇E_vec + skewE*∇b - ExBdrift * ∇B')*B_inv
-
-    # Electric field component parallel to the magnetic field
-    Eparal = E_vec⋅b
-    # Calculate ∇B-drift
-    ∇Bdrift = q_inv*B_inv*μ*(b × ∇B)
-    # Total time derivatives. Assumes ∂/∂t = 0,
-    dbdt = vparal * (∇b * b) + ∇b*ExBdrift
-    dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift
+    ∇b = jacobian_matrix[1:3,:]
+    ∇ExB = jacobian_matrix[4:6,:]
+    ∇B = jacobian_matrix[7,:]
     
-    # Compute the perpendicular velcoity
-    dRperpdt = ExBdrift + ∇Bdrift + q_inv*B_inv*m*b × (vparal*dbdt + dExBdt)
-    #dRperpdt = b̂/B × (-E⃗ + μ/q*∇B + m/q*(vparal*db̂dt + dExBdt))  # old
-
-    # Compute the acceleration 
-    dvparaldt = (q*Eparal - μ*b⋅∇B)/m # along the magnetic field lines
-    # With correction proposed by Birn et al., 2004:
-    #dvparaldt = (q*Eparal - μ*b̂⋅∇B)/m + ExBdrift⋅db̂dt + ∇Bdrift⋅db̂dt
-    #dRperpdt = b̂/B × (-c*E⃗ + μ*c/q * ∇B) #old
-
-    # Compute the velocity
-    dRdt = vparal*b + dRperpdt
-    
-    # How to store the perpendicular velocity? Would need to know b̂ at
-    #   each R calculate vperp at each R. Could be interesting to store this
-    #   as an auxiliary variable somehow, to se how the drift evolves.
-    du[:] = [dRdt; dvparaldt]
+    du[:] = gca_drift_and_acceleration(
+        ∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ
+        )
 end
+
 
 """
     gca_2Dxz!(du, u, p, _)
@@ -261,10 +220,10 @@ end
 
 """
     gca_highmemory(u, p, _)
-Same as @gca, but does not calculate gradients on the fly.
-Uses interpolation and gradients stored in memory instead.
+Same as `guidingcentreapproximation!`, but does not calculate gradients
+on the fly. Uses interpolation and gradients stored in memory instead.
 """
-function gca_highmemory(u, p, _)
+function gca_highmemory!(du, u, p, _)
     R = u[1:3]    # Position of the gyrocentre
     vparal = u[4] # Particle velocity parallel to the magnetic field
     beta = u[5]   # Cosine of pitch angle
@@ -303,7 +262,6 @@ function gca_highmemory(u, p, _)
     # Material derivatives of the magnetic field strength, the magnetic field
     # direction, and the ExB-drift. Assumes ∂/∂t = 0
     # See Ripperda et al. (2018) and notes.
-    dBdt = vparal * b_vec ⋅ gradB_vec + ExBdrift ⋅ gradB_vec
     dbdt = vparal * (gradb * b_vec) + gradb*ExBdrift
     dExBdt = vparal * (gradExB * b_vec) + gradExB*ExBdrift
 
@@ -319,11 +277,8 @@ function gca_highmemory(u, p, _)
     # Compute the total velocity of the guiding centre
     dRdt = vparal*b_vec + dRperpdt
 
-    # Compute the pitch angle rate of change
-    dbetadt = (1/vparal*dvparaldt - 1/2B*dBdt)*beta*(1-beta^2)
-
     # Update the statevector
-    return [dRdt; dvparaldt; dbetadt] 
+    du[:] = [dRdt; dvparaldt]
 
 end
 
@@ -538,9 +493,9 @@ function GCAPitchAngleFriction_lowmemory_2Dxz(u, p, _)
     # Calculate drifts
     ∇Bdrift = q_inv*B_inv*μ*(b × ∇B)
     # Total time derivatives. Assumes ∂/∂t = 0,
-    dBdt = vparal * b ⋅ ∇B + ExBdrift ⋅ ∇B
-    dbdt = vparal * (∇b * b) + ∇b*ExBdrift
-    dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift
+    dBdt = vparal * b ⋅ ∇B + ExBdrift ⋅ ∇B # magnetic field strength
+    dbdt = vparal * (∇b * b) + ∇b*ExBdrift # magnetic field direction
+    dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift # ExB-drift
     
     # Compute the perpendicular velcoity
     dRperpdt = ExBdrift + ∇Bdrift + q_inv*B_inv*m*b × (vparal*dbdt + dExBdt)

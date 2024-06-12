@@ -105,16 +105,16 @@ function create3Daxes(
     (xf, yf, zf)::Tuple{Real, Real, Real},
     (nx, ny, nz)::Tuple{Integer, Integer, Integer}
     )
-    xx = collect(LinRange(x0, xf, nx))
+    xx = LinRange(x0, xf, nx)
     dx = xx[2] - xx[1]
-    yy = collect(LinRange(y0, yf, ny))
+    yy = LinRange(y0, yf, ny)
     dy = yy[2] - yy[1]
     # Account for single point in the z-axis
     if nz == 1
         zz = [z0]
         dz = 0.
             else
-        zz = collect(LinRange(z0, zf, nz))
+        zz = LinRange(z0, zf, nz)
         dz = zz[2] - zz[1]
     end
     return xx, yy, zz, dx, dy, dz
@@ -134,17 +134,19 @@ Discretise a `func`tion onto a mesh with grid points given by
 """
 function discretise(
     func::Function,
-    xx  ::Vector{T} where {T<:Real},
-    yy  ::Vector{T} where {T<:Real},
-    zz  ::Vector{T} where {T<:Real},
+    xx  ::AbstractVector,
+    yy  ::AbstractVector,
+    zz  ::AbstractVector,
     args...
     )
-    f111 = func(xx[1], yy[1], zz[1], args...)
-    field = Array{eltype(f111), 3}(undef, length(xx), length(yy), length(zz))
+    f111 = func(xx[1], yy[1], zz[1])
+    field = Array{Vector{eltype(f111)}, 3}(
+        undef, length(xx), length(yy), length(zz)
+        )
     for i in eachindex(xx)
         for j in eachindex(yy)
             for k in eachindex(zz)
-                field[i,j,k] = func(xx[i], yy[j], zz[k], args...)
+                field[i,j,k] = func(xx[i], yy[j], zz[k])
             end
         end
     end
@@ -175,10 +177,11 @@ function normal3Donlyz(
     amplitude   ::Real=1.0
     )
     # Create spatial axes and find the grid sizes
-    xx, yy, zz, dx, dy, dz = createaxes((x0, y0, z0),
-                                        (xf, yf, zf),
-                                        (nx, ny, nz)
-                                        )
+    xx, yy, zz, dx, dy, dz = create3Daxes(
+        (x0, y0, z0),
+        (xf, yf, zf),
+        (nx, ny, nz)
+        )
     # Initialise the vector field
     ndims = 3
     A = zeros(ndims, nx, ny, nz)

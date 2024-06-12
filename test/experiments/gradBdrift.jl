@@ -57,9 +57,7 @@ ni = (100, 100, 2)
 a = 10.0 # gradient in magnetic field
 B0 = 6.0 # Additional constant
 function gradBfield(
-    x::Float64,
     y::Float64,
-    z::Float64
     )
     return [0.0, 0.0, a*y + B0]
 end
@@ -79,13 +77,13 @@ Ey = 0.0
 #
 #-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
-xx, yy, zz, dx, dy, dz = createaxes(xi0, xif, ni)
+xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
 Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
 Efield = zeros(size(Bfield))
 Efield[1,:,:,:] .= Ex
 Efield[2,:,:,:] .= Ey
 #Efield[1,:,1:30,:] .= 0.0
-discretise!(Bfield, xx, yy, zz, gradBfield)
+Bfield = stack(discretise((x,y,z) -> gradBfield(y), xx, yy, zz))
 # Create interpolation objects
 emfields = eachslice(vcat(Bfield, Efield), dims=(2,3,4))
 emfields_itp = linear_interpolation((xx, yy, zz), emfields, 
@@ -140,7 +138,7 @@ sol_GCA = DifferentialEquations.solve(prob_GCA)
 #-------------------------------------------------------------------------------
 # TESTING
 # Initial gyrofrequency
-B = norm(gradBfield(pos0...))
+B = norm(gradBfield(pos0[2]))
 vperp = √(vel0[1]^2 + vel0[2]^2)
 ff = charge*B/(mass*2π)
 rL = mass*vperp/(charge*B)

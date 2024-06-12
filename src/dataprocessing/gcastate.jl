@@ -363,10 +363,10 @@ function timeseriesofgcastates(
         if components == "all"
             timeseries[i] = GCAState(
                 interpolated_solution,
-                solution.prob.p[1],
-                solution.prob.p[2],
-                solution.prob.p[3],
-                solution.prob.p[4]
+                solution.prob.p.charge,
+                solution.prob.p.mass,
+                solution.prob.p.magneticmoment,
+                solution.prob.p.fields,
                 ;
                 time=times[i],
                 dimensionality=dimensionality

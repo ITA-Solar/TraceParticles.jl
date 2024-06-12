@@ -20,7 +20,7 @@
 # NUMBER OF PARTICLES, SIMULATION DURATION, TIMESTEP   |
 #......................................................|
 numparticles = 1  # Number of particles to simulate    |
-tf = 100.0 #n=100   # End time of simulation [s]         |
+tf = 80.0 #n=100   # End time of simulation [s]         |
 tspan = (0.0, tf)
 #tf = 2.3 #n=10   # End time of simulation [s]         |
 #......................................................|
@@ -40,15 +40,13 @@ itp_bc = Flat()
 
 #...............................................
 # INITIAL CONDITIONS
-vel0 = [0.0, 1.0, 0.5]
-# Initial position is hardcoded such that vperp is 1 and the guiding centre is
+# Initial position is such that vperp is 1 and the guiding centre is
 # at x⃗ = [1, 0, 0]. It is also assumed that the GCA is valid such that B is equal
 # to B(x⃗) = 2M, directed in -ẑ. We may then compare with the Walt (1994)
 # approximation of the azimuthal drift-period.
-rL = mass/(charge*M) 
-pos0 = [1.0 - rL, 0.0, 0.0]
-R0 = [1.0, 0.0, 0.0]
-pos0 = R0 - mass/(charge*M)*(vel0 × [0,0,-1.0])
+R0 = [1, 0, 0]
+vparal = 0.5
+vperp = 1.0
 
 #...............................................
 # SPATIAL PARAMETERS (x, y, z)
@@ -71,39 +69,58 @@ ni = (256, 256, 256)
 #
 #-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
-xx, yy, zz, dx, dy, dz = createaxes(xi0, xif, ni)
-Bfield = Array{Float64,  4}(undef, numdims, ni...)
-Efield = zeros(Float64, size(Bfield))
-discretise!(Bfield, xx, yy, zz, magneticdipolefield, M)
-# Create interpolation objects
-emfields = eachslice(vcat(Bfield, Efield), dims=(2,3,4))
-emfields_itp = interpolate((xx, yy, zz), emfields, itp_type)
-emfields_itp = extrapolate(emfields_itp, itp_bc)
-
+analytical_field = false
+if analytical_field
+    emfields(x,y,z) = [magneticdipolefield(x,y,z,M); zeros(3)]
+    emfields_itp = Vector{Function}(undef, 6)
+    for i = 1:6
+        emfields_itp[i] = (x,y,z) -> emfields(x,y,z)[i]
+    end
+else
+    xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
+    Efield =  zeros(Float64, numdims, ni...)
+    Bfield = stack(discretise(
+        (x,y,z) -> magneticdipolefield(x, y, z, M),
+        xx,
+        yy,
+        zz,
+        )
+    )
+    # Create interpolation objects
+    #emfields = eachslice(vcat(Bfield, Efield), dims=(2,3,4))
+    fields = [Bfield; Efield]
+    emfields_itp = Vector{AbstractInterpolation}(undef, 6)
+    for i = 1:6
+        emfields_itp[i] = cubic_spline_interpolation((xx, yy, zz), fields[i,:,:,:],
+        extrapolation_bc=Flat()
+        )
+    end
+end
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
 # Set initial position and velocities
-B⃗ = emfields_itp(R0...)[1:3]
-B = norm(B⃗)
-b̂ = B⃗/B
-v = norm(vel0)
-vparal = vel0 ⋅ b̂
-vperp = √(v^2 - vparal^2)
-μ = mass*vperp^2/(2B)
+B⃗ = [itp(R0...) for itp in emfields_itp][1:3]
+μ = tp.magneticmoment(vperp, mass, norm(B⃗))
+u0 = tp.get_fullorbit(B⃗, E⃗, R0, vparal, μ, charge, mass, 0.0)
 
 fo_params = (charge, mass, emfields_itp)
-gca_params = (charge, mass, μ, emfields_itp)
+gca_params = (charge=charge, mass=mass, magneticmoment=μ, emfields_itp)
 
 #-------------------------------------------------------------------------------
 # CREATE PROBLEM
-fo_prob = ODEProblem(lorentzforce!, [pos0; vel0], tspan, fo_params)
+#fo_prob = ODEProblem(lorentzforce!, [pos0; vel0], tspan, fo_params)
+fo_prob = ODEProblem(lorentzforce!, u0, tspan, fo_params)
 gca_prob = ODEProblem(
     guidingcentreapproximation!, [R0; vparal], tspan, gca_params
     )
 #...............................................................................
 # RUN SIMULATION
-fo_sim = DifferentialEquations.solve(fo_prob)
-gca_sim = DifferentialEquations.solve(gca_prob)
+reltol_fo = 1e-4
+reltol_gca = 1e-4
+@time fo_sim = DifferentialEquations.solve(fo_prob, Tsit5();
+    reltol=reltol_fo, abstol=1e-9)
+@time gca_sim = DifferentialEquations.solve(gca_prob, Tsit5();
+    reltol=reltol_gca, abstol=1e-9)
 println("qMm = $qMm")
 println("nof. FO-timesteps = $(length(fo_sim.t))")
 println("nof. GCA-timesteps = $(length(gca_sim.t))")
@@ -115,15 +132,30 @@ println("nof. GCA-timesteps = $(length(gca_sim.t))")
 ϕ_FO = atan(fo_sim.u[end][2]/fo_sim.u[end][1])
 ϕ_GCA = atan(gca_sim.u[end][2]/gca_sim.u[end][1])
 
-v = norm(vel0)
-vparall = abs((B⃗ ⋅ vel0)/B)
-vperp = √(v^2 - vparall^2)
-α = atan(vperp/vparall)
-R0 = 1.0
+#v = norm(vel0)
+#vparall = abs((B⃗ ⋅ vel0)/B)
+#vperp = √(v^2 - vparall^2)
+
+v = norm(u0[4:6])
+α = atan(vperp/vparal)
+R0x = R0[1]
 
 function T_dipole(q, m, M, R0, v, α)
     return @. 2π*q*M/(m*v^2*R0)*(1 - 1/3*sin(α)^0.62)
 end # function T_dipole
 
-T = T_dipole(charge, mass, M, R0, v, α)
+T = T_dipole(charge, mass, M, R0x, v, α)
+angularfreq = 2π/T
+
+times = range(0.0, tf, length=1000)
+driftx = R0x*cos.(angularfreq*times)
+drifty = R0x*sin.(angularfreq*times)
+angle_anal = atan.(drifty, driftx)
+angle_fo = atan.(fo_sim(times)[2,:], fo_sim(times)[1,:])
+angle_gca = atan.(gca_sim(times)[2,:], gca_sim(times)[1,:])
+angle_fo = atan.(fo_sim(times)[2,:], fo_sim(times)[1,:])
+
 global ϕ = 2π*tf/T
+global ϕ_FO = angle_fo[end]
+global ϕ_gca = angle_gca[end]
+

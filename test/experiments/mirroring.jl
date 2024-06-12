@@ -21,7 +21,7 @@ The GC is initialised in the centre of the bottle to avoid any other drifts.
 #......................................................|
 numparticles = 1  # Number of particles to simulate    |
 dt = 1.e-3        # Time step [s]                      |
-tf = 30.0 #n=100   # End time of simulation [s]         |
+tf = 300.0 #n=100   # End time of simulation [s]         |
 tspan = (0, tf)
 #tf = 2.3 #n=10   # End time of simulation [s]         |
 #......................................................|
@@ -33,7 +33,7 @@ charge = 1
 
 #...............................................
 # MAGNETIC FIELD PARAMETERS
-B0 = 30.0 # Magnetic field strenth parameter
+B0 = 10.0 # Magnetic field strenth parameter
 L = 0.4 # Mirroring length
 
 #...............................................
@@ -41,7 +41,6 @@ L = 0.4 # Mirroring length
 vel0 = [0.0, 0.1, 0.1]
 rL = mass*√(vel0[1]^2 + vel0[2]^2)/(charge*B0)
 pos0 = [-rL, 0.0, 0.0]
-R0 = [0.0, 0.0, 0.0]
 
 #...............................................
 # SPATIAL PARAMETERS (x, y, z)
@@ -56,12 +55,6 @@ xif = (a, a, a)
 ni = (100, 100, 100)
  
 #...............................................
-# ELECTRIC FIELD PARAMETERS
-# It will not exist
-Ex = 0.0
-Ey = 0.0
-
-#...............................................
 # SOLVER CONDITIONS
 # RK4 for GCA? Euler-Cromer for full orbit?
 
@@ -70,18 +63,29 @@ Ey = 0.0
 #
 #-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
-xx, yy, zz, dx, dy, dz = createaxes(xi0, xif, ni)
-Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
-Efield = zeros(size(Bfield))
-Efield[1,:,:,:] .= Ex
-Efield[2,:,:,:] .= Ey
-#Efield[1,:,1:30,:] .= 0.0
-discretise!(Bfield, xx, yy, zz, magneticmirrorfield, B0, L)
-emfields = eachslice(vcat(Bfield, Efield), dims=(2,3,4))
-emfields_itp = linear_interpolation((xx, yy, zz), emfields, 
-    extrapolation_bc=Flat()
+analytical_field = false
+if analytical_field
+    emfields_itp(x,y,z) = [magneticmirrorfield(x,y,z,B0,L); zeros(3)]
+else
+    xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
+    Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
+    Efield = zeros(size(Bfield))
+    Bfield = stack(discretise(
+        (x, y, z) -> magneticmirrorfield(x,y,z,B0,L),
+        xx,
+        yy,
+        zz
+        )
     )
-
+    #emfields = eachslice(vcat(Bfield, Efield), dims=(2,3,4))
+    fields = [Bfield; Efield]
+    emfields_itp = Vector{AbstractInterpolation}(undef, 6)
+    for i = 1:6
+        emfields_itp[i] = cubic_spline_interpolation((xx, yy, zz), fields[i,:,:,:],
+            extrapolation_bc=Flat()
+            )
+    end
+end
 #-------------------------------------------------------------------------------
 # SIMULATION DURATION
 #
@@ -91,34 +95,30 @@ numsteps = trunc(Int64, tf/dt)   # Number of timesteps in the simulation
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
 # Set initial position and velocities
-B⃗ = emfields_itp(pos0...)[1:3]
+B⃗ = [itp(pos0...) for itp in emfields_itp][1:3]
 E⃗ = zeros(3)
-B = norm(B⃗)
-b̂ = B⃗/B
-v = norm(vel0)
-vparal = vel0 ⋅ b̂
-vperp = √(v^2 - vparal[1]^2)
-μ = mass*vperp^2/(2B)
-
+R0, vparal, μ = tp.get_guidingcentre(pos0, vel0, B⃗, E⃗, charge, mass)
 #-------------------------------------------------------------------------------
 # CREATE PROBLEM
 prob_FO = ODEProblem(
     lorentzforce!, 
     [pos0; vel0],
     tspan,
-    (charge, mass, emfields_itp),
+    (charge=charge, mass=mass, fields=emfields_itp),
     )
 prob_GCA = ODEProblem(
     guidingcentreapproximation!,
     [R0; vparal],
     tspan,
-    (charge, mass, μ, emfields_itp)
+    (charge=charge, mass=mass, magneticmoment=μ, fields=emfields_itp)
     )
 
 #...............................................................................
 # RUN SIMULATION
-sol_FO = DifferentialEquations.solve(prob_FO)
-sol_GCA = DifferentialEquations.solve(prob_GCA)
+sol_FO = DifferentialEquations.solve(prob_FO, Tsit5();
+    reltol=5e-5)
+sol_GCA = DifferentialEquations.solve(prob_GCA, Tsit5();
+    reltol=1e-4, abstol=1e-9)
 
 #...............................................................................
 
@@ -138,6 +138,9 @@ times = collect(range(0.0, step=dt, length=numsteps+1))
 z_anal_FO = z(sol_FO.t, μ, mass, B0, L, A, ϕ)
 z_anal_GCA = z(sol_GCA.t, μ, mass, B0, L, A, ϕ)
 
+times = range(0.0, tf, length=1000)
+analytical = z.(times, μ, mass, B0, L, A, ϕ)
+
 z_GCA  = [u[3] for u in sol_GCA.u] 
 z_FO  = [u[3] for u in sol_FO.u] 
 rmse_GCA = √(sum((z_anal_GCA .- z_GCA).^2)/numsteps)
@@ -146,6 +149,6 @@ rmse_FO = √(sum((z_anal_FO .- z_FO).^2)/numsteps)
     @test isapprox(rmse_GCA, 0.0, atol=0.001)
 end # testset GCA: Euler
 @testset verbose = true "Full orbit: Default alg." begin
-    @test isapprox(rmse_FO, 0.0, atol=0.010)
+    @test isapprox(rmse_FO, 0.0, atol=0.001)
 end # testset GCA: Euler
     

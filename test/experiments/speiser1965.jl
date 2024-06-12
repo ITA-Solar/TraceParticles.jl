@@ -59,8 +59,6 @@ d = 1e-4 # Current sheet width
 b = 1e-2  # Characteristic field strength
 function speiserBfield(
     x::Float64,
-    y::Float64,
-    z::Float64
     )
     return [η, -x/d, 0.0]*b
 end
@@ -79,11 +77,16 @@ Ez = -a
 #
 #-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
-xx, yy, zz, dx, dy, dz = createaxes(xi0, xif, ni)
+xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
 Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
 Efield = zeros(size(Bfield))
 Efield[3, :,:,:] .= Ez
-discretise!(Bfield, xx, yy, zz, speiserBfield)
+Bfield = stack(discretise(
+    (x,y,z) -> speiserBfield(x),
+    xx,
+    yy,
+    zz)
+)
 # Create interpolation objects
 emfields = eachslice(vcat(Bfield, Efield), dims=(2,3,4))
 emfields_itp = linear_interpolation((xx, yy, zz), emfields, 
