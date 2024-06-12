@@ -218,17 +218,17 @@ rmse_ez = 0.0
 rmse_px = 0.0
 rmse_py = 0.0
 rmse_pz = 0.0
-nsteps_e = length(sol_FO[1].t)
-nsteps_p = length(sol_FO[2].t)
+nsteps_e = length(sol_FO[:,1].t)
+nsteps_p = length(sol_FO[:,2].t)
 for i = 1:nsteps_e
-    global rmse_ex += (sol_FO[1].u[i][1] - analytic_ex(sol_FO[1].t[i]))^2 
-    global rmse_ey += (sol_FO[1].u[i][2] - analytic_ey(sol_FO[1].t[i]))^2 
-    global rmse_ez += (sol_FO[1].u[i][3] - analytic_ez(sol_FO[1].t[i]))^2 
+    global rmse_ex += (sol_FO[i,1][1] - analytic_ex(sol_FO[:,1].t[i]))^2
+    global rmse_ey += (sol_FO[i,1][2] - analytic_ey(sol_FO[:,1].t[i]))^2
+    global rmse_ez += (sol_FO[i,1][3] - analytic_ez(sol_FO[:,1].t[i]))^2
 end
 for i = 1:nsteps_p
-    global rmse_px += (sol_FO[2].u[i][1] - analytic_px(sol_FO[2].t[i]))^2 
-    global rmse_py += (sol_FO[2].u[i][2] - analytic_py(sol_FO[2].t[i]))^2 
-    global rmse_pz += (sol_FO[2].u[i][3] - analytic_pz(sol_FO[2].t[i]))^2 
+    global rmse_px += (sol_FO[i,2][1] - analytic_px(sol_FO[:,2].t[i]))^2
+    global rmse_py += (sol_FO[i,2][2] - analytic_py(sol_FO[:,2].t[i]))^2
+    global rmse_pz += (sol_FO[i,2][3] - analytic_pz(sol_FO[:,2].t[i]))^2
 end
 rmse_ex = sqrt(rmse_ex/nsteps_e)
 rmse_ey = sqrt(rmse_ey/nsteps_e)
@@ -250,9 +250,9 @@ end # testset Vay
 # GCA using DifferentialEquations.jl
 @testset verbose = true "GCA: Default alg." begin
     # Electron
-    @test isapprox(sol_GCA[1].u[end][1], 0.02, rtol=1e-13)
-    @test isapprox(sol_GCA[1].u[end][2], 0.00, atol=1e-15)
-    @test isapprox(sol_GCA[1].u[end][3], 0.00, rtol=1e-15)
+    @test isapprox(sol_GCA[2,1][1], 0.02, rtol=1e-13)
+    @test isapprox(sol_GCA[2,1][2], 0.00, atol=1e-15)
+    @test isapprox(sol_GCA[2,1][3], 0.00, atol=1e-15)
 end
 
 
