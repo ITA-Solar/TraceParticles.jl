@@ -344,6 +344,53 @@ function parallel_acceleration(
 end
 
 
+function gca_drift_and_acceleration(
+    ∇b       ::Matrix{<:Real},
+    ∇ExBdrift::Matrix{<:Real},
+    ∇B       ::Vector{<:Real},
+    B_vec    ::Vector{<:Real},
+    E_vec    ::Vector{<:Real},
+    vparal   ::Real,
+    q        ::Real,
+    m        ::Real,
+    μ        ::Real,
+    )
+    q_inv = 1/q       # Inverse of the charge -- to save computation time.
+                      # Maybe not necessary in Julia?
+    B = norm(B_vec)   # The magnetic field strength
+    B_inv = 1/B       # Inverse of B - to replace divition with multiplication
+    b = B_vec*B_inv   # An unit vector pointing in the direction of the
+                      #  magnetic field
+
+    ExBdrift = (E_vec × b)*B_inv # The E cross B-drift
+    # Electric field component parallel to the magnetic field
+    Eparal = E_vec⋅b
+    # Calculate ∇B-drift
+    ∇Bdrift = gradbdrift(b, ∇B, μ, B_inv, q_inv)
+    #∇Bdrift = q_inv*B_inv*μ*(b × ∇B)
+
+    # Total time derivatives. Assumes ∂/∂t = 0, and neglects other
+    # drifts than ExB
+    vparal_vec = vparal*b
+    total_velocity = vparal_vec + ExBdrift
+    dbdt = ∇b * total_velocity
+    dExBdt = ∇ExBdrift * total_velocity
+    #dbdt = vparal * (∇b * b) + ∇b*ExBdrift
+    #dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift
+
+    # Compute the perpendicular velcoity
+    dRperpdt = ExBdrift + ∇Bdrift + q_inv*B_inv*m*b × (vparal*dbdt + dExBdt)
+
+    # Compute the acceleration along the magnetic field lines
+    # With correction proposed by Birn et al., 2004:
+    dvparaldt = (q*Eparal - μ*b⋅∇B)/m + (ExBdrift + ∇Bdrift) ⋅ dbdt
+
+    # Compute the velocity
+    #dRdt = vparal*b + Rperp
+    dRdt = vparal_vec + dRperpdt
+    return [dRdt; dvparaldt]
+end
+
 """
     drift_dbdt_acceleration(
         ExBdrift::Vector{<:Real},
@@ -397,7 +444,7 @@ function get_guidingcentre(
     ExBdrift, B, b_vec = exbdrift(magneticfield, electricfield)
     vel_in_E_frame = vel - ExBdrift
     # Calculate the guiding centre posistion 
-    R = pos - mass/(charge*B) * (vel_in_E_frame × b_vec)
+    R = pos + mass/(charge*B) * (vel_in_E_frame × b_vec)
     # Calculate the velocity parallell to the magnetic field -- vparal
     vparal = vel ⋅ b_vec
     # Calculate mangetic moment -- mu
@@ -428,16 +475,7 @@ function get_guidingcentre_2Dxzitp(
     posx, poz = pos[1], pos[3]
     magneticfield = [emfields_itpvec[i](posx, poz) for i = 1:3]
     electricfield = [emfields_itpvec[i](posx, poz) for i = 4:6]
-    ExBdrift, B, b_vec = exbdrift(magneticfield, electricfield)
-    vel_in_E_frame = vel - ExBdrift
-    # Calculate the guiding centre posistion
-    R = pos - mass/(charge*B) * (vel_in_E_frame × b_vec)
-    # Calculate the velocity parallell to the magnetic field -- vparal
-    vparal = vel ⋅ b_vec
-    # Calculate mangetic moment -- mu
-    vperp = vel_in_E_frame - vparal*b_vec
-    mu = magneticmoment(norm(vperp), mass, B)
-    return R, vparal, mu
+    get_guidingcentre(pos, vel, magneticfield, electricfield, charge, mass)
 end
 
 
@@ -483,8 +521,8 @@ function get_fullorbit(
     R            ::Vector{<:Real}, # Guiding centre position
     vparal       ::Real,           # Velocity parallel to the magnetic field
     μ            ::Real,           # Magnetic moment of particle
-    mass         ::Real,
     charge       ::Real,
+    mass         ::Real,
     phaseangle   ::Real,           # Arbitrary phase angle of gyration.
     )
     v_exb, B, b = exbdrift(magneticfield, electricfield) # get E cross B drift,
@@ -493,8 +531,7 @@ function get_fullorbit(
     r_L = larmorradius(mass, vperp, charge, B)
     e₁ = (R × b)/norm(R)
     e₂ = e₁ × b
-    cθ = cos(phaseangle)
-    sθ = sin(phaseangle)
+    sθ, cθ = sincos(phaseangle)
     position = R + r_L*(cθ*e₁ + sθ*e₂)
     velocity = vparal*b + v_exb + vperp*(cθ*e₂ - sθ*e₁)
     return [position; velocity]
