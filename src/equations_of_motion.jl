@@ -177,8 +177,8 @@ function gca_2Dxz!(du, u, p, _)
         B_vec_fd = vec[1:3]
         E_vec_fd = vec[4:6]
         B_fd = norm(B_vec_fd)
-        b̂_fd = B_vec_fd/B_fd
-        return [b̂_fd; E_vec_fd × b̂_fd/B_fd; B_fd]
+        b_fd = B_vec_fd/B_fd
+        return [b_fd; E_vec_fd × b_fd/B_fd; B_fd]
     end
     jacobian_matrix = [
         jacobian_matrix[:,1];;
@@ -192,10 +192,16 @@ function gca_2Dxz!(du, u, p, _)
     # Electric field component parallel to the magnetic field
     Eparal = E_vec⋅b
     # Calculate drifts
-    ∇Bdrift = q_inv*B_inv*μ*(b × ∇B)
-    # Total time derivatives. Assumes ∂/∂t = 0,
-    dbdt = vparal * (∇b * b) + ∇b*ExBdrift
-    dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift
+    ∇Bdrift = gradbdrift(b, ∇B, μ, B_inv, q_inv)
+
+    # Total time derivatives. Assumes ∂/∂t = 0, and neglects other
+    # drifts than ExB
+    vparal_vec = vparal*b
+    total_velocity = vparal_vec + ExBdrift
+    dbdt = ∇b * total_velocity
+    dExBdt = ∇ExB * total_velocity
+    #dbdt = vparal * (∇b * b) + ∇b*ExBdrift
+    #dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift
     
     # Compute the perpendicular velcoity
     dRperpdt = ExBdrift + ∇Bdrift + q_inv*B_inv*m*b × (vparal*dbdt + dExBdt)
@@ -209,7 +215,7 @@ function gca_2Dxz!(du, u, p, _)
     #dvparaldt = (q*Eparal - μ*b⋅∇B)/m # along the magnetic field lines
 
     # Compute the velocity
-    dRdt = vparal*b + dRperpdt
+    dRdt = vparal_vec + dRperpdt
     
     # How to store the perpendicular velocity? Would need to know b̂ at
     #   each R calculate vperp at each R. Could be interesting to store this
