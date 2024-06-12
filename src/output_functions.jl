@@ -1,6 +1,6 @@
 """
     maxrl_minlb_maxscalesratio(sol, i)
-Output function for ensemble simulations using `DifferentialEquations`. 
+Output function for ensemble simulations using `DifferentialEquations`.
 
 Finds the maximum larmor radius, minimum field length and maximum scales ratio
 of the particle's trajectory using the inherent interpolation function in the
@@ -40,14 +40,16 @@ function output_func_max_lightweight(sol, i)
     x0, y0, z0, vparal0 = first(sol)
     xf, yf, zf, vparalf = last(sol)
     # Select parameters to save
-    exclusionlist = [:fields, :temp]
+    exclusionlist = [:fields, :temp, :userdata]
     param_to_save = filter(x -> !(x in exclusionlist), keys(sol.prob.p))
     # Construct and retunr the output tuple
     return (
         x0=x0, y0=y0, z0=z0, vparal0=vparal0,
         xf=xf, yf=yf, zf=zf, vparalf=vparalf,
         sol.prob.p[param_to_save]...,
-        t0=first(sol.t), tf=last(sol.t), nt = length(sol.t),
+        t0 = first(sol.t),
+        tf = last(sol.t),
+        nt = length(sol.t),
         maxrl = maxrl.max,
         maxrl_x = maxrl.max_u[1],
         maxrl_y = maxrl.max_u[2],
@@ -66,10 +68,11 @@ function output_func_max_lightweight(sol, i)
         maxscalesratio_z = maxscalesratio.max_u[3],
         maxscalesratio_vparal = maxscalesratio.max_u[4],
         maxscalesratio_t = maxscalesratio.max_t,
-        retcode = sol.retcode,
         meanrl = meanrl,
         meanlb = meanlb,
         meanscalesratio = meanscalesratio,
+        retcode = sol.retcode,
+        retmsg = sol.prob.p.userdata.retmsg,
         ),
         false
 end
