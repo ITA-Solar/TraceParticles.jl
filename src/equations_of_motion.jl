@@ -189,38 +189,9 @@ function gca_2Dxz!(du, u, p, _)
     ∇ExB = jacobian_matrix[4:6,:]
     ∇B = jacobian_matrix[7,:]
 
-    # Electric field component parallel to the magnetic field
-    Eparal = E_vec⋅b
-    # Calculate drifts
-    ∇Bdrift = gradbdrift(b, ∇B, μ, B_inv, q_inv)
-
-    # Total time derivatives. Assumes ∂/∂t = 0, and neglects other
-    # drifts than ExB
-    vparal_vec = vparal*b
-    total_velocity = vparal_vec + ExBdrift
-    dbdt = ∇b * total_velocity
-    dExBdt = ∇ExB * total_velocity
-    #dbdt = vparal * (∇b * b) + ∇b*ExBdrift
-    #dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift
-    
-    # Compute the perpendicular velcoity
-    dRperpdt = ExBdrift + ∇Bdrift + q_inv*B_inv*m*b × (vparal*dbdt + dExBdt)
-    #dRperpdt = b̂/B × (-E⃗ + μ/q*∇B + m/q*(vparal*db̂dt + dExBdt))  # old
-
-    # Compute the acceleration 
-    #dvparaldt = (q*Eparal - μ*b⋅∇B)/m + ExBdrift⋅dbdt
-    # With correction proposed by Birn et al., 2004:
-    dvparaldt = (q*Eparal - μ*b⋅∇B)/m + (ExBdrift + ∇Bdrift) ⋅ dbdt
-    # Old version:
-    #dvparaldt = (q*Eparal - μ*b⋅∇B)/m # along the magnetic field lines
-
-    # Compute the velocity
-    dRdt = vparal_vec + dRperpdt
-    
-    # How to store the perpendicular velocity? Would need to know b̂ at
-    #   each R calculate vperp at each R. Could be interesting to store this
-    #   as an auxiliary variable somehow, to se how the drift evolves.
-    du[:] = [dRdt; dvparaldt]
+    du[:] = gca_drift_and_acceleration(
+        ∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ
+    )
 end
 
 
