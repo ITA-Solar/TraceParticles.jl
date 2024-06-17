@@ -3,9 +3,15 @@ mutable struct SaveBatchAsDF
     expname::String
     batchnr::Int
     batchsize::Int
-    function SaveBatchAsDF(expdir::String, expname::String, batchsize::Int)
+    nbatches::Int
+    function SaveBatchAsDF(
+            expdir::String,
+            expname::String,
+            batchsize::Int,
+            nbatches::Int
+            )
         batchnr = 0
-        new(expdir, expname, batchnr, batchsize)
+        new(expdir, expname, batchnr, batchsize, nbatches)
     end
 end
 function (self::SaveBatchAsDF)(u, batch, I)
@@ -14,7 +20,10 @@ function (self::SaveBatchAsDF)(u, batch, I)
     filename = self.expname * "_$(self.batchnr).csv"
     df = DataFrame(batch)
     filename = joinpath(self.expdir, filename)
-    println("Saving batch $(self.batchnr) (particles $I) to")
+    println("")
+    println("Batch $(self.batchnr) of $(self.nbatches).")
+    println("")
+    println("Saving particles $I to")
     println("--> $(self.expdir)")
     println("--> $(filename)")
     CSV.write(filename, df)
@@ -22,13 +31,12 @@ function (self::SaveBatchAsDF)(u, batch, I)
     println("")
     println("Summary statistics:")
     println("Number of particles:         $(length(batch))")
-    println("Average number of timesteps: $(mean(df.nt))")
+    @printf "Average number of timesteps: %.1f\n" mean(df.nt)
     println("Number of maxiters:          $(sum(df.retcode .== :maxiters))")
     println("Number of OutofDomain:       $(sum(df.retmsg .== "OutofDomain"))")
     println("Number of GCABreakDown:      $(sum(df.retmsg .== "GCABreakDown"))")
     println("")
-    println("=================================================================")
-    println("")
-    println("Running batch $(self.batchnr) of $(self.batchsize).")
+    println("=================================================================",
+        "===============")
     return u, false
 end
