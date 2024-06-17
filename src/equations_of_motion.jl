@@ -159,7 +159,7 @@ function gca_2Dxz!(du, u, p, _)
     Rx, Rz = u[1], u[3]
     vparal = u[4] # Particle velocity parallel to the magnetic field
     # Extract parameters
-    q, m, μ, itpvec = p
+    q, m, μ, itpvec = p.charge, p.mass, p.magneticmoment, p.fields
     q_inv = 1/q # Inverse of q - to replace division with multiplication
     # Use the gyrocentre position interpolate the vectors
     # scalars from the interpolation objects.
