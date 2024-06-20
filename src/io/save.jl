@@ -30,43 +30,6 @@ end
 """
     save(
         filename::String,
-        solution::EnsembleSolution,
-        )
-Save an `EnsambleSolution` using `JLD`.
-"""
-function save(
-    filename::String,
-    solution::EnsembleSolution,
-    )
-    save(filename, solution.u)
-end
-
-"""
-    save(
-        filename::String,
-        solutionvector::Vector{<:ODESolution},
-        )
-Save a vector of `ODESolution`'s using `JLD`.
-"""
-function save(
-    filename::String,
-    solutionvector::Vector{<:ODESolution},
-    )
-    npart = length(solutionvector)
-    jldopen(filename, "w") do file
-        write(file, "npart", npart)
-        for i = 1:npart
-            write(file, "u$i", solutionvector[i].u)
-            write(file, "t$i", solutionvector[i].t)
-        end
-    end
-    println("tp.jl: Wrote $filename")
-end
-
-
-"""
-    save(
-        filename::String,
         solution::Array{<:Real, 3},
         )
 Save the numerical solution which has the form of a 3D-array. E.g. the solution
@@ -172,4 +135,34 @@ function save(
     close(f)
     #
     println("tp.jl: Wrote $(filename)")
+end
+
+
+"""
+    save_gcastates(expdir, expname, nbatches, fieldname)
+    save_gcastates(expname, nbatches, fields_itp)
+Calculates the GCAStates of the initial and final states of an ensamble of
+test particles.
+"""
+function save_gcastates(
+    expdir::String,
+    expname::String,
+    nbatches::Int,
+    fieldname::String,
+    )
+    @load fieldname fields_itp
+    filname = joinpath(expdir, expname)
+    save_gcastates(filename, nbatches, fields_itp)
+end
+function save_gcastates(
+    expname::String,
+    nbatches::Int,
+    fields_itp::Vector{AbstractInterpolation}
+    )
+    for i in 1:nbatches
+        df = DataFrame(CSV.File(filename * "_$i.csv"))
+        dfgca0, dfgcaf = GCAState(df, fields_itp, components="all")
+        CSV.write(filename * "_gcastate0_$i.csv", dfgca0)
+        CSV.write(filename * "_gcastatef_$i.csv", dfgcaf)
+    end
 end
