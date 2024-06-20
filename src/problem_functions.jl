@@ -22,7 +22,6 @@ struct UposMBvel{RealT}
     tg_itp::AbstractInterpolation
 end 
 function (self::UposMBvel{<:Real})(prob, i, repeat)
-    print("Particle $i \r")
     wp_part = eltype(self.xbounds)
     charge = prob.p.charge
     mass = prob.p.mass
@@ -57,16 +56,15 @@ end
 Draws x, y, and z positions from a given distribution using the rejection
 sampling method.
 """
-struct DposMBvel{RealT}
+struct DposMBvel
     rng::AbstractRNG
-    proposal_distr::Function
-    target_distr::Function
-    domain::Vector{Tuple{RealT, RealT}}
-    max_value::RealT
+    proposal_distr::Any
+    target_distr::Any
+    domain::Vector{Tuple{<:Real, <:Real}}
+    max_value::Real
     tg_itp::AbstractInterpolation
 end
 function (self::DposMBvel)(prob, i, repeat)
-    print("Particle $i \r")
     (Rx, Rz), nrejections = rejectionsample(
         self.proposal_distr,
         self.max_value,
