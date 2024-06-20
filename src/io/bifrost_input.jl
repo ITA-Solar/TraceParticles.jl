@@ -12,18 +12,22 @@
 
 
 function get_br_var_interpolator(
-        expname ::String,
+        brxp     ::BifrostExperiment,
         snap    ::Integer,
-        expdir  ::String,
         variable::String,
         ;
         itp_type=BSpline(Linear()),
         itp_bc=Flat(),
+        units="si",
         kwargs...
     )
-    var = get_var(expname, snap, expdir, variable; kwargs...)
+    if variable == "ne"
+        var = get_electron_density(brxp, snap; units=units, kwargs...)
+    else
+        var = get_var(brxp, snap, variable; units=units, kwargs...)
+    end
     var = dropdims(var)
-    br_axes = load_br_axes(expname, snap, expdir)
+    br_axes = get_axes(brxp,units=units)
     br_axes = dropdims(br_axes)
         #var_itp = linear_interpolation(
     #    br_axes, var, extrapolation_bc=itp_bc
@@ -76,11 +80,12 @@ function get_br_gcafields_vecof_interpolators(
         destagger=true,
         destaggergradients=true,
         diffscheme=bifrostscheme,
+        units="si",
         kwargs...
         )
     vars = ("bx", "by", "bz", "ex", "ey", "ez")
     emfields = [get_var(expname, snap, expdir, var;
-        destagger=destagger, kwargs...)
+        destagger=destagger, units=units, kwargs...)
         for var in vars] # Vector{Array{3, <:Real}}
     B_vec = stack(emfields[1:3]) # Array{4, <:Real}
     E_vec = stack(emfields[4:6]) # Array{4, <:Real}
@@ -93,7 +98,7 @@ function get_br_gcafields_vecof_interpolators(
 
 
     # br_axes = Tuple{Vector{<:Real}, Vector{<:Real}, Vector{<:Real}}
-    br_axes = load_br_axes(expname, snap, expdir)
+    br_axes = get_axes(brxp,units=units)
 
     println("Computing gradients...")
     # ∇B = Vector{Array{3, <:Real}}(3)
@@ -205,6 +210,7 @@ function get_br_emfield_interpolator(
         ;
         itp_type=Gridded(Linear()),
         itp_bc=Flat(),
+        units=units,
         )
     bx = get_var(expname, snap, expdir, "bx"; units="SI", destagger=true)
     by = get_var(expname, snap, expdir, "by"; units="SI", destagger=true)
@@ -219,7 +225,7 @@ function get_br_emfield_interpolator(
     #
     # Make interpolation-object
     emfield = dropdims(emfield)
-    br_axes = load_br_axes(expname, snap, expdir)
+    br_axes = get_axes(brxp,units=units)
     br_axes = dropdims(br_axes)
     emfields_itp = linear_interpolation(
         br_axes, emfield, extrapolation_bc=itp_bc
@@ -238,6 +244,7 @@ function get_br_emfield_numdensity_gastemp_interpolator(
         ;
         itp_type=Gridded(Linear()),
         itp_bc=Flat(),
+        units=units,
         )
     #
     bx = get_var(expname, snap, expdir, "bx"; units="SI", destagger=true)
@@ -258,31 +265,10 @@ function get_br_emfield_numdensity_gastemp_interpolator(
     #
     # Make interpolation-object
     fields = dropdims(fields)
-    br_axes = load_br_axes(expname, snap, expdir)
+    br_axes = get_axes(brxp,units=units)
     br_axes = dropdims(br_axes)
     fields_itp = interpolate(br_axes, fields, itp_type)
     fields_itp = extrapolate(fields_itp, itp_bc)
     #
     return fields_itp
-end
-
-
-function load_br_axes(
-        expname::String,
-        snap   ::Integer,
-        expdir ::String,
-        )
-    basename = string(
-        expdir, "/", expname
-        )
-    idl_filename = string(basename, "_", snap, ".idl")
-    mesh_filename = string(basename, ".mesh")
-    mesh = BifrostMesh(mesh_filename)
-    params = read_params(idl_filename)
-    # Scale br_axes
-    code2cgs_l = parse(Float32, params["u_l"]) # exploit promotion
-    x = code2cgs_l * tp.cgs2SI_l * mesh.x
-    y = code2cgs_l * tp.cgs2SI_l * mesh.y
-    z = code2cgs_l * tp.cgs2SI_l * mesh.z
-    return (x, y, z)
 end
