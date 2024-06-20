@@ -29,6 +29,16 @@ callback should be created like this:
     affect!(integrator) = terminate!(integrator)
     cb = DiscreteCallback(condition,affect!)
 """
+struct OutOfDomainCondition_2Dxz
+    xbounds::Tuple{<:Real, <:Real}
+    zbounds::Tuple{<:Real, <:Real}
+end
+function (self::OutOfDomainCondition_2Dxz)(u,_,_)
+    return u[1] <= self.xbounds[1] || u[1] >= self.xbounds[2] ||
+        u[3] <= self.zbounds[1] || u[3] >= self.zbounds[2]
+end
+
+
 function outside2dnullpointzoom(u,_,_) # (u, t, integrator)
     return u[1] <= 14.52e6 || u[1] >= 18.83e6 ||
             u[3] <= -7.79e6 || u[3] >= -3.88e6
