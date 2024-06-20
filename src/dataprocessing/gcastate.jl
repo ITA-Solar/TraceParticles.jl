@@ -203,10 +203,11 @@ struct GCAState
         solution::DataFrame,
         fields::Vector{<:AbstractInterpolation}
         ;
+        lowmem=true,
         kwargs...
         )
         return init_and_final_ensembleofgcastates(
-            solution, fields; kwargs...
+            solution, fields; lowmem=lowmem, kwargs...
             )
     end
 end
@@ -273,7 +274,7 @@ Constructs a DataFrame from a vector of `GCAState` objects. The DataFrame
 contains the fields of the `GCAState` objects as columns. Vector fields are
 collapsed into one column per component.
 """
-function DataFrame(gcastates::Vector{GCAState})
+function DataFrame(gcastates::Vector{GCAState}; lowmem=false)
     df = DataFrame(
         Dict(
             field => [getfield(state, field) for state in gcastates]
@@ -281,10 +282,6 @@ function DataFrame(gcastates::Vector{GCAState})
         )
     )
     newcols = Dict(
-        :Rx => (:state, 1),
-        :Ry => (:state, 2),
-        :Rz => (:state, 3),
-        :vparal => (:state, 4),
         :bx => (:bfield, 1),
         :by => (:bfield, 2),
         :bz => (:bfield, 3),
@@ -304,6 +301,13 @@ function DataFrame(gcastates::Vector{GCAState})
         :polarisationdrift_y => (:polarisationdrift, 2),
         :polarisationdrift_z => (:polarisationdrift, 3),
     )
+    if !lowmem
+        newcols[:Rx] = (:state, 1)
+        newcols[:Ry] = (:state, 2)
+        newcols[:Rz] = (:state, 3)
+        newcols[:vparal] = (:state, 4)
+    end
+
     # Create new columns for the vector field components
     for (field, (source, idx)) in newcols
         column = stack(df[:, source])
@@ -317,16 +321,29 @@ function DataFrame(gcastates::Vector{GCAState})
         end
     end
     # Change order of columns
-    select!(df,
-        [
-        :Rx, :Ry, :Rz, :vparal, :charge, :mass, :μ, :time, :energy, :vperp,
-        :r_L, :ω_c, :β, :exbdrift_x, :exbdrift_y,
-        :exbdrift_z, :∇Bdrift_x, :∇Bdrift_y, :∇Bdrift_z, :curvaturedrift_x,
-        :curvaturedrift_y, :curvaturedrift_z, :polarisationdrift_x,
-        :polarisationdrift_y, :polarisationdrift_z, :mirroracc, :paralacc,
-        :dbdtacc, :bx, :by, :bz, :ex, :ey, :ez, :L_B
-        ]
-        )
+    if !lowmem
+        select!(df,
+            [
+            :Rx, :Ry, :Rz, :vparal, :charge, :mass, :μ, :time, :energy, :vperp,
+            :r_L, :ω_c, :β, :exbdrift_x, :exbdrift_y,
+            :exbdrift_z, :∇Bdrift_x, :∇Bdrift_y, :∇Bdrift_z, :curvaturedrift_x,
+            :curvaturedrift_y, :curvaturedrift_z, :polarisationdrift_x,
+            :polarisationdrift_y, :polarisationdrift_z, :mirroracc, :paralacc,
+            :dbdtacc, :bx, :by, :bz, :ex, :ey, :ez, :L_B
+            ]
+            )
+    else
+        select!(df,
+            [
+            :energy, :vperp,
+            :r_L, :ω_c, :β, :exbdrift_x, :exbdrift_y,
+            :exbdrift_z, :∇Bdrift_x, :∇Bdrift_y, :∇Bdrift_z, :curvaturedrift_x,
+            :curvaturedrift_y, :curvaturedrift_z, :polarisationdrift_x,
+            :polarisationdrift_y, :polarisationdrift_z, :mirroracc, :paralacc,
+            :dbdtacc, :bx, :by, :bz, :ex, :ey, :ez, :L_B
+            ]
+            )
+    end
     return df
 end
 
@@ -358,7 +375,7 @@ function timeseriesofgcastates(
     dimensionality="2Dxz"
     )
     timeseries = Vector{GCAState}(undef, length(times))
-    for i in eachindex(times)
+    Threads.@threads for i in eachindex(times)
         interpolated_solution = solution(times[i], idxs=1:4)
         if components == "all"
             timeseries[i] = GCAState(
@@ -498,6 +515,7 @@ function ensembleofgcastates(
     times::Vector{<:Real},
     args...
     ;
+    lowmem=true,
     kwargs...
     )
     nrows = size(solution, 1)
@@ -509,7 +527,7 @@ function ensembleofgcastates(
         ;
         kwargs...
     )
-    DataFrame(gcastates)
+    DataFrame(gcastates; lowmem=lowmem)
 end
 
 function ensembleofgcastates(
@@ -521,11 +539,12 @@ function ensembleofgcastates(
     components="exb",
     charge=tp.e,
     mass=tp.m_e,
-    dimensionality="2Dxz"
+    dimensionality="2Dxz",
+    lowmem=false,
     )
     nofparticles = length(solution)
     particlestates = Vector{GCAState}(undef, nofparticles)
-    for i in 1:nofparticles
+    Threads.@threads for i in 1:nofparticles
         if components == "all"
             particlestates[i] = GCAState(
                 solution[i],
@@ -535,7 +554,8 @@ function ensembleofgcastates(
                 itpvec
                 ;
                 time=times[i],
-                dimensionality=dimensionality
+                dimensionality=dimensionality,
+
                 )
         elseif components == "exb"
             if dimensionality == "2Dxz"
@@ -600,6 +620,3 @@ function ensembleofgcastates(
     end
     return initialstates, finalstates
 end
-
-
-
