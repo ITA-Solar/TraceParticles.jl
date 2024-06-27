@@ -1,4 +1,7 @@
+using Distributed
 using DifferentialEquations
+using Printf
+
 """
 This script is used as a fast way to run a single test particle simulation
 from the command line that adheres to my data management plan.
@@ -100,24 +103,73 @@ catch
     end
 end
 
-ensemble_algorithm = try np = nprocs()
-    if np > 1
-        println("Running on $np processes.")
-        EnsembleDistributed()
-    end
-catch
-    if Threads.nthreads() > 1
-        println("Running on $(Threads.nthreads()) threads.")
-        EnsembleThreads()
-    else
-        println("Running in serial.")
-        EnsembleSerial()
-    end
+np = nprocs()
+println(".................................................................",
+        "...............")
+if np > 1
+    println("Running on $np processes.")
+    ensemble_algorithm = EnsembleDistributed()
+elseif Threads.nthreads() > 1
+    println("Running on $(Threads.nthreads()) threads.")
+    ensemble_algorithm = EnsembleThreads()
+else
+    println("Running in serial.")
+    ensemble_algorithm = EnsembleSerial()
 end
 solve_args = try (alg, ensemble_algorithm)
 catch
     (ensemble_algorithm,)
 end
+
+
+function print_particlecounter(count, total)
+    @printf "Particle %i (%.2f %%)\r" count count/total*100
+end
+
+lk = ReentrantLock()
+particlecounter = 0
+@everywhere function update_particlecounter()
+    global particlecounter
+    particlecounter += 1
+end
+
+if ensemble_algorithm == EnsembleDistributed()
+    # Distributed
+    # Overwrite the the ensemble problem keyword argument `prob_func` with some
+    # progress verbose.
+    ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
+        prob_func = (prob, i, repeat) -> begin
+            remote_do(update_particlecounter, 1) # 1 is main process
+            ensembleprob_kwargs.prob_func(prob, i, repeat)
+        end
+    )
+elseif ensemble_algorithm == EnsembleThreads()
+    ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
+        prob_func = (prob, i, repeat) -> begin
+            global particlecounter
+            global lk
+            lock(lk)
+            try particlecounter += 1
+            finally
+                unlock(lk)
+            end
+            ensembleprob_kwargs.prob_func(prob, i, repeat)
+        end
+    )
+else
+    # Serial
+    # Overwrite the the ensemble problem keyword argument `prob_func` with some
+    # progress verbose.
+    ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
+        prob_func = (prob, i, repeat) -> begin
+            #print("Particle $i  of $npart \r")
+            print_particlecounter(i, npart)
+            ensembleprob_kwargs.prob_func(prob, i, repeat)
+        end
+    )
+end
+
+
 
 #===============================================================================#
 
@@ -139,24 +191,44 @@ prob = ODEProblem(
         charge = charge,
         mass = mass,
         fields = fields_itp,
+        magneticmoment = try mu0
+        catch
+            nothing
+        end
     )
 )
 ensemble_prob = EnsembleProblem(
         prob
         ;
-        ensembleprob_kwargs...
-    )
+        ensembleprob_kwargs_internal...
+)
 
 #===============================================================================#
 # START OF SIMULATION
 
 println("Running ensemble of $npart particles...")
+println(".................................................................",
+        "...............")
+
+running = true
+if ensemble_algorithm != EnsembleSerial()
+    @async begin
+        while running
+            #print("Particle $particlecounter of $npart \r")
+            print_particlecounter(particlecounter, npart)
+            sleep(0.1)
+        end
+    end
+end
+
 @time sim = DifferentialEquations.solve(
     ensemble_prob,
     solve_args...
     ;
     solve_kwargs...
-    );
+);
+
+running = false
 
 if !(:reduction in keys(ensembleprob_kwargs))
     @warn "No reduction function specified.
