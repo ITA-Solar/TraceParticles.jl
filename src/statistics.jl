@@ -597,3 +597,7 @@ function binmap_witherror(
     error_bm = std_bm ./ sqrt(nsplits)
     return xx, mean_bm, error_bm
 end
+
+
+weighted_average(value, weight) = sum(value .* weight)/sum(weight)
+weighted_count(value, weight) = sum(weight)
