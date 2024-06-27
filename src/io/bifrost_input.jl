@@ -19,6 +19,7 @@ function get_br_var_interpolator(
         itp_type=BSpline(Linear()),
         itp_bc=Flat(),
         units="si",
+        normalise=false,
         kwargs...
     )
     if variable == "ne"
@@ -32,6 +33,16 @@ function get_br_var_interpolator(
         #var_itp = linear_interpolation(
     #    br_axes, var, extrapolation_bc=itp_bc
     #    )
+    if normalise
+        if !(variable in ("ne", "r", "tg"))
+            error("Normalisation of vector components not implemented")
+        end
+        @warn "Normalising routine assumes uniform axes"
+        dxvec = [diff(axes)[1] for axes in br_axes]
+        dv = prod(dxvec)
+        normfactor = sum(var)*dv
+        var = var / normfactor
+    end
     if itp_type == BSpline(Linear())
         itp_func = linear_interpolation
     else
