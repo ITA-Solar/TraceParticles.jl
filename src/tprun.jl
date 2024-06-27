@@ -67,21 +67,33 @@ will use distributed computing.
 """
 params = ARGS[1]
 include(joinpath(pwd(), basename(params)))
+
 try mkdir("data")
 catch
 end
-try tp_expname
+
+try expname
 catch
-    error("The parameter file must define the experiment name in" *
-        " the variable `tp_expname`.")
+    error("'expname' undefined. The parameter file must define the experiment"*
+        " name in the parameters file")
 end
-paramsbackup = pwd() * "/data/" * tp_expname * ".jl"
-try cp(params, paramsbackup)
+
+datadir = try datadir
 catch
-    @warn "The file $paramsbackup already exists in the data directory.
-           Do you want to delete it and rerun? y/n"
+    pritntln("'datadir' not set, using 'data'.")
+    "data"
+end
+
+expdir = datadir * "/" * expname
+paramsbackup = expdir * "/" * expname * ".jl"
+try mkdir(expdir)
+    cp(params, paramsbackup)
+catch
+    println("The directory $(pwd() * "/" * expdir) already exists.
+     Do you want to delete it and re-run? y/n")
     if readline() == "y"
-        rm(paramsbackup)
+        rm(expdir, recursive=true)
+        mkdir(expdir)
         cp(params, paramsbackup)
     else
         error("Exiting.")
