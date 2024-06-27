@@ -10,6 +10,25 @@
 """
 Draw initial conditions from an array.
 """
+struct PposPvel{RealT}
+    u0::Vector{Vector{RealT}}
+    mu0::Vector{RealT}
+end
+function (self::PposPvel)(prob, i, repeat)
+    remake(
+        prob,
+        u0=self.u0[i],
+        p=(
+            charge = prob.p.charge,
+            mass = prob.p.mass,
+            magneticmoment = self.mu0[i],
+            fields = prob.p.fields,
+            userdata = UserData("none")
+            )
+        )
+end
+
+
 
 """
 Draw uniform position, Maxwell-Boltzmann distributed velocity.
