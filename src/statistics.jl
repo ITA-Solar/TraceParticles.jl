@@ -506,7 +506,8 @@ function binmap(
     xvalues,
     yvalues,
     zvalues,
-    mapfunc::Function = x -> length(x),
+    weights=ones(length(xvalues)),
+    mapfunc::Function = (x,w) -> sum(w),
     args...
     ;
     nbinsx=100,
@@ -534,20 +535,28 @@ function binmap(
         y=yvalues,
         z=zvalues,
         binindex_x=binindex_x,
-        binindex_y=binindex_y
+        binindex_y=binindex_y,
+        weight=weights,
         )
     gdf = groupby(df, [:binindex_x, :binindex_y])
 
     binvalues = Matrix{eltype(zvalues)}(undef, nbinsx, nbinsy)
-    for i in 1:nbinsx
+    emptybins = 0
+    Threads.@threads for i in 1:nbinsx
         for j in 1:nbinsy
-            try binvalues[i,j] = mapfunc(
-                gdf[(binindex_x=i, binindex_y=j,)].z, args...
-                )
-            catch
-                binvalues[i] = mapfunc([], args...)
+            try
+                groupdf = gdf[(binindex_x=i, binindex_y=j,)]
+                binvalues[i,j] = mapfunc(
+                    groupdf.z, groupdf.weight, args...
+                    )
+            catch e
+                emptybins += 1
+                binvalues[i,j] = NaN
             end
         end
+    end
+    if emptybins != 0
+        @warn @sprintf("%.2f %% of the bins are empty.", emptybins/(nbinsx*nbinsy)*100)
     end
     if normalise
         dx = diff(xedges)[1]
