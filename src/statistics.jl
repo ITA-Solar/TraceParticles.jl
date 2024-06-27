@@ -461,12 +461,17 @@ function binmap(
     # Apply the mapfunc to each exisiting group (some bins might be empty and
     # hence not present in the groupby object).
     binvalues = Vector{eltype(data)}(undef, nbins)
+    emptybins = 0
     Threads.@threads for i = 1:nbins
         try groupdf = gdf[(binindex_x=i,)]
             binvalues[i] = mapfunc(groupdf.x, groupdf.weight, args...)
         catch
-            binvalues[i] = mapfunc([], [0.0], args...)
+            emptybins += 1
+            binvalues[i] = NaN
         end
+    end
+    if emptybins != 0
+        @warn @sprintf("%.2f %% of the bins are empty.", emptybins/(nbins)*100)
     end
 
     # Some post-processing. Normalise the binvalues if requested.
