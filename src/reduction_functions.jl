@@ -54,3 +54,44 @@ function (self::SaveBatchAsDF)(u, batch, I)
     print_batch_statistics(df)
     return u, false
 end
+
+
+mutable struct SaveBatchAsHDF5
+    datadir::String
+    expname::String
+    batchnr::Int
+    batchsize::Int
+    nbatches::Int
+    function SaveBatchAsHDF5(
+            expdir::String,
+            expname::String,
+            batchsize::Int,
+            nbatches::Int
+            )
+        batchnr = 0
+        new(expdir, expname, batchnr, batchsize, nbatches)
+    end
+end
+function (self::SaveBatchAsHDF5)(u, batch, I)
+    # Save the batch as a DataFrame
+    self.batchnr += 1
+    filename = self.expname * ".h5"
+    expdir = joinpath(self.datadir, self.expname)
+    filename = joinpath(expdir, filename)
+
+    print_reduction_overview(self.batchnr, self.nbatches, expdir, filename, I)
+
+    df = DataFrame(batch)
+
+    h5open(filename, "cw") do fid
+        h5group = create_group(fid, "batch_$(self.batchnr)")
+        for key in names(df)
+            write(h5group, key, df[!, key])
+        end
+    end
+    println("success")
+
+    print_batch_statistics(df)
+
+    return u, false
+end

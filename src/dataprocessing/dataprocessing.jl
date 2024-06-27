@@ -151,3 +151,77 @@ function collect_batches(filename::String, nbatches::Int)
     end
     return df
 end
+
+
+function csv_to_h5(filename, batchnr)
+    df = DataFrame(CSV.File(filename * "_$batchnr.csv"))
+    filename_h5 = filename * ".h5"
+    groupname = "batch_$batchnr"
+    h5open(filename_h5, "cw") do h5_file
+        h5group = create_group(h5_file, groupname)
+        for key in names(df)
+            if key == "retcode" || key == "retmsg"
+                write_dataset(h5group, key, string.(df[!, key]))
+            else
+                write_dataset(h5group, key, df[!, key])
+            end
+        end
+    end
+end
+
+
+function h5_getbatch(filename, batchnr)
+    df = h5open(filename, "r") do h5_file
+        DataFrame(read(h5_file["batch_$batchnr"]))
+    end
+end
+
+
+function h5_getdataset(filename, dataset, batchnr)
+    data = h5open(filename, "r") do h5_file
+        read(h5_file["batch_$batchnr/" * dataset])
+    end
+end
+function h5_getdataset(filename, dataset; batches=[1])
+    nbatches = length(batches)
+    groupnames = ["batch_$i/" for i in batches]
+
+    data = reduce(vcat,
+        h5open(filename, "r") do h5_file
+            firstbatch = read(h5_file[groupnames[1] * dataset])
+            npart = length(firstbatch)
+            data = Vector{Vector{eltype(firstbatch)}}(undef, nbatches)
+            data[1] = firstbatch
+            for i in 2:nbatches
+               data[i] = read(h5_file[groupnames[i] * dataset])
+            end
+            data
+        end
+    )
+end
+
+
+function h5_getall(filename; batches=[1])
+    nbatches = length(batches)
+    groupnames = ["batch_$i" for i in batches]
+
+    df = reduce(vcat,
+        h5open(filename, "r") do h5_file
+            dfvec = Vector{DataFrame}(undef, nbatches)
+            for i in 1:nbatches
+                dfvec[i] = DataFrame(read(h5_file[groupnames[i]]))
+            end
+            dfvec
+        end
+    )
+end
+
+
+function h5_getenergies(filename; batches=[1])
+    fname0 = filename * "_gcastates0.h5"
+    fnamef = filename * "_gcastatesf.h5"
+    (
+        h5_getdataset(fname0, "energy"; batches=batches),
+        h5_getdataset(fnamef, "energy"; batches=batches)
+    )
+end

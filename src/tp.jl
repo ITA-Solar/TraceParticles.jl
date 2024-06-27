@@ -25,6 +25,7 @@ using Optimization, OptimizationNLopt
 using DataFrames
 using CSV
 using StatsBase
+using HDF5
 
 using Printf
 using JLD2

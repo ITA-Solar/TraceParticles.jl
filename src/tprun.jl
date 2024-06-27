@@ -234,4 +234,18 @@ if !(:reduction in keys(ensembleprob_kwargs))
     @warn "No reduction function specified.
     Saving the full ensemble simulation as 'out.jld2'."
     JLD2.@save "out.jld2" sim
+else
+    try
+        println("\nPost-processing: Computing GCAStates...")
+        extension = try extension
+        catch
+            ".h5"
+        end
+        @time tp.save_gcastates(
+            joinpath(expdir, expname) * extension, nbatches, fields_itp
+            )
+        println("                 Success")
+    catch e
+        println("                 Failed:\n", e)
+    end
 end

@@ -96,73 +96,57 @@ end
 
 
 """
-    save(
-        filename::String,
-        structure::DataType,
-        )
-Save a `DataType` of type `structure` in a runnable Julia-script.
-
-This is a rather complicated way of saving a structure as a Julia-script, but
-it looks nice. A simpler way would be to just write
-
-    f = open(filename, "w+")
-    write(f, string("instance = ", structure))
-    close(f)
-
-and that would also be a runnable script.
-"""
-function save(
-    filename::String,
-    structure::DataType,
-    )
-    writestring = "instance = $(typeof(structure))(\n"
-    for field in fieldnames(structure)
-        if isdefined(structure, field)
-            if typeof(getfield(structure, field)) == String
-                value = "\"$(getfield(structure, field))\""
-            else
-                value = "$(getfield(structure, field))"
-            end
-            spaces = " "^(11 - length("$field"))
-            writestring = string(writestring,
-                                  "\t$field", spaces, "= $value,\n")
-        end
-    end
-    writestring = string(writestring, ")")
-    #
-    f = open(filename, "w+")
-    write(f, writestring)
-    close(f)
-    #
-    println("tp.jl: Wrote $(filename)")
-end
-
-
-"""
-    save_gcastates(expdir, expname, nbatches, fieldname)
-    save_gcastates(expname, nbatches, fields_itp)
+    save_gcastates(expdir, expname, fileext, nbatches, fieldname)
+    save_gcastates(filename, nbatches, fields_itp)
 Calculates the GCAStates of the initial and final states of an ensamble of
 test particles.
 """
 function save_gcastates(
     expdir::String,
     expname::String,
+    fileext::String,
     nbatches::Int,
     fieldname::String,
     )
     @load fieldname fields_itp
-    filname = joinpath(expdir, expname)
+    filename = joinpath(expdir, expname) * fileext
     save_gcastates(filename, nbatches, fields_itp)
 end
 function save_gcastates(
-    expname::String,
+    filename::String,
     nbatches::Int,
-    fields_itp::Vector{AbstractInterpolation}
+    fields_itp::Vector{<:AbstractInterpolation}
     )
-    for i in 1:nbatches
-        df = DataFrame(CSV.File(filename * "_$i.csv"))
-        dfgca0, dfgcaf = GCAState(df, fields_itp, components="all")
-        CSV.write(filename * "_gcastate0_$i.csv", dfgca0)
-        CSV.write(filename * "_gcastatef_$i.csv", dfgcaf)
+    name, extension = splitext(filename)
+    if extension == ".csv"
+        for i in 1:nbatches
+            df = DataFrame(CSV.File(filename * "_$i.csv"))
+            dfgca0, dfgcaf = GCAState(df, fields_itp, components="all")
+            CSV.write(filename * "_gcastate0_$i.csv", dfgca0)
+            CSV.write(filename * "_gcastatef_$i.csv", dfgcaf)
+        end
+    elseif extension == ".h5"
+        h5_sol = h5open(filename, "r")
+        h5_gcastates0 = h5open(name * "_gcastates0.h5", "w")
+        h5_gcastatesf = h5open(name * "_gcastatesf.h5", "w")
+        for i in 1:nbatches
+            batchname = "batch_$i"
+            batch = read(h5_sol[batchname])
+            df = DataFrame(batch)
+            dfgca0, dfgcaf = GCAState(df, fields_itp, components="all")
+            group0 = create_group(h5_gcastates0, batchname)
+            groupf = create_group(h5_gcastatesf, batchname)
+            for key in names(dfgca0)
+                write_dataset(group0, key, dfgca0[!, key])
+                write_dataset(groupf, key, dfgcaf[!, key])
+            end
+        end
+        close(h5_sol)
+        close(h5_gcastates0)
+        close(h5_gcastatesf)
+    elseif extension == ""
+        error("Filname must include extension.")
+    else
+        error("File extension not supported.")
     end
 end

@@ -71,7 +71,7 @@ function output_func_max_lightweight(sol, i)
         meanrl = meanrl,
         meanlb = meanlb,
         meanscalesratio = meanscalesratio,
-        retcode = sol.retcode,
+        retcode = string(sol.retcode),
         retmsg = sol.prob.p.userdata.retmsg,
         ),
         false
