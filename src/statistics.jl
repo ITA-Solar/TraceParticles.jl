@@ -358,7 +358,7 @@ Bins `values` into the bins defined by `edges`. Returns the indices of the bins.
 function binindex(values::AbstractVector, edges::AbstractVector)
     indices = zeros(Int, length(values))
     nbins = length(edges) - 1
-    for i in eachindex(values)
+    Threads.@threads for i in eachindex(values)
         if values[i] == edges[end]
             indices[i] = nbins
             continue
@@ -461,7 +461,7 @@ function binmap(
     # Apply the mapfunc to each exisiting group (some bins might be empty and
     # hence not present in the groupby object).
     binvalues = Vector{eltype(data)}(undef, nbins)
-    for i = 1:nbins
+    Threads.@threads for i = 1:nbins
         try groupdf = gdf[(binindex_x=i,)]
             binvalues[i] = mapfunc(groupdf.x, groupdf.weight, args...)
         catch
