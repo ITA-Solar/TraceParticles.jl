@@ -569,3 +569,31 @@ function binmap(
     end
     return midpoints(xedges), midpoints(yedges), binvalues
 end
+
+
+function binmap_witherror(
+    data,
+    nsplits,
+    args...
+    ;
+    kwargs...
+    )
+
+    xx, mean_bm = binmap(data, args...; kwargs...)
+    bm_arr = Matrix{Float64}(undef, nsplits, length(mean_bm))
+    ni = length(data)
+    i = 1
+    stride = floor(Int, ni/nsplits)
+    for k in 1:nsplits
+        if k != nsplits
+            _, bm = binmap(data[i:i+stride-1], args...; kwargs...)
+        else
+            _, bm = binmap(data[i:end], args...; kwargs...)
+        end
+        i += stride
+        bm_arr[k, :] .= bm
+    end
+    std_bm = mapslices(std, bm_arr; dims=1)
+    error_bm = std_bm ./ sqrt(nsplits)
+    return xx, mean_bm, error_bm
+end
