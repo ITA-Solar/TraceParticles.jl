@@ -90,7 +90,7 @@ function (self::DposMBvel)(prob, i, repeat)
         self.domain,
         self.rng
         )
-    acceptanceratio = 1/nrejections
+    acceptanceratio = 1/(nrejections + 1)
     weight = self.target_distr(Rx, Rz) / self.proposal_distr(Rx, Rz)
     R = [Rx, 1e6, Rz] # !!! Hardcoded y-value
 
