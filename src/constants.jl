@@ -37,6 +37,8 @@ cgs2SI_e = 1e-6 # g cm s^-2 Fr^-1 * 1e-3 kg/g * 1e-2 m/cm * 1e-1 Fr/C
                 # = kg m /s^2/C..........................electric field
 cgs2SI_r = 1e3  # g/cm^3 * 1e-3 kg/g * 1e6 cm^3/m^3 = kg/m^3 ...density
 
+J2eV = 6.24150907e18 # 1 J * 6.24e12 eV/J........................energy
+
 # Other convertion factors
 density2numberdensity_MHD = 1/(m_e + m_p)
 
