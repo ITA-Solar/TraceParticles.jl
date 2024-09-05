@@ -152,6 +152,32 @@ function generate_probdistr(
 end
 
 
+"""
+    saturate_distribution(
+        xx,
+        yy,
+        normbm,
+        threshold
+        )
+Saturate the distribution over a threshold value.
+"""
+function saturate_distribution(
+    xx,
+    yy,
+    gridded_dist,
+    threshold
+    )
+    saturated_dist = copy(gridded_dist)
+    saturated_dist[saturated_dist .< threshold] .= threshold
+    dxs = [diff(xx)[1], diff(yy)[1]]
+    proddxs = abs(prod(dxs))
+    normfactor = sum(saturated_dist)*proddxs
+    saturated_dist /= normfactor
+    itp = linear_interpolation((xx, yy), saturated_dist, extrapolation_bc=Flat())
+    return itp, saturated_dist
+end
+
+
 function collect_batches(filename::String, nbatches::Int)
     df = DataFrame(CSV.File(filename * "_1.csv"))
     for i in 2:nbatches
