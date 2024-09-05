@@ -226,11 +226,14 @@ function h5_getall(filename; batches=[1])
 end
 
 
-function h5_getenergies(filename; batches=[1])
+function h5_getenergies(filename; batches=[1], units="eV")
     fname0 = filename * "_gcastates0.h5"
     fnamef = filename * "_gcastatesf.h5"
-    (
-        h5_getdataset(fname0, "energy"; batches=batches),
-        h5_getdataset(fnamef, "energy"; batches=batches)
-    )
+    e0 = h5_getdataset(fname0, "energy"; batches=batches)
+    ef = h5_getdataset(fnamef, "energy"; batches=batches)
+    if units == "eV"
+        e0 = e0 * J2eV
+        ef = ef * J2eV
+    end
+    return e0, ef
 end
