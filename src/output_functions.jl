@@ -100,12 +100,19 @@ function output_func_lightweight(sol, i)
 end
 
 function find_max_larmorradius(sol; ntimes=5length(sol.t))
-    f(t) =  larmorradius(sol(first(t))[1:2:3], sol.prob.p)
-    times = range(first(sol.t), last(sol.t), length=ntimes)
-    farray = [f(t) for t in times]
-    maxidx = argmax(farray)
-    max = MaxValue(farray[maxidx], sol(times[maxidx]), times[maxidx])
-    mean = sum(farray)/length(farray)
+    f(t) = larmorradius(sol(first(t))[1:2:3], sol.prob.p)
+    if ntimes == 1
+        time = sol.t[1]
+        farray = larmorradius(sol[1][1:2:3], sol.prob.p)
+        max = MaxValue(farray, sol[1], time)
+        mean = sum(farray)/length(farray)
+    else
+        times = range(first(sol.t), last(sol.t), length=ntimes)
+        farray = [f(t) for t in times]
+        maxidx = argmax(farray)
+        max = MaxValue(farray[maxidx], sol(times[maxidx]), times[maxidx])
+        mean = sum(farray)/length(farray)
+    end
     return max, mean
 end
 
@@ -115,11 +122,20 @@ function find_min_fieldlength(sol; ntimes=5length(sol.t))
         sol(first(t))[1:2:3], 
         sol.prob.p.fields[1:3]
         )
-    times = range(first(sol.t), last(sol.t), length=ntimes)
-    farray = [f(t) for t in times]
-    minidx = argmin(farray)
-    min = MinValue(farray[minidx], sol(times[minidx]), times[minidx])
-    mean = sum(farray)/length(farray)
+    if ntimes == 1
+        time = sol.t[1]
+        farray = characteristicfieldlength(
+            sol[1][1:2:3], sol.prob.p.fields[1:3]
+            )
+        min = MinValue(farray, sol[1], time)
+        mean = farray
+    else
+        times = range(first(sol.t), last(sol.t), length=ntimes)
+        farray = [f(t) for t in times]
+        minidx = argmin(farray)
+        min = MinValue(farray[minidx], sol(times[minidx]), times[minidx])
+        mean = sum(farray)/length(farray)
+    end
     return min, mean
 end
 
@@ -131,11 +147,19 @@ function find_max_scalesratio(sol; ntimes=5length(sol.t))
         sol.prob.p.fields[1:3]
         )
     f(t) = frl(t)/flb(t)
-    times = range(first(sol.t), last(sol.t), length=ntimes)
-    farray = [f(t) for t in times]
-    maxidx = argmax(farray)
-    max = MaxValue(farray[maxidx], sol(times[maxidx]), times[maxidx])
-    mean = sum(farray)/length(farray)
+    if ntimes == 1
+        time = sol.t[1]
+        farray = larmorradius(sol[1][1:2:3], sol.prob.p)/
+            characteristicfieldlength(sol[1][1:2:3], sol.prob.p.fields[1:3])
+        max = MaxValue(farray, sol[1], time)
+        mean = farray
+    else
+        times = range(first(sol.t), last(sol.t), length=ntimes)
+        farray = [f(t) for t in times]
+        maxidx = argmax(farray)
+        max = MaxValue(farray[maxidx], sol(times[maxidx]), times[maxidx])
+        mean = sum(farray)/length(farray)
+    end
     return max, mean
 end
 
