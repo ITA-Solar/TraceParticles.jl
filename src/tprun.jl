@@ -186,7 +186,7 @@ prob = ODEProblem(
     catch
         zeros(1) # Dummy initial condition
     end,
-    tspan,
+    typeof(tspan) <: Tuple{Real, Real} ? tspan : (0,1),
     (
         charge = charge,
         mass = mass,
