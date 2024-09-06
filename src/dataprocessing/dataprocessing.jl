@@ -135,14 +135,14 @@ function generate_probdistr(
     kwargs...
     )
     xx, yy, bm = binmap(xvalues, yvalues, zvalues, args...; kwargs...)
-    if minimum(bm) < 0
-        bm .+= abs(minimum(bm))
-    end
+    normbm = copy(bm)
     # Empty bins have NaN-values. Set them to zero to reflect their values in
     # the probability distribution. Interpolations.jl doesn't like NaN values
     # either.
-    normbm = copy(bm)
-    normbm[findall(x -> isnan(x), bm)] .= 0
+    normbm[ismissing.(normbm)] .= 0
+    if minimum(normbm) < 0
+        normbm .+= abs(minimum(normbm))
+    end
     dxs = [diff(xx)[1], diff(yy)[1]]
     proddxs = abs(prod(dxs))
     normfactor = sum(normbm)*proddxs

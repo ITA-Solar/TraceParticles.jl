@@ -356,7 +356,7 @@ end # function rejection sampling
 Bins `values` into the bins defined by `edges`. Returns the indices of the bins.
 """
 function binindex(values::AbstractVector, edges::AbstractVector)
-    indices = zeros(Int, length(values))
+    indices = missings(Int, length(values))
     nbins = length(edges) - 1
     Threads.@threads for i in eachindex(values)
         if values[i] == edges[end]
@@ -417,11 +417,12 @@ function binmap(
             log10data = log10.(data)
             minx = minimum(log10data)
             maxx = maximum(log10data)
+            xedges = 10 .^ LinRange(minx, maxx, nbins+1)
         else
             minx = minimum(data)
             maxx = maximum(data)
+            xedges = LinRange(minx, maxx, nbins+1)
         end
-        xedges = LinRange(minx, maxx, nbins+1)
     elseif isnothing(xedges)
         # If data-corresponding x-values are given, we use these to bin the
         # data.
@@ -429,21 +430,18 @@ function binmap(
             log10data = log10.(xvalues)
             minx = minimum(log10data)
             maxx = maximum(log10data)
+            xedges = 10 .^ LinRange(minx, maxx, nbins+1)
         else
             minx = minimum(xvalues)
             maxx = maximum(xvalues)
+            xedges = LinRange(minx, maxx, nbins+1)
         end
-        xedges = LinRange(minx, maxx, nbins+1)
     else
         # If edges are given, we use these to bin the data.
         nbins = length(xedges) - 1
     end
     # Bin the data
-    if logx
-        binindex_x = binindex(data, 10 .^ xedges)
-    else
-        binindex_x = binindex(data, xedges)
-    end
+    binindex_x = binindex(data, xedges)
 
     # Here comes maping of each bin.
     # First,
@@ -460,29 +458,38 @@ function binmap(
     # Third,
     # Apply the mapfunc to each exisiting group (some bins might be empty and
     # hence not present in the groupby object).
-    binvalues = Vector{eltype(data)}(undef, nbins)
-    emptybins = 0
-    Threads.@threads for i = 1:nbins
-        try groupdf = gdf[(binindex_x=i,)]
-            binvalues[i] = mapfunc(groupdf.x, groupdf.weight, args...)
-        catch
-            emptybins += 1
-            binvalues[i] = NaN
+    binvalues = missings(eltype(data), nbins)
+    k = keys(gdf)
+    Threads.@threads for i in 1:length(gdf)
+        if !ismissing(k[i].binindex_x)
+            groupdf = gdf[i]
+            binvalues[k[i].binindex_x] = mapfunc(
+                groupdf.x, groupdf.weight, args...
+                )
         end
     end
+
+    emptybins = sum(ismissing.(binvalues))
     if emptybins != 0
         @warn @sprintf("%.2f %% of the bins are empty.", emptybins/(nbins)*100)
     end
 
     # Some post-processing. Normalise the binvalues if requested.
     if normalise
-        dx = diff(xedges)[1]
-        binvalues = binvalues ./ (dx*sum(binvalues))
+        mask = ismissing.(binvalues)
+        bm = binvalues[.!mask]
+        dx = diff(xedges)[.!mask]
+        # The normalisation factor is the sum of the binvalues times the binwidth,
+        # assuming the binwidth is constant. Empty bins are NaN, which should begin
+        # zero in a probability distribution. They are therefore not included in
+        # the sum.
+        normfactor = sum(dx .* bm)
+        binvalues = binvalues ./ normfactor
     end
     if logf
         binvalues = log10.(binvalues)
     end
-    return midpoints(xedges), binvalues
+    return xedges, binvalues
 end
 
 
@@ -512,7 +519,7 @@ function binmap(
     yvalues,
     zvalues,
     weights=ones(length(xvalues)),
-    mapfunc::Function = (x,w) -> sum(w),
+    mapfunc::Function = (z,w) -> sum(w),
     args...
     ;
     nbinsx=100,
@@ -523,16 +530,37 @@ function binmap(
     logz=false,
     normalise=false,
     )
-    if logaxes
-        xvalues = log10.(xvalues)
-        yvalues = log10.(yvalues)
-    elseif logx
-        xvalues = log10.(xvalues)
-    elseif logy
-        yvalues = log10.(yvalues)
+    #if logaxes
+    #    xvalues = log10.(xvalues)
+    #    yvalues = log10.(yvalues)
+    #elseif logx
+    #    xvalues = log10.(xvalues)
+    #elseif logy
+    #    yvalues = log10.(yvalues)
+    #end
+    if logx
+        log10data = log10.(xvalues)
+        minx = minimum(log10data)
+        maxx = maximum(log10data)
+        xedges = 10 .^ LinRange(minx, maxx, nbinsx + 1)
+    else
+        minx = minimum(xvalues)
+        maxx = maximum(xvalues)
+        xedges = LinRange(minx, maxx, nbinsx + 1)
     end
-    xedges = LinRange(minimum(xvalues), maximum(xvalues), nbinsx+1)
-    yedges = LinRange(minimum(yvalues), maximum(yvalues), nbinsy+1)
+    if logy
+        log10data = log10.(yvalues)
+        miny = minimum(log10data)
+        maxy = maximum(log10data)
+        yedges = 10 .^ LinRange(miny, maxy, nbinsy + 1)
+    else
+        miny = minimum(yvalues)
+        maxy = maximum(yvalues)
+        yedges = LinRange(miny, maxy, nbinsy + 1)
+    end
+
+    #xedges = LinRange(minimum(xvalues), maximum(xvalues), nbinsx+1)
+    #yedges = LinRange(minimum(yvalues), maximum(yvalues), nbinsy+1)
     binindex_x = binindex(xvalues, xedges)
     binindex_y = binindex(yvalues, yedges)
     df = DataFrame(
@@ -544,22 +572,19 @@ function binmap(
         weight=weights,
         )
     gdf = groupby(df, [:binindex_x, :binindex_y])
+    #giddf = select(gdf, groupindices => :gid)
 
-    binvalues = Matrix{eltype(zvalues)}(undef, nbinsx, nbinsy)
-    emptybins = 0
-    Threads.@threads for i in 1:nbinsx
-        for j in 1:nbinsy
-            try
-                groupdf = gdf[(binindex_x=i, binindex_y=j,)]
-                binvalues[i,j] = mapfunc(
-                    groupdf.z, groupdf.weight, args...
-                    )
-            catch e
-                emptybins += 1
-                binvalues[i,j] = NaN
-            end
+    binvalues = missings(eltype(zvalues), nbinsx, nbinsy)
+    k = keys(gdf)
+    Threads.@threads for i in eachindex(k)
+        if !ismissing(k[i].binindex_x) && !ismissing(k[i].binindex_y)
+            groupdf = gdf[i]
+            binvalues[k[i].binindex_x, k[i].binindex_y] = mapfunc(
+                groupdf.z, groupdf.weight, args...
+                )
         end
     end
+    emptybins = sum(ismissing.(binvalues))
     if emptybins != 0
         @warn @sprintf("%.2f %% of the bins are empty.", emptybins/(nbinsx*nbinsy)*100)
     end
