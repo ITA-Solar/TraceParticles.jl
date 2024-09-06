@@ -328,7 +328,7 @@ end # function ∇
 
 
 """
-    curlfield, gridsizes, derivscheme)
+    curl(field, gridsizes, derivscheme)
 The curl operator. Calculates the curl of a 3-dimensional vector
 field. Requires uniform grid spacing on all three axis. 
 arguments. The scheme is given as a function type, e.g. Schemes.derivateCentral.
