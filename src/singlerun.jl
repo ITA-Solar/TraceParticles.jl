@@ -15,6 +15,10 @@ try mu0
 catch
     error("`mu0::Vector{<:Real}` must be defined.")
 end
+try tspans
+catch
+    error("`tspan::Vector{Tuple{Real, Real}}` must be defined.")
+end
 
 # Adjust keyword arguments to DifferentialEquations.solve
 npart = length(u0)
@@ -46,7 +50,7 @@ solve_kwargs_internal = (solve_kwargs...,
 
 # Adjust keyword arguments to EnsembleProb
 ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
-    prob_func = tp.PposPvel(u0, mu0),
+    prob_func = tp.PposPvel(u0, mu0, tspans),
     # Use default output function. I.e. return the whole solution
     output_func = (sol, i) -> (sol, false),
     reduction = (u, data, I) -> (append!(u, data), false)
@@ -64,13 +68,13 @@ for each particle in the EnsembleProblem, but the particle independent `eom`,
 """
 prob = ODEProblem(
     eom,
-    u0,
-    tspan,
+    u0[1],
+    tspan[1],
     (
         charge = charge,
         mass = mass,
         fields = fields_itp,
-        mu0,
+        magneticmoment = mu0[1],
     )
 )
 ensemble_prob = EnsembleProblem(
@@ -98,7 +102,7 @@ println("\nPost-processing: Computing GCAStates...")
 gcastates = Vector{Vector{GCAState}}(undef, npart)
 ntimes = try ntimes
 catch
-    1000
+    10000
 end
 for i in 1:npart
     times = range(sol[i].t[1], sol[i].t[end], length=ntimes)
