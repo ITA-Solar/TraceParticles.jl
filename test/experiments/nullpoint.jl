@@ -1,4 +1,3 @@
-using Base: find_extended_dims
 # Nullpoint simulation with 
 #  Uniform distribution in position 
 #  Maxwellian velocity distributions
@@ -48,7 +47,7 @@ fields_itp = get_br_emfield_vecof_interpolators(
     br_expdir
     ;
     itp_bc = itp_bc
-    )
+    );
 
 # Initial position of particles
 posx = rand(rng, wp_part, xbounds..., npart)
@@ -65,7 +64,7 @@ br_temp_itp = get_br_var_interpolator(
     "tg";
     units=units,
     itp_bc = itp_bc
-    )
+    );
 vel = maxwellianvelocitysample(rng, br_temp_itp, mass, posx, posz)
 #
 # Next, find the guiding centre, velocity magnitude parallel to the magnetic
