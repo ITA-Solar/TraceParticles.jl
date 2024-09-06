@@ -100,7 +100,7 @@ struct GCAState
         m     ::Real,
         μ     ::Real, 
         itpvec::Vector{<:AbstractInterpolation}; 
-        time=nothing,
+        time=0.0,
         dimensionality="2Dxz"
         )
         if dimensionality == "2Dxz"
@@ -249,6 +249,12 @@ end
 function get_bfield(gcastates::Vector{GCAState})
     [gcastate.bfield for gcastate in gcastates]
 end
+function get_B(gcastates::Vector{GCAState})
+    [norm(gcastate.bfield) for gcastate in gcastates]
+end
+function get_E(gcastates::Vector{GCAState})
+    [norm(gcastate.efield) for gcastate in gcastates]
+end
 function get_efield(gcastates::Vector{GCAState})
     [gcastate.efield for gcastate in gcastates]
 end
@@ -258,6 +264,18 @@ end
 function get_scalesratio(gcastates::Vector{GCAState})
     [gcastate.r_L/gcastate.L_B for gcastate in gcastates]
 end
+function get_exb(gcastates::Vector{GCAState})
+    [norm(gcastate.exbdrift) for gcastate in gcastates]
+end
+function get_gradBdrift(gcastates::Vector{GCAState})
+    [norm(gcastate.∇Bdrift) for gcastate in gcastates]
+end
+function get_Rdrift(gcastates::Vector{GCAState})
+    [norm(gcastate.curvaturedrift) for gcastate in gcastates]
+end
+function get_Pdrift(gcastates::Vector{GCAState})
+    [norm(gcastate.polarisationdrift) for gcastate in gcastates]
+end
 function get_drifts(gcastate::GCAState)
     return [
         gcastate.exbdrift,
@@ -266,6 +284,15 @@ function get_drifts(gcastate::GCAState)
         gcastate.polarisationdrift
         ]
 end
+function get_driftnorm(gcastates::Vector{GCAState})
+    [norm(
+        gcastate.exbdrift .+
+        gcastate.∇Bdrift .+
+        gcastate.curvaturedrift .+
+        gcastate.polarisationdrift
+        ) for gcastate in gcastates]
+end
+
 
 
 """
