@@ -10,22 +10,26 @@
 """
 Draw initial conditions from an array.
 """
-struct PposPvel{RealT}
-    u0::Vector{Vector{RealT}}
-    mu0::Vector{RealT}
+struct PposPvel
+    u0::Vector{<:Vector{<:Real}}
+    mu0::Vector{<:Real}
+    tspan::Vector{<:Tuple{Real, Real}}
 end
 function (self::PposPvel)(prob, i, repeat)
     remake(
         prob,
-        u0=self.u0[i],
-        p=(
+        f = prob.f,
+        u0 = self.u0[i],
+        tspan = self.tspan[i],
+        p = (
             charge = prob.p.charge,
             mass = prob.p.mass,
             magneticmoment = self.mu0[i],
             fields = prob.p.fields,
+            weight = 1.0,
             userdata = UserData("none")
-            )
         )
+    )
 end
 
 
@@ -65,6 +69,7 @@ function (self::UposMBvel{<:Real})(prob, i, repeat)
         mass = mass, 
         magneticmoment = magneticmoment,
         fields = prob.p.fields,
+        weight = 1.0,
         userdata = UserData("none")
         )
     )
