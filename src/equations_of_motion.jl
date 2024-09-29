@@ -42,8 +42,35 @@ function fieldlinetracing_backward(u, p, _)
     dsdt = -fielddirection
     return dsdt
 end
-    
 
+
+"""
+    emfieldatpos(
+        pos::Vector{<:Real},
+        fields_itp,
+    )::Tuple(Vector{<:Real, <:Real}
+Interpolate the electromagetic field to `pos`. Returns the magnetic and
+electric field vectors. Methods for both a vector of interpolationobjects,
+and just a single interpolationobject.
+"""
+function emfieldatpos(
+    pos::Vector{<:Real},
+    fields_itp::Vector{<:AbstractInterpolation}
+)::Tuple(Vector{<:Real, <:Real}
+    fields = [itp(pos...) for itp in fields_itp]
+    B = fields[1:3]
+    E = fields[4:6]
+    return B, E
+end
+function emfieldatpos(
+    pos::Vector{<:Real},
+    fields_itp::AbstractInterpolation
+)::Tuple(Vector{<:Real, <:Real}
+    fields = fields_itp(pos...)
+    B = fields[1:3]
+    E = fields[4:6]
+    return B, E
+end
 """
     lorentzforce!(du, u, p, _)
 Equations of motion described by the Lorentz Force in 3 dimensions. The 
@@ -55,13 +82,7 @@ function lorentzforce!(du, u, p, _)
     q, m, fields_itp = p
     x = u[1:3] # The position vector
     v = u[4:6] # The velocity vector
-    if typeof(fields_itp) <: Vector
-        fields = [itp(x...) for itp in fields_itp]
-    else
-        fields = fields_itp(x...)
-    end
-    B = fields[1:3]
-    E = fields[4:6]
+    B, E = emfieldatpos(x, fields_itp)
     dvdt = q/m * (E + v × B) 
     dxdt = v
     du[:] = [dxdt; dvdt]
@@ -100,16 +121,8 @@ function guidingcentreapproximation!(du, u, p, _)
     vparal = u[4] # Particle velocity parallel to the magnetic field
     # Extract parameters
     q, m, μ, itpvec = p
-    # Use the gyrocentre position interpolate the vectors
-    # scalars from the interpolation objects.
-    #fields = itpvec(R...)
-    if typeof(itpvec) <: Vector
-        fields = [itp(R...) for itp in itpvec]
-    else
-        fields = itpvec(R...)
-    end
-    B_vec = fields[1:3]
-    E_vec = fields[4:6]
+    # Interpolate the electromagnetic field to the guiding centre position.
+    B_vec, E_vec = emfieldatpos(R, itpvec)
 
      # Calculate the field gradients.
     jacobian_matrix = ForwardDiff.jacobian(R) do x
