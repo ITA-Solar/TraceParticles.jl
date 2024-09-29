@@ -13,6 +13,7 @@ end
 
 function print_batch_statistics(batch)
     println("")
+    println("Timestamp:                   $(now())")
     println("Summary statistics:")
     println("Number of particles:         $(size(batch)[1])")
     @printf "Average number of timesteps: %.1f\n" mean(batch.nt)
@@ -88,7 +89,9 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
         for key in names(df)
             write(h5group, key, df[!, key])
         end
+        write(h5group, "timestamp", string(now()))
     end
+    # Write batch statistics to file?
     println("success")
 
     print_batch_statistics(df)
