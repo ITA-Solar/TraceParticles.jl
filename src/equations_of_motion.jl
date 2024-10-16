@@ -140,10 +140,26 @@ function guidingcentreapproximation!(du, u, p, _)
     ∇b = jacobian_matrix[1:3,:]
     ∇ExB = jacobian_matrix[4:6,:]
     ∇B = jacobian_matrix[7,:]
-    
-    du[:] = gca_drift_and_acceleration(
+
+    # We index du with 1:4 to allow aribitrary size of u.
+    # (This is necessary when doing hybrid swtich method).
+    du[1:4] = gca_drift_and_acceleration(
         ∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ
         )
+end
+
+
+"""
+    hybridgcafo!(du, u, p, _)
+A hybrid EoM. Runs either the guiding centre approximation or full orbit
+integration depending on the parameter `switch`.
+"""
+function hybridgcafo!(du, u, p, _)
+    if p.switch == 1
+        guidingcentreapproximation!(du, u, p, nothing)
+    elseif p.switch == 2
+        lorentzforce!(du, u, p, nothing)
+    end
 end
 
 

@@ -54,12 +54,104 @@ end
 # Hybrid switching
 # -----------------------------------------------------------------------------
 """
-    gcabrakdown(u, t, integrator)
+    switch2gca_affect!(integrator)
+Callback affect which switches to the guiding centre approximation by setting
+the parameter `switch` to `1` and transforming `u` to the guiding centre state.
+"""
+function switch2gca_affect!(integrator)
+    B, E = emfieldatpos(integrator.u[1:3], integrator.p.fields)
+    get_guidingcentre!(
+        integrator.u, # In-place (will be changed)
+        integrator.p.magneticmoment,# In-place
+        integrator.u[1:3],
+        integrator.u[4:6],
+        B, E,
+        integrator.p.charge,
+        integrator.p.mass
+    )
+    # Set switch to full orbit case
+    integrator.p.switch = 1
+end
+
+
+"""
+    switch2fo_affect!(integrator)
+Callback affect which switches to full orbit integration by setting
+the parameter `switch` to `2` and transforming `u` to a full orbit state.
+"""
+function switch2fo_affect!(integrator)
+    B, E = emfieldatpos(integrator.u[1:3], integrator.p.fields)
+    phaseangle = rand(integrator.p.rng, 0.0, Float64(pi))
+    get_fullorbit!(
+        integrator.u,
+        B, E,
+        integrator.u[1:3],
+        integrator.u[4],
+        integrator.p.magneticmoment,
+        integrator.p.charge,
+        integrator.p.mass,
+        phaseangle
+    )
+    # Set switch to full orbit case
+    integrator.p.switch = 2
+end
+
+
+"""
+    switch_affect!(integrator)
+Callback affect that checks the `switch` parameter and switches the EoM, either
+from full orbit integration to the guiding centre approximation or the
+opposite.
+"""
+function switch_affect!(integrator)
+    println("Switch_affect!")
+    println("Switch value before: $(integrator.p.switch)")
+#    println("mu before:           $(integrator.p.magneticmoment)")
+    println("u before: $(integrator.u)")
+    if integrator.p.switch == 1
+        switch2fo_affect!(integrator)
+    else
+        switch2gca_affect!(integrator)
+    end
+    println("Switch value after:  $(integrator.p.switch)")
+#    println("mu after:            $(integrator.p.magneticmoment)")
+    println("u after:  $(integrator.u)")
+end
+
+
+# -----------------------------------------------------------------------------
+# GCA breakdown and validity condition
+# -----------------------------------------------------------------------------
+"""
+    GCAValidCondition
 Callback condition for checking GCA assumption. Returns `true` if the ratio
 between the particle Larmor radius and the characteristic length of the
-magnetic field is higher than a tolerance `switchtol`, given by the problem
-parameters.
+magnetic field is lower than a tolerance `switchtol`.
 """
+struct GCAValidCondition
+    tolerance::Real
+end
+function (functor::GCAValidCondition)(u, t, integrator)
+    ratio = scalesratio(u, t, integrator.p)
+    return ratio < functor.tolerance
+end
+
+
+"""
+    GCABreakDownCondition
+Callback condition for checking GCA assumption. Returns `true` if the ratio
+between the particle Larmor radius and the characteristic length of the
+magnetic field is higher than a tolerance `switchtol`.
+"""
+struct GCABreakDownCondition
+    tolerance::Real
+end
+function (functor::GCABreakDownCondition)(u, t, integrator)
+    ratio = scalesratio(u, t, integrator.p)
+    return ratio > functor.tolerance
+end
+
+
 struct GCABreakDownCondition_2Dxz
     tolerance::Real
 end
