@@ -56,7 +56,7 @@ and just a single interpolationobject.
 function emfieldatpos(
     pos::Vector{<:Real},
     fields_itp::Vector{<:AbstractInterpolation}
-)::Tuple(Vector{<:Real, <:Real}
+)
     fields = [itp(pos...) for itp in fields_itp]
     B = fields[1:3]
     E = fields[4:6]
@@ -65,7 +65,7 @@ end
 function emfieldatpos(
     pos::Vector{<:Real},
     fields_itp::AbstractInterpolation
-)::Tuple(Vector{<:Real, <:Real}
+)
     fields = fields_itp(pos...)
     B = fields[1:3]
     E = fields[4:6]
