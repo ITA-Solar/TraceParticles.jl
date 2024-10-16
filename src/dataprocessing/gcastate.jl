@@ -329,6 +329,53 @@ function get_driftnorm(gcastates::Vector{GCAState})
 end
 
 
+"""
+    get_forces(gcastates::Vector{GCAState})
+Calculate and return the forces acting on a GCA-particle. The parallel forces
+are straightforward, since we already have the parallel acceleration terms in
+the `GCAState`. The perpendicular drift forces and the "gyration force" needs
+to be evaluated through differentiation. Since the latter forces are evaluated
+at a time between the `GCAState`s, the parallel forces are interpolated in
+time.
+"""
+function get_forces(gcastates::Vector{GCAState})
+    # Perpendicular acceleration
+    # Use first order upwind finite difference scheme to evaluate acceleration
+    drifts = get_drifts(gcastates)
+    times = get_time(gcastates)
+    Δdrifts = [diff(drift) for drift in drifts]
+    Δt = diff(times)
+    perpendicular_acceleration = [ Δv ./ Δt for Δv in Δdrifts]
+
+    # "Gyration force"
+    Δvperp = diff(get_vperp(gcastates))
+    append!(perpendicular_acceleration, [Δvperp ./ Δt])
+
+    # Energy change
+    ΔE = diff(get_energy(gcastates))
+    ΔEΔt = ΔE ./ Δt
+    # Take the pairwise average of the parallel acceleration to get the
+    # acceleration at the same time.
+    pairwiseaverage(x) = ((x .+ circshift(x, -1))/2)[1:end-1]
+    mirroracc = pairwiseaverage(get_mirroracc(gcastates))
+    parallelacc = pairwiseaverage(get_paralacc(gcastates))
+    acceleration = [[parallelacc, mirroracc]; perpendicular_acceleration]
+    force = get_mass(gcastates)*acceleration
+
+    # Return a NamedTuple of the time and force components.
+    return (
+        time = pairwiseaverage(times),
+        parallel = force[1],
+        mirror = force[2],
+        exb = force[3],
+        gradb = force[4],
+        curvature = force[5],
+        polarisation = force[6],
+        vperp = force[7],
+        energy = ΔEΔt
+    )
+end
+
 #-------------------------------------------------------------------------------
 # To retrieve various quantities from a vector of a vector of GCAStates.
 function get_initialenergies(states::Vector{Vector{GCAState}})
