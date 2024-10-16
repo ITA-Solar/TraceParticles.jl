@@ -79,10 +79,10 @@ interpolation functor giving the magnetic and electric field by passing the
 position coordinates.
 """
 function lorentzforce!(du, u, p, _)
-    q, m, fields_itp = p
+    q, m = p.charge, p.mass
     x = u[1:3] # The position vector
     v = u[4:6] # The velocity vector
-    B, E = emfieldatpos(x, fields_itp)
+    B, E = emfieldatpos(x, p.fields)
     dvdt = q/m * (E + v × B) 
     dxdt = v
     du[:] = [dxdt; dvdt]
@@ -120,7 +120,7 @@ function guidingcentreapproximation!(du, u, p, _)
     R = u[1:3]
     vparal = u[4] # Particle velocity parallel to the magnetic field
     # Extract parameters
-    q, m, μ, itpvec = p
+    q, m, μ, itpvec = p.charge, p.mass, p.magneticmoment, p.fields
     # Interpolate the electromagnetic field to the guiding centre position.
     B_vec, E_vec = emfieldatpos(R, itpvec)
 
