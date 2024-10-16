@@ -69,6 +69,9 @@ include("dataprocessing/gcastate.jl")
 #---------#---------------------------------------------------------------------
 # physics.jl
 export  get_guidingcentre,
+        get_guidingcentre!,
+        get_fullorbit,
+        get_fullorbit!,
         cosineof_pitchangle,
         kineticenergy,
         magneticdipolefield,
@@ -76,7 +79,8 @@ export  get_guidingcentre,
 # equations_of_motion.jl
 export  guidingcentreapproximation!,
         gca_2Dxz!,
-        lorentzforce!, lorentzforce
+        lorentzforce!, lorentzforce,
+        hybridgcafo!
 # statistics.jl
 export  maxwellianvelocitysample
 # numerical_methods/sde_schemes
@@ -98,8 +102,8 @@ export  dropdims,
         MaxValue,
         MinValue
 # gcastate.jl
-export GCAState
-export get_drifts,
+export  GCAState
+export  get_drifts,
         get_x,
         get_y,
         get_z,
@@ -115,9 +119,8 @@ export get_drifts,
         get_fieldlength,
         get_scalesratio
 # statistics.jl
-export binmap,
+export  binmap,
         rejectionsample
-
 
 #-------------------------------------------------------------------------------
 end
