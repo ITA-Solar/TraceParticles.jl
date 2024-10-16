@@ -213,6 +213,27 @@ struct GCAState
 end
 
 
+################################################################################
+"""
+Get functions
+"""
+
+"""
+    get_drifts(gcastate::GCAState)
+Return all drifts components in a vector.
+"""
+function get_drifts(gcastate::GCAState)
+    return [
+        gcastate.exbdrift,
+        gcastate.∇Bdrift,
+        gcastate.curvaturedrift,
+        gcastate.polarisationdrift
+        ]
+end
+
+
+#-------------------------------------------------------------------------------
+# To retrieve various quantities from a vector GCAStates
 function get_x(gcastates::Vector{GCAState})
     [gcastate.state[1] for gcastate in gcastates]
 end
@@ -276,14 +297,28 @@ end
 function get_Pdrift(gcastates::Vector{GCAState})
     [norm(gcastate.polarisationdrift) for gcastate in gcastates]
 end
-function get_drifts(gcastate::GCAState)
-    return [
-        gcastate.exbdrift,
-        gcastate.∇Bdrift,
-        gcastate.curvaturedrift,
-        gcastate.polarisationdrift
-        ]
+function get_mirroracc(gcastates::Vector{GCAState})
+    [gcastate.mirroracc for gcastate in gcastates]
 end
+function get_paralacc(gcastates::Vector{GCAState})
+    [gcastate.paralacc for gcastate in gcastates]
+end
+function get_mass(gcastates::Vector{GCAState})
+    gcastates[1].mass
+end
+function get_drifts(gcastates::Vector{GCAState})
+    [
+        get_exb(gcastates),
+        get_gradBdrift(gcastates),
+        get_Rdrift(gcastates),
+        get_Pdrift(gcastates),
+    ]
+end
+
+"""
+    get_driftnorm(gcastates::Vector{GCAState})
+Return the total drift velocity at each state in a vector of GCAStates.
+"""
 function get_driftnorm(gcastates::Vector{GCAState})
     [norm(
         gcastate.exbdrift .+
@@ -294,7 +329,29 @@ function get_driftnorm(gcastates::Vector{GCAState})
 end
 
 
+#-------------------------------------------------------------------------------
+# To retrieve various quantities from a vector of a vector of GCAStates.
+function get_initialenergies(states::Vector{Vector{GCAState}})
+    e0 = [s[1].energy for s in states]
+end
+function get_finalenergies(states::Vector{Vector{GCAState}})
+    ef = [s[end].energy for s in states]
+end
+function get_initialx(states::Vector{Vector{GCAState}})
+    e0 = [s[1].state[1] for s in states]
+end
+function get_finalx(states::Vector{Vector{GCAState}})
+    ef = [s[end].state[1] for s in states]
+end
+function get_initialz(states::Vector{Vector{GCAState}})
+    e0 = [s[1].state[3] for s in states]
+end
+function get_finalz(states::Vector{Vector{GCAState}})
+    ef = [s[end].state[3] for s in states]
+end
 
+
+################################################################################
 """
     DataFrame(gcastates::Vector{GCAState})
 Constructs a DataFrame from a vector of `GCAState` objects. The DataFrame
