@@ -15,7 +15,7 @@
         curvaturedrift   ::Vector{<:Real},
         polarisationdrift::Vector{<:Real},
         mirroracc        ::Real,
-        parallelacc      ::Real,
+        paralacc         ::Real,
         magneticfield    ::Vector{<:Real},
         electricfield    ::Vector{<:Real},
         magneticfieldlength::Real
@@ -222,7 +222,7 @@ end
 function get_z(gcastates::Vector{GCAState})
     [gcastate.state[3] for gcastate in gcastates]
 end
-function get_vparallel(gcastates::Vector{GCAState})
+function get_vparal(gcastates::Vector{GCAState})
     [gcastate.state[4] for gcastate in gcastates]
 end
 function get_mu(gcastates::Vector{GCAState})
