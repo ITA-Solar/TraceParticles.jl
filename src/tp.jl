@@ -53,6 +53,7 @@ include("callbacks.jl")
 include("problem_functions.jl")
 include("output_functions.jl")
 include("reduction_functions.jl")
+include("parameterstructs.jl")
 include("numerical_methods/ode_schemes.jl")
 include("numerical_methods/sde_schemes.jl")
 include("numerical_methods/differentiations.jl")
@@ -121,6 +122,8 @@ export  get_drifts,
 # statistics.jl
 export  binmap,
         rejectionsample
+# paramerterstructs.jl
+export  HybridParams
 
 #-------------------------------------------------------------------------------
 end
