@@ -161,10 +161,18 @@ function characteristicfieldlength(
     return characteristicfieldlength(fieldstrength, grad)
 end
 function characteristicfieldlength(
-        position::Vector{<:Real},
-        itpvec_strength::Vector{<:AbstractInterpolation},
-        itpvec_grad::Vector{<:AbstractInterpolation}
-        )
+    position::Vector{<:Real},
+    itp::AbstractInterpolation
+)
+    fieldstrength = norm(itp(position...)[1:3])
+    grad = ∇(position, itp)
+    return characteristicfieldlength(fieldstrength, grad)
+end
+function characteristicfieldlength(
+    position::Vector{<:Real},
+    itpvec_strength::Vector{<:AbstractInterpolation},
+    itpvec_grad::Vector{<:AbstractInterpolation}
+)
     fieldstrength = norm([itp(position...) for i in itpvec_strength])
     grad = [itp(position...) for i in itpvec_grad]
     return characteristicfieldlength(fieldstrength, grad)
@@ -284,9 +292,19 @@ function kineticenergy(
     m::Real, # Particle mass
     μ::Real, # Particle magnetic moment
     itpvec::Vector{<:AbstractInterpolation}, # electromagnetic field interpolators
-    )
-    vperp, drifts = drifts(R, vparal, q, m, μ, itpvec)
-    kineticenergy(vparal, vperp, drifts...)
+    time::Real
+    ;
+    dimensionality="2Dxz"
+)
+    kineticenergy(GCAState(
+        state,
+        q,
+        m,
+        μ,
+        itpvec;
+        time=time,
+        dimensionality=dimensionality,
+    ))
 end
 
 
