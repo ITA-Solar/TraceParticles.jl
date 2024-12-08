@@ -329,18 +329,11 @@ function exbdrift(
 )
     return (E_vec × b̂) * B_inv
 end
-
-
-"""
-    exbdrift(magneticfield::Vector{<:Real}, electricfield::Vector{<:Real})
-Calculate the E cross B drift in a given electromagnetic field. Also return
-the magnetic field strength and mangnetic field direction.
-"""
 function exbdrift(magneticfield::Vector{<:Real}, electricfield::Vector{<:Real})
     B = norm(magneticfield) # Magnetic field strength
-    B_inv = 1/B
-    b̂ = magneticfield*B_inv     # Magnetic field direction (unit vector)
-    return exbdrift(b̂, electricfield, B_inv), B,  b̂
+    B_inv = 1 / B
+    b̂ = magneticfield * B_inv     # Magnetic field direction (unit vector)
+    return exbdrift(b̂, electricfield, B_inv)
 end
 
 
@@ -560,21 +553,25 @@ Calculates and returns the guiding-centre position, parallel velocity, and
  magnetic moment of a charged particle in a electromagnetic field. 
 """
 function get_guidingcentre(
-    pos          ::Vector{<:Real},
-    vel          ::Vector{<:Real},
+    pos::Vector{<:Real},
+    vel::Vector{<:Real},
     magneticfield::Vector{<:Real},
     electricfield::Vector{<:Real},
-    charge       ::Real,
-    mass         ::Real
-    )
-    ExBdrift, B, b_vec = exbdrift(magneticfield, electricfield)
+    charge::Real,
+    mass::Real
+)
+
+    B = norm(magneticfield) # Magnetic field strength
+    B_inv = 1 / B
+    b_vec = magneticfield / B_inv     # Magnetic field direction (unit vector)
+    ExBdrift = exbdrift(magneticfield, electricfield)
     vel_in_E_frame = vel - ExBdrift
     # Calculate the guiding centre posistion 
-    R = pos + mass/(charge*B) * (vel_in_E_frame × b_vec)
+    R = pos + mass / (charge * B) * (vel_in_E_frame × b_vec)
     # Calculate the velocity parallell to the magnetic field -- vparal
     vparal = vel ⋅ b_vec
     # Calculate mangetic moment -- mu
-    vperp = vel_in_E_frame - vparal*b_vec
+    vperp = vel_in_E_frame - vparal * b_vec
     mu = magneticmoment(norm(vperp), mass, B)
     return R, vparal, mu
 end
@@ -595,27 +592,29 @@ Calculates and returns the guiding-centre position, parallel velocity, and
  magnetic moment of a charged particle in a electromagnetic field.
 """
 function get_guidingcentre!(
-    u            ::Vector{<:Real},
-    mu           ::Real,
-    pos          ::Vector{<:Real},
-    vel          ::Vector{<:Real},
+    u::Vector{<:Real},
+    pos::Vector{<:Real},
+    vel::Vector{<:Real},
     magneticfield::Vector{<:Real},
     electricfield::Vector{<:Real},
-    charge       ::Real,
-    mass         ::Real
-    )
-    ExBdrift, B, b_vec = exbdrift(magneticfield, electricfield)
+    charge::Real,
+    mass::Real
+)
+    B = norm(magneticfield) # Magnetic field strength
+    b_vec = magneticfield / B     # Magnetic field direction (unit vector)
+    ExBdrift = exbdrift(magneticfield, electricfield)
     vel_in_E_frame = vel - ExBdrift
     # Calculate the guiding centre posistion
-    R = pos + mass/(charge*B) * (vel_in_E_frame × b_vec)
+    R = pos + mass / (charge * B) * (vel_in_E_frame × b_vec)
     # Calculate the velocity parallell to the magnetic field -- vparal
     vparal = vel ⋅ b_vec
     # Calculate mangetic moment -- mu
-    vperp = vel_in_E_frame - vparal*b_vec
-    mu = magneticmoment(norm(vperp), mass, B)
+    vperp = vel_in_E_frame - vparal * b_vec
     # In place return
+    mu = magneticmoment(norm(vperp), mass, B)
     u[1:3] = R
     u[4] = vparal
+    return mu
 end
 
 
@@ -645,17 +644,19 @@ end
 
 
 function get_gca_velocities(
-    vel          ::Vector{<:Real},
+    vel::Vector{<:Real},
     magneticfield::Vector{<:Real},
     electricfield::Vector{<:Real},
-    mass         ::Real
-    )
-    ExBdrift, B, b_vec = exbdrift(magneticfield, electricfield)
+    mass::Real
+)
+    B = norm(magneticfield) # Magnetic field strength
+    b_vec = magneticfield / B     # Magnetic field direction (unit vector)
+    ExBdrift = exbdrift(magneticfield, electricfield)
     vel_in_E_frame = vel - ExBdrift
     # Calculate the velocity parallell to the magnetic field -- vparal
     vparal = vel ⋅ b_vec
     # Calculate mangetic moment -- mu
-    vperp = vel_in_E_frame - vparal*b_vec
+    vperp = vel_in_E_frame - vparal * b_vec
     mu = magneticmoment(norm(vperp), mass, B)
     return vparal, mu, vel_in_E_frame
 end
@@ -683,22 +684,24 @@ centre position vector.
 function get_fullorbit(
     magneticfield::Vector{<:Real},
     electricfield::Vector{<:Real},
-    R            ::Vector{<:Real}, # Guiding centre position
-    vparal       ::Real,           # Velocity parallel to the magnetic field
-    μ            ::Real,           # Magnetic moment of particle
-    charge       ::Real,
-    mass         ::Real,
-    phaseangle   ::Real,           # Arbitrary phase angle of gyration.
-    )
-    v_exb, B, b = exbdrift(magneticfield, electricfield) # get E cross B drift,
+    R::Vector{<:Real}, # Guiding centre position
+    vparal::Real,           # Velocity parallel to the magnetic field
+    μ::Real,           # Magnetic moment of particle
+    charge::Real,
+    mass::Real,
+    phaseangle::Real,           # Arbitrary phase angle of gyration.
+)
+    B = norm(magneticfield) # Magnetic field strength
+    b = magneticfield / B   # Magnetic field direction (unit vector)
+    v_exb = exbdrift(magneticfield, electricfield) # get E cross B drift,
     # magnetic field strength and magnetic field direction
     vperp = perpendicular_velocity(μ, mass, B)
     r_L = larmorradius(mass, vperp, charge, B)
-    e₁ = (R × b)/norm(R)
+    e₁ = (R × b) / norm(R)
     e₂ = e₁ × b
     sθ, cθ = sincos(phaseangle)
-    position = R + r_L*(cθ*e₁ + sθ*e₂)
-    velocity = vparal*b + v_exb + vperp*(cθ*e₂ - sθ*e₁)
+    position = R + r_L * (cθ * e₁ + sθ * e₂)
+    velocity = vparal * b + v_exb + vperp * (cθ * e₂ - sθ * e₁)
     return [position; velocity]
 end
 
@@ -725,25 +728,28 @@ is with respect to vector perpendicular to the magnetic field and guiding
 centre position vector.
 """
 function get_fullorbit!(
-    u            ::Vector{<:Real},
+    u::Vector{<:Real},
     magneticfield::Vector{<:Real},
     electricfield::Vector{<:Real},
-    R            ::Vector{<:Real}, # Guiding centre position
-    vparal       ::Real,           # Velocity parallel to the magnetic field
-    μ            ::Real,           # Magnetic moment of particle
-    charge       ::Real,
-    mass         ::Real,
-    phaseangle   ::Real,           # Arbitrary phase angle of gyration.
+    R::Vector{<:Real}, # Guiding centre position
+    vparal::Real,           # Velocity parallel to the magnetic field
+    μ::Real,           # Magnetic moment of particle
+    charge::Real,
+    mass::Real,
+    phaseangle::Real,           # Arbitrary phase angle of gyration.
+    itpvec
     )
-    v_exb, B, b = exbdrift(magneticfield, electricfield) # get E cross B drift,
+    B = norm(magneticfield) # Magnetic field strength
+    b = magneticfield / B   # Magnetic field direction (unit vector)
+    v_exb = exbdrift(magneticfield, electricfield) # get E cross B drift,
     # magnetic field strength and magnetic field direction
     vperp = perpendicular_velocity(μ, mass, B)
     r_L = larmorradius(mass, vperp, charge, B)
-    e₁ = (R × b)/norm(R)
+    e₁ = (R × b) / norm(R)
     e₂ = e₁ × b
     #e₂ = b × e₁
     sθ, cθ = sincos(phaseangle)
-    position = R + r_L*(cθ*e₁ + sθ*e₂)
+    position = R + r_L * (cθ * e₁ + sθ * e₂)
     #velocity = vparal*b + v_exb + vperp*(cθ*e₂ - sθ*e₁) !OLD!
     velocity = vparal*b + v_exb + sign(charge)*vperp*(cθ*e₂ + sθ*e₁)
     # In-place return

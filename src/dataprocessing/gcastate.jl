@@ -175,8 +175,9 @@ struct GCAState
             ExBdrift, ∇Bdrift, Rdrift, Pdrift,
             mirroracc, paralacc, dbdtacc,
             B_vec, E_vec,
+            dbdt,
             L_B,
-            )
+        )
     end
 
    function GCAState(
@@ -190,7 +191,8 @@ struct GCAState
         time=-1
         )
         vparallel = state[4]
-        v_E, B, _ = exbdrift(bfield, efield)
+        B = norm(bfield)
+        v_E = exbdrift(bfield, efield)
         vperp = perpendicular_velocity(μ, m, B)
         Ek = kineticenergy(vparallel, vperp, v_E, m)
         new(
