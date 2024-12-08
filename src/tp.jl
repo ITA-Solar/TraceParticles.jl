@@ -69,61 +69,81 @@ include("dataprocessing/gcastate.jl")
 # Exports #
 #---------#---------------------------------------------------------------------
 # physics.jl
-export  get_guidingcentre,
-        get_guidingcentre!,
-        get_fullorbit,
-        get_fullorbit!,
-        cosineof_pitchangle,
-        kineticenergy,
-        magneticdipolefield,
-        magneticmirrorfield
+export
+    get_guidingcentre,
+    get_guidingcentre!,
+    get_fullorbit,
+    get_fullorbit!,
+    cosineof_pitchangle,
+    kineticenergy,
+    magneticdipolefield,
+    magneticmirrorfield
 # equations_of_motion.jl
-export  guidingcentreapproximation!,
-        gca_2Dxz!,
-        lorentzforce!, lorentzforce,
-        hybridgcafo!
+export
+    guidingcentreapproximation!,
+    gca_2Dxz!,
+    lorentzforce!,
+    lorentzforce,
+    hybridgcafo!
 # statistics.jl
-export  maxwellianvelocitysample
+export maxwellianvelocitysample
 # numerical_methods/sde_schemes
-export  euler_maruyama,
-        milstein_central
+export
+    euler_maruyama,
+    milstein_central
 # solvers.jl
-export  #solve,
-        solve_stoppingtime
+export solve_stoppingtime
+# callbacks.jl
+export
+    GCAInvalidCondition,
+    GCAValidCondition,
+    switch2fo_affect!,
+    switch2gca_affect!
 # io/bifrost_input.jl
-export  get_br_emfield_interpolator,
-        get_br_emfield_vecof_interpolators,
-        get_br_emfield_numdensity_gastemp_interpolator,
-        get_br_var_interpolator
+export
+    get_br_emfield_interpolator,
+    get_br_emfield_vecof_interpolators,
+    get_br_emfield_numdensity_gastemp_interpolator,
+    get_br_var_interpolator
+export
+    h5_getall,
+    h5_getbatch,
+    h5_getdataset,
+    h5_getenergies
 # utils.jl
-export  dropdims,
-        create3Daxes,
-        discretise,
-        UserData,
-        MaxValue,
-        MinValue
+export
+    dropdims,
+    create3Daxes,
+    discretise,
+    UserData,
+    MaxValue,
+    MinValue
 # gcastate.jl
-export  GCAState
-export  get_drifts,
-        get_x,
-        get_y,
-        get_z,
-        get_vparallel,
-        get_mu,
-        get_time,
-        get_energy,
-        get_vperp,
-        get_larmorradius,
-        get_gyrofrequency,
-        get_bfield,
-        get_efield,
-        get_fieldlength,
-        get_scalesratio
+export
+    GCAState,
+    get_drifts,
+    get_stateidx,
+    get_x,
+    get_y,
+    get_z,
+    get_vparal,
+    get_mu,
+    get_time,
+    get_energy,
+    get_vperp,
+    get_larmorradius,
+    get_gyrofrequency,
+    get_bfield,
+    get_efield,
+    get_fieldlength,
+    get_scalesratio,
+    get_characteristicfieldlength,
 # statistics.jl
-export  binmap,
-        rejectionsample
+export
+    binmap,
+    rejectionsample
 # paramerterstructs.jl
-export  HybridParams
+export HybridParams
 
 #-------------------------------------------------------------------------------
 end
