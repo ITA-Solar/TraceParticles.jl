@@ -189,16 +189,10 @@ function gca_2Dxz!(du, u, p, _)
     vparal = u[4] # Particle velocity parallel to the magnetic field
     # Extract parameters
     q, m, μ, itpvec = p.charge, p.mass, p.magneticmoment, p.fields
-    q_inv = 1/q # Inverse of q - to replace division with multiplication
     # Use the gyrocentre position interpolate the vectors
     # scalars from the interpolation objects.
     B_vec = [itpvec[i](Rx, Rz) for i in 1:3]
     E_vec = [itpvec[i](Rx, Rz) for i in 4:6]
-    B = norm(B_vec)   # The magnetic field strength
-    B_inv = 1/B       # Inverse of B - to replace divition with multiplication
-    b = B_vec*B_inv   # An unit vector pointing in the direction of the
-                      #  magnetic field
-    ExBdrift = (E_vec × b)/B # The E cross B-drift
 
     # Calculate the field gradients.
     jacobian_matrix = ForwardDiff.jacobian([Rx, Rz]) do x
