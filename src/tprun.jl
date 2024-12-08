@@ -21,7 +21,7 @@ chosen by the user.
 
 ## Requirements
 As a bare minimum, the `expparams.jl` file must define the following variables:
-- `tp_expname::String` : The name of the test particle experiment.
+- `expname::String` : The name of the test particle experiment.
 - `eom::Function` : The equation of motion of the test particles.
 - `fields_itp::Vector{<:AbstractInterpolation} : The interpolated fields
     that the test particles will be evolved in.
@@ -68,28 +68,51 @@ the command line.
 If the script is run with multiple threads and mulitple processes, the script
 will use distributed computing.
 """
-params = ARGS[1]
-include(joinpath(pwd(), basename(params)))
 
-try mkdir("data")
+
+
+commandlineparams = ARGS[1]
+include(joinpath(pwd(), basename(commandlineparams)))
+#exp_params = experiment_parameters()
+
+try
+    mkdir("data")
 catch
 end
 
-try expname
-catch
-    error("'expname' undefined. The parameter file must define the experiment"*
-        " name in the parameters file")
+requirements = [
+    :expname,
+    :eom,
+    :charge,
+    :mass,
+    :fields_itp,
+    :tspan,
+    :prob_func,
+    :trajectories
+]
+for i in requirements
+    try
+        eval(i)
+    catch
+        error("The parameter file must define the variable `$i`")
+    end
 end
 
-datadir = try datadir
+if !isdefined(Main, :expname)
+    error("")
+end
+
+datadir = try
+    datadir
 catch
-    pritntln("'datadir' not set, using 'data'.")
+    println("'datadir' not set, using 'data'.")
     "data"
 end
 
 expdir = datadir * "/" * expname
 paramsbackup = expdir * "/" * expname * ".jl"
-try mkdir(expdir)
+try
+    mkdir(expdir)
     cp(params, paramsbackup)
 catch
     println("The directory $(pwd() * "/" * expdir) already exists.
@@ -105,7 +128,7 @@ end
 
 np = nprocs()
 println(".................................................................",
-        "...............")
+    "...............")
 if np > 1
     println("Running on $np processes.")
     ensemble_algorithm = EnsembleDistributed()
@@ -116,14 +139,15 @@ else
     println("Running in serial.")
     ensemble_algorithm = EnsembleSerial()
 end
-solve_args = try (alg, ensemble_algorithm)
+solve_args = try
+    (alg, ensemble_algorithm)
 catch
     (ensemble_algorithm,)
 end
 
 
 function print_particlecounter(count, total)
-    @printf "Particle %i (%.2f %%)\r" count count/total*100
+    @printf "Particle %i (%.2f %%)\r" count count / total * 100
 end
 
 lk = ReentrantLock()
@@ -138,18 +162,19 @@ if ensemble_algorithm == EnsembleDistributed()
     # Overwrite the the ensemble problem keyword argument `prob_func` with some
     # progress verbose.
     ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
-        prob_func = (prob, i, repeat) -> begin
+        prob_func=(prob, i, repeat) -> begin
             remote_do(update_particlecounter, 1) # 1 is main process
             ensembleprob_kwargs.prob_func(prob, i, repeat)
         end
     )
 elseif ensemble_algorithm == EnsembleThreads()
     ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
-        prob_func = (prob, i, repeat) -> begin
+        prob_func=(prob, i, repeat) -> begin
             global particlecounter
             global lk
             lock(lk)
-            try particlecounter += 1
+            try
+                particlecounter += 1
             finally
                 unlock(lk)
             end
@@ -161,7 +186,7 @@ else
     # Overwrite the the ensemble problem keyword argument `prob_func` with some
     # progress verbose.
     ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
-        prob_func = (prob, i, repeat) -> begin
+        prob_func=(prob, i, repeat) -> begin
             #print("Particle $i  of $npart \r")
             print_particlecounter(i, npart)
             ensembleprob_kwargs.prob_func(prob, i, repeat)
@@ -182,25 +207,27 @@ for each particle in the EnsembleProblem, but the particle independent `eom`,
 """
 prob = ODEProblem(
     eom,
-    try u0
+    try
+        u0
     catch
         zeros(1) # Dummy initial condition
     end,
-    typeof(tspan) <: Tuple{Real, Real} ? tspan : (0,1),
+    typeof(tspan) <: Tuple{Real,Real} ? tspan : (0, 1),
     (
-        charge = charge,
-        mass = mass,
-        fields = fields_itp,
-        magneticmoment = try mu0
+        charge=charge,
+        mass=mass,
+        fields=fields_itp,
+        magneticmoment=try
+            mu0
         catch
             nothing
         end
     )
 )
 ensemble_prob = EnsembleProblem(
-        prob
-        ;
-        ensembleprob_kwargs_internal...
+    prob
+    ;
+    ensembleprob_kwargs_internal...
 )
 
 #===============================================================================#
@@ -208,7 +235,7 @@ ensemble_prob = EnsembleProblem(
 
 println("Running ensemble of $npart particles...")
 println(".................................................................",
-        "...............")
+    "...............")
 
 running = true
 if ensemble_algorithm != EnsembleSerial()
@@ -237,13 +264,14 @@ if !(:reduction in keys(ensembleprob_kwargs))
 else
     try
         println("\nPost-processing: Computing GCAStates...")
-        extension = try extension
+        extension = try
+            extension
         catch
             ".h5"
         end
         @time tp.save_gcastates(
             joinpath(expdir, expname) * extension, nbatches, fields_itp
-            )
+        )
         println("                 Success")
     catch e
         println("                 Failed:\n", e)
