@@ -30,6 +30,32 @@ function larmorradius(
     vperp = perpendicular_velocity(μ, m, B)
     return larmorradius(m, vperp, q, B)
 end
+function larmorradius(
+    R::Vector{<:Real},
+    μ::Real,
+    q::Real,
+    m::Real,
+    itp::AbstractInterpolation
+)
+    B = norm(itp(R...)[1:3])
+    vperp = perpendicular_velocity(μ, m, B)
+    return larmorradius(m, vperp, q, B)
+end
+function larmorradius(
+    state::Vector{<:Real},
+    mass::Real,
+    charge::Real,
+    itp::AbstractInterpolation
+)
+    position = state[1:3]
+    velocity = state[4:6]
+    fields = itp(position...)
+    B_vec = fields[1:3]
+    E_vec = fields[4:6]
+    B = norm(B_vec)
+    vperp = norm(perpendicular_velocity(velocity, B_vec, E_vec))
+    return larmorradius(mass, vperp, charge, B)
+end
 
 
 """
@@ -52,6 +78,59 @@ field.
 function perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength::Real)
     sqrt(2magnetic_moment * magneticfieldstrength / mass)
 end
+function perpendicular_velocity(
+    vel::Vector{<:Real},
+    magneticfield::Vector{<:Real},
+    electricfield::Vector{<:Real},
+)
+    B = norm(magneticfield) # Magnetic field strength
+    b_vec = magneticfield / B   # Magnetic field direction (unit vector)
+    ExBdrift = exbdrift(magneticfield, electricfield) # get E cross B drift,
+    vel_in_E_frame = vel - ExBdrift
+    vparal = vel ⋅ b_vec
+    # Calculate mangetic moment -- mu
+    vperp = vel_in_E_frame - vparal * b_vec
+    return vperp
+end
+function perpendicular_velocity(
+    R::Vector{<:Real},
+    μ::Real,
+    m::Real,
+    itp::AbstractInterpolation
+)
+    B = norm(itp(R...)[1:3])
+    return perpendicular_velocity(μ, m, B)
+end
+function perpendicular_velocity(
+    R::Vector{<:Real},
+    μ::Real,
+    m::Real,
+    itpvec::Vector{<:AbstractInterpolation},
+)
+    B = norm([itp(R...) for itp in itpvec[1:3]])
+    return perpendicular_velocity(μ, m, B)
+end
+
+"""
+    perpendicular_velocity(
+        position::Vector{<:Real},
+        velocity::Vector{<:Real},
+        itp::AbstractInterpolation
+)
+"""
+function perpendicular_velocity(
+    state::Vector{<:Real},
+    itp::AbstractInterpolation
+)
+    position = state[1:3]
+    velocity = state[4:6]
+    fields = itp(position...)
+    B_vec = fields[1:3]
+    E_vec = fields[4:6]
+    return perpendicular_velocity(velocity, B_vec, E_vec)
+end
+
+
 
 
 """
