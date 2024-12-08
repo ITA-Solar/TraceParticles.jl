@@ -447,6 +447,36 @@ function parallel_acceleration(
 end
 
 
+"""
+    fermi_acceleration(
+        ExBdrift::Vector{<:Real},
+        ∇Bdrift::Vector{<:Real},
+        dbdt   ::Vector{<:Real},
+        )
+    fermi_acceleration(
+        ExBdrift::Vector{<:Real},
+        dbdt   ::Vector{<:Real},
+        )
+Calculate the acceleration of a charged particle due to an E cross B drift
+along the material derivative of the magnetic field direction. This
+acceleration term is associated with a curvature drift along the electric
+field. It is also termed 1st order Fermi acceleration by Birn et al. 2017.
+"""
+function fermi_acceleration(
+    ExBdrift::Vector{<:Real},
+    ∇Bdrift::Vector{<:Real},
+    dbdt::Vector{<:Real},
+)
+    return (ExBdrift + ∇Bdrift) ⋅ dbdt
+end
+function fermi_acceleration(
+    ExBdrift::Vector{<:Real},
+    dbdt::Vector{<:Real},
+)
+    return ExBdrift ⋅ dbdt
+end
+
+
 function fieldgradients(
     R::Vector{<:Real},
     itpvec
@@ -565,34 +595,7 @@ function gca_drift_and_acceleration(
     return [dRdt; dvparaldt]
 end
 
-"""
-    drift_dbdt_acceleration(
-        ExBdrift::Vector{<:Real},
-        ∇Bdrift::Vector{<:Real},
-        dbdt   ::Vector{<:Real},
-        )
-    drift_dbdt_acceleration(
-        ExBdrift::Vector{<:Real},
-        dbdt   ::Vector{<:Real},
-        )
-Calculate the acceleration of a charged particle due to the marterial
-derivative of the magnetic field direction. See Birn et al. 2004 and
-Ripperda et al. 2018 for reference. Although they don't comment this
-term much, so I'm not to sure what it represents.
-"""
-function drift_dbdt_acceleration(
-    ExBdrift::Vector{<:Real},
-    ∇Bdrift::Vector{<:Real},
-    dbdt   ::Vector{<:Real},
-    )
-    return (ExBdrift + ∇Bdrift) ⋅ dbdt
-end
-function drift_dbdt_acceleration(
-    ExBdrift::Vector{<:Real},
-    dbdt   ::Vector{<:Real},
-    )
-    return ExBdrift ⋅ dbdt
-end
+
 
 
 """
