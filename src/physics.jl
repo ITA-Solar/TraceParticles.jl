@@ -447,6 +447,61 @@ function parallel_acceleration(
 end
 
 
+function fieldgradients(
+    R::Vector{<:Real},
+    itpvec
+)
+    # Interpolate the electromagnetic field to the guiding centre position.
+    B_vec, E_vec = emfieldatpos(R, itpvec)
+
+    # Calculate the field gradients.
+    jacobian_matrix = ForwardDiff.jacobian(R) do x
+        if typeof(itpvec) <: Vector
+            vec = [itp(x...) for itp in itpvec]
+        else
+            vec = itpvec(x...)
+        end
+        B_vec_fd = vec[1:3]
+        E_vec_fd = vec[4:6]
+        B_fd = norm(B_vec_fd)
+        b_fd = B_vec_fd / B_fd
+        return [b_fd; E_vec_fd × b_fd / B_fd; B_fd]
+    end
+    ∇b = jacobian_matrix[1:3, :]
+    ∇ExB = jacobian_matrix[4:6, :]
+    ∇B = jacobian_matrix[7, :]
+
+    return ∇b, ∇ExB, ∇B, B_vec, E_vec
+end
+
+function drifts(
+    R::Vector{<:Real},
+    vparal::Real,
+    q::Real,
+    m::Real,
+    μ::Real,
+    itpvec
+)
+    ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, itpvec)
+
+    B = norm(B_vec)
+    B_inv = 1 / B
+    b = B_vec * B_inv
+    q_inv = 1 / q
+    ExBdrift = exbdrift(B_vec, E_vec)
+
+    vparal_vec = vparal * b
+    total_velocity = vparal_vec + ExBdrift
+    dbdt = ∇b * total_velocity
+    dExBdt = ∇ExB * total_velocity
+
+    ∇Bdrift = gradbdrift(b, ∇B, μ, B_inv, q_inv)
+    Rdrift = curvaturedrift(b, dbdt, vparal, B_inv, q_inv, m)
+    Pdrift = polarisationdrift(b, dExBdt, B_inv, q_inv, m)
+
+    return ExBdrift, ∇Bdrift, Rdrift, Pdrift
+end
+
 """
     gca_drift_and_acceleration(
         ∇b         ::Matrix{<:Real},
