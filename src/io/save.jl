@@ -18,9 +18,9 @@ Save the data slurped in `args` with `expname` at `expdir`.
 """
 function save(
     expname::String,
-    expdir ::String,
+    expdir::String,
     args...
-    )
+)
     basename = joinpath(expdir, expname)
     filename = string(basename, ".tp")
     save(filename, args...)
@@ -37,13 +37,13 @@ to the Loretnz equation.
 """
 function save(
     filename::String,
-    solution::Array{<:Real, 3},
-    )
+    solution::Array{<:Real,3},
+)
     f = open(filename, "w+")
     write(f, solution)
     close(f)
     println("tp.jl: Wrote $filename")
-end 
+end
 
 
 """
@@ -58,15 +58,15 @@ equations.
 """
 function save(
     filename::String,
-    solution::Array{<:Real, 3},
+    solution::Array{<:Real,3},
     magneticmoment::Vector{<:Real}
-    )
+)
     f = open(filename, "w+")
     write(f, solution)
     write(f, magneticmoment)
     close(f)
     println("tp.jl: Wrote $filename")
-end 
+end
 
 
 """
@@ -79,7 +79,7 @@ Save only the initial state, final state, and final time of the ODE-solutions.
 function save_lightweight(
     filename::String,
     solutionvector::Vector{<:ODESolution},
-    )
+)
     u0 = getinitialstate(solutionvector)
     uf = getfinalstate(solutionvector)
     tf = getfinaltime(solutionvector)
@@ -107,16 +107,18 @@ function save_gcastates(
     fileext::String,
     nbatches::Int,
     fieldname::String,
-    )
+)
     @load fieldname fields_itp
     filename = joinpath(expdir, expname) * fileext
     save_gcastates(filename, nbatches, fields_itp)
 end
+
+
 function save_gcastates(
     filename::String,
     nbatches::Int,
     fields_itp::Vector{<:AbstractInterpolation}
-    )
+)
     name, extension = splitext(filename)
     if extension == ".csv"
         for i in 1:nbatches

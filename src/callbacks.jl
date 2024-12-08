@@ -1,11 +1,11 @@
 
 abstract type AbstractTPCallback end
 
-struct DiscreteTPCallback{F1, F2} <: AbstractTPCallback
+struct DiscreteTPCallback{F1,F2} <: AbstractTPCallback
     condition::F1
-    affect!  ::F2
-    function DiscreteTPCallback(condition::F1, affect!::F2) where {F1, F2}
-        new{F1, F2}(condition, affect!)
+    affect!::F2
+    function DiscreteTPCallback(condition::F1, affect!::F2) where {F1,F2}
+        new{F1,F2}(condition, affect!)
     end
 end
 function DiscreteTPCallback()
@@ -33,12 +33,12 @@ DifferentialEquations.jl.
 Returns true if the particle is outside the 2D bounds in x and z.
 """
 struct OutOfDomainCondition_2Dxz
-    xbounds::Tuple{<:Real, <:Real}
-    zbounds::Tuple{<:Real, <:Real}
+    xbounds::Tuple{<:Real,<:Real}
+    zbounds::Tuple{<:Real,<:Real}
 end
-function (self::OutOfDomainCondition_2Dxz)(u,_,_)
+function (self::OutOfDomainCondition_2Dxz)(u, _, _)
     return u[1] <= self.xbounds[1] || u[1] >= self.xbounds[2] ||
-        u[3] <= self.zbounds[1] || u[3] >= self.zbounds[2]
+           u[3] <= self.zbounds[1] || u[3] >= self.zbounds[2]
 end
 
 
@@ -53,9 +53,9 @@ callback should be created like this:
     affect!(integrator) = terminate!(integrator)
     cb = DiscreteCallback(condition,affect!)
 """
-function outside2dnullpointzoom(u,_,_) # (u, t, integrator)
+function outside2dnullpointzoom(u, _, _) # (u, t, integrator)
     return u[1] <= 14.52e6 || u[1] >= 18.83e6 ||
-            u[3] <= -7.79e6 || u[3] >= -3.88e6
+           u[3] <= -7.79e6 || u[3] >= -3.88e6
 end
 function outofdomainaffect!(integrator)
     integrator.p.userdata.retmsg = "OutofDomain"
@@ -187,10 +187,10 @@ function GCABreakDownCB(
     dimensionality::String
     ;
     tolerance::Real=1.0
-    )
-    if method*dimensionality == "lowmem2Dxz"
+)
+    if method * dimensionality == "lowmem2Dxz"
         condition = GCABreakDownCondition_2Dxz(tolerance)
-    elseif method*dimensionality == "highmem2Dxz"
+    elseif method * dimensionality == "highmem2Dxz"
         condition = GCABreakDownCondition_highmem_2Dxz(tolerance)
     else
         error("Unknown method.")
@@ -276,7 +276,7 @@ end
 function larmorradius(
     R::Vector{<:Real},
     params::NamedTuple
-    )
+)
     itpvec = params.fields[1:3]
     μ = params.magneticmoment
     q = params.charge
@@ -293,7 +293,7 @@ function mincondition_fieldlength_2Dxz(u, _, integrator)
 end
 function mincondition_fieldlength_highmemory_2Dxz(u, _, integrator)
     itpvec = integrator.p.fields
-    R = [u[1],u[3]]
+    R = [u[1], u[3]]
     L_B = characteristicfieldlength(R, itpvec[1:3], itpvec[7:9])
     return L_B < integrator.p.fieldlength.min
 end
@@ -308,7 +308,7 @@ function minaffect_fieldlength_2Dxz!(integrator)
 end
 function minaffect_fieldlength_highmemory_2Dxz!(integrator)
     itpvec = integrator.p.fields
-    R = [integrator.u[1],integrator.u[3]]
+    R = [integrator.u[1], integrator.u[3]]
     L_B = characteristicfieldlength(R, itpvec[1:3], itpvec[7:9])
     integrator.p.fieldlength.min = L_B
     integrator.p.fieldlength.min_u = copy(integrator.u)

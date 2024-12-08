@@ -42,20 +42,20 @@ Finds the position of `point` in the vector `coords` using binary search.
 Returns its lower neighbour.
 """
 function locate_cell(coords::Vector{T} where {T<:Real},
-                    point ::Number
-                    )
+    point::Number
+)
     # Initial bounds
     low = 1
     high = length(coords)
-    while  high > low + 1 # While we haven't found the cell
-        mid  = floor(Int64, (high + low)/2)
+    while high > low + 1 # While we haven't found the cell
+        mid = floor(Int64, (high + low) / 2)
         if point > coords[mid]
             low = mid
         elseif point < coords[mid]
             high = mid
-	else
-	    low = mid - 1
-	    high = mid
+        else
+            low = mid - 1
+            high = mid
         end # if
     end # while
     return low
@@ -78,7 +78,7 @@ end
 Convenience structure for storing the maximum value of some quantity during
 a `Differentialequations` simulation.
 """
-mutable struct MaxValue{T1, T2, T3}
+mutable struct MaxValue{T1,T2,T3}
     max::T1
     max_u::T2
     max_t::T3
@@ -89,7 +89,7 @@ end
 Convenience structure for storing the minimum value of some quantity during
 a `Differentialequations` simulation.
 """
-mutable struct MinValue{T1, T2, T3}
+mutable struct MinValue{T1,T2,T3}
     min::T1
     min_u::T2
     min_t::T3
@@ -101,20 +101,20 @@ end
 # Mesh generation from analytical fields #
 #-------------------------------------------------------------------------------
 function create3Daxes(
-    (x0, y0, z0)::Tuple{Real, Real, Real},
-    (xf, yf, zf)::Tuple{Real, Real, Real},
-    (nx, ny, nz)::Tuple{Integer, Integer, Integer}
-    )
-    xx = LinRange(x0, xf, nx)
+    (x0, y0, z0)::Tuple{Real,Real,Real},
+    (xf, yf, zf)::Tuple{Real,Real,Real},
+    (nx, ny, nz)::Tuple{Integer,Integer,Integer}
+)
+    xx = range(x0, xf, length=nx)
     dx = xx[2] - xx[1]
-    yy = LinRange(y0, yf, ny)
+    yy = range(y0, yf, length=ny)
     dy = yy[2] - yy[1]
     # Account for single point in the z-axis
     if nz == 1
         zz = [z0]
-        dz = 0.
-            else
-        zz = LinRange(z0, zf, nz)
+        dz = 0.0
+    else
+        zz = range(z0, zf, length=nz)
         dz = zz[2] - zz[1]
     end
     return xx, yy, zz, dx, dy, dz
@@ -134,19 +134,19 @@ Discretise a `func`tion onto a mesh with grid points given by
 """
 function discretise(
     func::Function,
-    xx  ::AbstractVector,
-    yy  ::AbstractVector,
-    zz  ::AbstractVector,
+    xx::AbstractVector,
+    yy::AbstractVector,
+    zz::AbstractVector,
     args...
-    )
+)
     f111 = func(xx[1], yy[1], zz[1])
-    field = Array{Vector{eltype(f111)}, 3}(
+    field = Array{Vector{eltype(f111)},3}(
         undef, length(xx), length(yy), length(zz)
-        )
+    )
     for i in eachindex(xx)
         for j in eachindex(yy)
             for k in eachindex(zz)
-                field[i,j,k] = func(xx[i], yy[j], zz[k])
+                field[i, j, k] = func(xx[i], yy[j], zz[k])
             end
         end
     end
@@ -169,19 +169,19 @@ fx(i)fy(j), where fx and fy are normal distributions in x, and y with
 expectation value and std equal to μx, μy, σx, σy, respetively. 
 """
 function normal3Donlyz(
-    (x0, y0, z0)::Tuple{Real, Real, Real},
-    (xf, yf, zf)::Tuple{Real, Real, Real},
-    (nx, ny, nz)::Tuple{Integer, Integer, Integer},
-    (μx, μy)    ::Tuple{Real, Real},
-    (σx, σy)    ::Tuple{Real, Real},
-    amplitude   ::Real=1.0
-    )
+    (x0, y0, z0)::Tuple{Real,Real,Real},
+    (xf, yf, zf)::Tuple{Real,Real,Real},
+    (nx, ny, nz)::Tuple{Integer,Integer,Integer},
+    (μx, μy)::Tuple{Real,Real},
+    (σx, σy)::Tuple{Real,Real},
+    amplitude::Real=1.0
+)
     # Create spatial axes and find the grid sizes
     xx, yy, zz, dx, dy, dz = create3Daxes(
         (x0, y0, z0),
         (xf, yf, zf),
         (nx, ny, nz)
-        )
+    )
     # Initialise the vector field
     ndims = 3
     A = zeros(ndims, nx, ny, nz)
@@ -191,7 +191,7 @@ function normal3Donlyz(
     gaussy = normaldistr(yy, μy, σy)
     for i = 1:nx
         for j = 1:ny
-            A[3,i,j,:] .= amplitude * gaussx[i] * gaussy[j]
+            A[3, i, j, :] .= amplitude * gaussx[i] * gaussy[j]
         end
     end
     return (xx, yy, zz), (dx, dy, dz), A
@@ -203,49 +203,49 @@ end # function normal3donlyz
 #-------------------------------------------------------------------------------
 function initparticlesuniform(
     numparticles::Integer,
-    pos0        ::Vector{T} where {T<:Real}, 
-    posf        ::Vector{T} where {T<:Real}, 
-    vel0        ::Vector{T} where {T<:Real}, 
-    velf        ::Vector{T} where {T<:Real}, 
-    seed        ::Integer=0  # random-seed
-    )
+    pos0::Vector{T} where {T<:Real},
+    posf::Vector{T} where {T<:Real},
+    vel0::Vector{T} where {T<:Real},
+    velf::Vector{T} where {T<:Real},
+    seed::Integer=0  # random-seed
+)
     numdims = 3
     spatialextent = posf .- pos0
     velocityrange = velf .- vel0
     r = rand(MersenneTwister(seed),
-             typeof(pos0[1]), (Int64(2numdims), Int64(numparticles)))
-             # 2 for both position and
+        typeof(pos0[1]), (Int64(2numdims), Int64(numparticles)))
+    # 2 for both position and
     # velocity 
-    positions  = pos0 .+ (spatialextent .* r[1:numdims, :])
+    positions = pos0 .+ (spatialextent .* r[1:numdims, :])
     velocities = vel0 .+ (velocityrange .* r[4:2numdims, :])
     return positions, velocities
 end # function initparticlesuniform
 
 function initparticlesmaxwellian(
     numparticles::Integer,
-    pos0        ::Vector{T} where {T<:Real}, 
-    posf        ::Vector{T} where {T<:Real}, 
-    temperature ::Real, # temperature of the Maxwellian distribution
-    mass        ::Real, # mass of particles
-    seed        ::Integer=0  # random-seed
+    pos0::Vector{T} where {T<:Real},
+    posf::Vector{T} where {T<:Real},
+    temperature::Real, # temperature of the Maxwellian distribution
+    mass::Real, # mass of particles
+    seed::Integer=0  # random-seed
     ;
     wfp::DataType=typeof(pos0[1])
-    )
+)
     numdims = 3
     #
     # Velocities
-    σ = √(k_B*temperature/mass) # Standard deviation of velocity
+    σ = √(k_B * temperature / mass) # Standard deviation of velocity
     # components 
     μ = 0.0 # Expectation-value of velocity distributions. 
     # Generate velocities from a normal distribution
     velocities = μ .+ σ .* randn(MersenneTwister(seed),
-                                 wfp, (numdims, numparticles))
+        wfp, (numdims, numparticles))
     #
     # Posistions: Generate from a uniform distribution
     spatialextent = posf .- pos0
-    positions = pos0 .+ 
-        (spatialextent .* rand(MersenneTwister(seed),
-                               wfp, (numdims, numparticles)))
+    positions = pos0 .+
+                (spatialextent .* rand(MersenneTwister(seed),
+        wfp, (numdims, numparticles)))
     #
     return positions, velocities
 end # function initparticlesmaxwellian
@@ -273,35 +273,35 @@ probability in appropriate normal-distribution (defined by `temperature` and
 particle `mass).
 """
 function initparticlesimsam(
-    proposal    ::Function,
-    randgen     ::Function,
+    proposal::Function,
+    randgen::Function,
     numparticles::Integer,
-    pos0        ::Vector{T} where {T<:Real}, 
-    posf        ::Vector{T} where {T<:Real}, 
-    temperature ::Real, # temperature of the Maxwellian distribution
-    mass        ::Real  # mass of particles
+    pos0::Vector{T} where {T<:Real},
+    posf::Vector{T} where {T<:Real},
+    temperature::Real, # temperature of the Maxwellian distribution
+    mass::Real  # mass of particles
     ;
     wfp::DataType=typeof(pos0[1])
-    )
+)
     #
     numdims = 3
     # Velocities
-    σ = √(k_B*temperature/mass) # Standard deviation of velocity
+    σ = √(k_B * temperature / mass) # Standard deviation of velocity
     # components 
     μ = 0.0 # Expectation-value of velocity distributions. 
     #  Define target distribution
     targetdistr(v) = normaldistr(v, μ, σ)
     N = (numdims, numparticles)
     velocities, weights = importancesampling(targetdistr,
-                                             proposal,
-                                             randgen,
-                                             N)
-    totweight = @. weights[1,:] * weights[2,:] * weights[3,:]
+        proposal,
+        randgen,
+        N)
+    totweight = @. weights[1, :] * weights[2, :] * weights[3, :]
     #
     # Posistions: Generate from a uniform distribution
     spatialextent = posf .- pos0
-    positions = pos0 .+ 
-        (spatialextent .* rand(wfp, (numdims, numparticles)))
+    positions = pos0 .+
+                (spatialextent .* rand(wfp, (numdims, numparticles)))
     #
     return positions, velocities, weights, totweight
 end # function initparticlesmaxwellian

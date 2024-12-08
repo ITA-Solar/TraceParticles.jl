@@ -23,18 +23,18 @@ expectation value `μ` and standard deviation `σ`.
 See also [`Utilities.uniformdistr`](@ref).
 """
 function normaldistr(
-    x::Array{T} where {T<:Real},
+    x::AbstractVector,
     μ::Real,
     σ::Real
-    )
-    return @.  1/(σ*√(2π))*exp(-0.5((x - μ)/σ)^2)
+)
+    return @. 1 / (σ * √(2π)) * exp(-0.5((x - μ) / σ)^2)
 end # normaldistr
 function normaldistr(
     x::Real,
     μ::Real,
     σ::Real
-    )
-    return 1/(σ*√(2π))*exp(-0.5((x - μ)/σ)^2)
+)
+    return 1 / (σ * √(2π)) * exp(-0.5((x - μ) / σ)^2)
 end
 
 function bivariate_normaldistr(
@@ -45,15 +45,15 @@ function bivariate_normaldistr(
     σx::Real,
     σy::Real,
     corr::Real # correlation
-    )
-    normfactor = 1/(2π*σx*σy*√(1 - corr^2))
+)
+    normfactor = 1 / (2π * σx * σy * √(1 - corr^2))
     return normfactor * exp(
-        -1/(2*(1 - corr^2)) * (
-            (x - μx)^2/σx^2 +
-            (y - μy)^2/σy^2 -
-            2*corr*(x - μx)*(y - μy)/(σx*σy)
-            )
+        -1 / (2 * (1 - corr^2)) * (
+            (x - μx)^2 / σx^2 +
+            (y - μy)^2 / σy^2 -
+            2 * corr * (x - μx) * (y - μy) / (σx * σy)
         )
+    )
 end
 
 """
@@ -71,9 +71,9 @@ function uniformdistr(
     x::Array{T} where {T<:Real},
     a::Real,
     b::Real
-    )
+)
     mask = a .<= x .<= b
-    stepheight = 1.0/(b - a)
+    stepheight = 1.0 / (b - a)
     prob = zeros(typeof(x[1]), size(x))
     prob[mask] .= stepheight
     return prob
@@ -93,10 +93,10 @@ function bivariate_uniformdistr(
     b::Real=1.0,
     c::Real=0.0,
     d::Real=1.0
-    )
+)
     Δx = b - a
     Δy = d - c
-    probability = abs(1/(Δx*Δy))
+    probability = abs(1 / (Δx * Δy))
     return a < x <= b && c < y <= d ? probability : 0.0
 end
 
@@ -111,32 +111,32 @@ Method which return random variables from a normal distribution with
 expectation value `μ` and standard deviation `σ`.
 """
 function Base.randn(
-    μ   ::AbstractFloat,
-    σ   ::AbstractFloat,
+    μ::AbstractFloat,
+    σ::AbstractFloat,
     dims...
-    )
-    return μ .+ σ.*randn(dims)
+)
+    return μ .+ σ .* randn(dims)
 end
 function Base.randn(
     precision::DataType,
-    μ        ::AbstractFloat,
-    σ        ::AbstractFloat,
+    μ::AbstractFloat,
+    σ::AbstractFloat,
     dims...
-    )
+)
     μ = convert.(precision, μ)
     σ = convert.(precision, σ)
-    return μ .+ σ.*randn(precision, dims)
-end 
+    return μ .+ σ .* randn(precision, dims)
+end
 function Base.randn(
-    rng      ::AbstractRNG,
+    rng::AbstractRNG,
     precision::DataType,
-    μ        ::AbstractFloat,
-    σ        ::AbstractFloat,
+    μ::AbstractFloat,
+    σ::AbstractFloat,
     dims...
-    )
+)
     μ = convert.(precision, μ)
     σ = convert.(precision, σ)
-    return μ .+ σ.*randn(rng, precision, dims)
+    return μ .+ σ .* randn(rng, precision, dims)
 end
 
 
@@ -146,81 +146,81 @@ Method which return random variables from a uniform distribution on the interval
 [a, b] with DataType `precision` and random seed generator `rng`.
 """
 function Base.rand(
-    a   ::AbstractFloat,
-    b   ::AbstractFloat,
+    a::AbstractFloat,
+    b::AbstractFloat,
     dims...
-    )
+)
     return a .+ rand(dims...) .* (b - a)
-end 
+end
 function Base.rand(
     precision::DataType,
-    a        ::AbstractFloat,
-    b        ::AbstractFloat,
+    a::AbstractFloat,
+    b::AbstractFloat,
     dims...
-    )
+)
     a = convert(precision, a)
     b = convert(precision, b)
     return a .+ rand(precision, dims...) .* (b - a)
-end 
+end
 function Base.rand(
-    rng ::AbstractRNG,
-    a   ::AbstractFloat,
-    b   ::AbstractFloat,
+    rng::AbstractRNG,
+    a::AbstractFloat,
+    b::AbstractFloat,
     dims...
-    )
+)
     return a .+ rand(rng, dims...) .* (b - a)
 end
 function Base.rand(
-    rng      ::AbstractRNG,
+    rng::AbstractRNG,
     precision::DataType,
-    a        ::AbstractFloat,
-    b        ::AbstractFloat,
+    a::AbstractFloat,
+    b::AbstractFloat,
     dims...
-    )
+)
     a = convert(precision, a)
     b = convert(precision, b)
     return a .+ rand(rng, precision, dims...) .* (b - a)
 end
 function Base.rand(
-    a   ::AbstractFloat,
-    b   ::AbstractFloat,
+    a::AbstractFloat,
+    b::AbstractFloat,
     dims::Tuple{Vararg{Int}}
-    )
+)
     return a .+ rand(dims...) .* (b - a)
-end 
+end
 function Base.rand(
     precision::DataType,
-    a        ::AbstractFloat,
-    b        ::AbstractFloat,
+    a::AbstractFloat,
+    b::AbstractFloat,
     dims::Tuple{Vararg{Int}}
-    )
+)
     a = convert(precision, a)
     b = convert(precision, b)
     return a .+ rand(precision, dims...) .* (b - a)
-end 
+end
 function Base.rand(
-    rng ::AbstractRNG,
-    a   ::AbstractFloat,
-    b   ::AbstractFloat,
+    rng::AbstractRNG,
+    a::AbstractFloat,
+    b::AbstractFloat,
     dims::Tuple{Vararg{Int}}
-    )
+)
     return a .+ rand(rng, dims...) .* (b - a)
-end 
+end
 function Base.rand(
-    rng      ::AbstractRNG,
+    rng::AbstractRNG,
     precision::DataType,
-    a        ::AbstractFloat,
-    b        ::AbstractFloat,
+    a::AbstractFloat,
+    b::AbstractFloat,
     dims::Tuple{Vararg{Int}}
-    )
+)
     a = convert(precision, a)
     b = convert(precision, b)
     return a .+ rand(rng, precision, dims...) .* (b - a)
 end
 function Base.rand(
-    rng      ::AbstractRNG,
+    rng::AbstractRNG,
     domain::Vector{<:Tuple{Real,Real}}
-    )
+)
     numaxes = length(domain)
     r = zeros(numaxes)
     for i = 1:numaxes
@@ -228,7 +228,7 @@ function Base.rand(
         b = domain[i][2]
         r[i] = a .+ rand(rng) .* (b - a)
     end
-    return  r
+    return r
 end # function rand
 
 
@@ -236,16 +236,16 @@ end # function rand
 # Sampling #
 #----------#--------------------------------------------------------------------
 function maxwellianvelocitysample(
-    rng            ::AbstractRNG,
+    rng::AbstractRNG,
     temperature_itp::Any,
-    mass           ::Real,
+    mass::Real,
     args...
     ;
     precision::DataType=Float64,
-    )
+)
     T = temperature_itp.(args...)
     μ = 0.0
-    σ = sqrt.(tp.k_B*T/mass) # Standard deviation of the Maxwell
+    σ = sqrt.(tp.k_B * T / mass) # Standard deviation of the Maxwell
     # distribution at this temperature
     return randn.(rng, precision, μ, σ, 3)
 end
@@ -262,11 +262,11 @@ Sample `N` points from the `proposal`-distribution and compute the importance
 weights with respect to the `target`-distribution.
 """
 function importancesampling(
-    target  ::Function, # Target distribution
+    target::Function, # Target distribution
     proposal::Function, # Proposal distruv
-    randgen ::Function, # Random variable generator. Following proposal pdf.
-    dims    ::Tuple{Vararg{Integer}}, # Number of samples
-    )
+    randgen::Function, # Random variable generator. Following proposal pdf.
+    dims::Tuple{Vararg{Integer}}, # Number of samples
+)
     samples = randgen(dims)
     weights = target(samples) ./ proposal(samples)
     return samples, weights
@@ -295,19 +295,19 @@ random variables, at the cost of a potentially large number of rejections.
 The number of rejectiosn icreases with dimension.
 """
 function rejectionsample(
-    target  ::Any,
+    target::Any,
     maxvalue::Real,
-    domain  ::Vector{<:Tuple{Real,Real}},
-    rng     ::AbstractRNG
-    )
+    domain::Vector{<:Tuple{Real,Real}},
+    rng::AbstractRNG
+)
     numrejections = 0
-    pos     = rand(rng, domain)
-    yguess  = rand(rng, 0.0, maxvalue)
+    pos = rand(rng, domain)
+    yguess = rand(rng, 0.0, maxvalue)
     ytarget = target(pos...)[1] # Target should return a single float, but in
     while yguess > ytarget
         numrejections += 1
-        pos     = rand(rng, domain)
-        yguess  = rand(rng, 0.0, maxvalue)
+        pos = rand(rng, domain)
+        yguess = rand(rng, 0.0, maxvalue)
         ytarget = target(pos...)[1]
     end
     return pos, numrejections
@@ -327,11 +327,11 @@ algorithm. See [`rejectionsample`](@ref) for more information.
 """
 function rejectionsample(
     target,
-    maxvalue  ::Real,
-    domain    ::Vector{<:Tuple{Real,Real}},
-    rng       ::AbstractRNG,
+    maxvalue::Real,
+    domain::Vector{<:Tuple{Real,Real}},
+    rng::AbstractRNG,
     numsamples::Integer,
-    )
+)
     numdims = size(domain)[1]
     positions = zeros((numdims, numsamples))
     numaccepted = 0
@@ -340,11 +340,11 @@ function rejectionsample(
         pos, rejections = rejectionsample(target, maxvalue, domain, rng)
         numaccepted += 1
         numrejected += rejections
-        positions[:,numaccepted] .= pos
+        positions[:, numaccepted] .= pos
     end
-    acceptancerate = numaccepted/(numaccepted + numrejected)
+    acceptancerate = numaccepted / (numaccepted + numrejected)
     if numdims == 1
-        return positions[1,:], acceptancerate
+        return positions[1, :], acceptancerate
     else
         return positions, acceptancerate
     end
@@ -399,16 +399,16 @@ Returns the midpoints of the bins and the mapped values of the bins.
 function binmap(
     data,
     weights=ones(length(data)),
-    mapfunc::Function = (x,w) -> sum(w),
+    mapfunc::Function=(x, w) -> sum(w),
     args...
     ;
     xvalues=nothing,
     xedges=nothing,
-    nbins= 100,
+    nbins=100,
     logx=false,
     logf=false,
     normalise=false,
-    )
+)
     if isnothing(xedges) && isnothing(xvalues)
         # If no edges or data-corresponding x-values are given, we bin the
         # data in a linear, uniform range between its minimum and maximum
@@ -417,11 +417,11 @@ function binmap(
             log10data = log10.(data)
             minx = minimum(log10data)
             maxx = maximum(log10data)
-            xedges = 10 .^ LinRange(minx, maxx, nbins+1)
+            xedges = 10 .^ LinRange(minx, maxx, nbins + 1)
         else
             minx = minimum(data)
             maxx = maximum(data)
-            xedges = LinRange(minx, maxx, nbins+1)
+            xedges = LinRange(minx, maxx, nbins + 1)
         end
     elseif isnothing(xedges)
         # If data-corresponding x-values are given, we use these to bin the
@@ -430,11 +430,11 @@ function binmap(
             log10data = log10.(xvalues)
             minx = minimum(log10data)
             maxx = maximum(log10data)
-            xedges = 10 .^ LinRange(minx, maxx, nbins+1)
+            xedges = 10 .^ LinRange(minx, maxx, nbins + 1)
         else
             minx = minimum(xvalues)
             maxx = maximum(xvalues)
-            xedges = LinRange(minx, maxx, nbins+1)
+            xedges = LinRange(minx, maxx, nbins + 1)
         end
     else
         # If edges are given, we use these to bin the data.
@@ -451,7 +451,7 @@ function binmap(
         x=data,
         binindex_x=binindex_x,
         weight=weights
-        )
+    )
     # Second,
     # group the data by binindex
     gdf = groupby(df, :binindex_x)
@@ -465,13 +465,13 @@ function binmap(
             groupdf = gdf[i]
             binvalues[k[i].binindex_x] = mapfunc(
                 groupdf.x, groupdf.weight, args...
-                )
+            )
         end
     end
 
     emptybins = sum(ismissing.(binvalues))
     if emptybins != 0
-        @warn @sprintf("%.2f %% of the bins are empty.", emptybins/(nbins)*100)
+        @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbins) * 100)
     end
 
     # Some post-processing. Normalise the binvalues if requested.
@@ -518,18 +518,16 @@ function binmap(
     xvalues,
     yvalues,
     zvalues,
-    weights=ones(length(xvalues)),
-    mapfunc::Function = (z,w) -> sum(w),
-    args...
     ;
+    mapfunc::Function=(z, w) -> sum(w),
+    weights=ones(length(xvalues)),
     nbinsx=100,
     nbinsy=100,
-    logaxes=false,
     logx=false,
     logy=false,
     logz=false,
     normalise=false,
-    )
+)
     #if logaxes
     #    xvalues = log10.(xvalues)
     #    yvalues = log10.(yvalues)
@@ -570,7 +568,7 @@ function binmap(
         binindex_x=binindex_x,
         binindex_y=binindex_y,
         weight=weights,
-        )
+    )
     gdf = groupby(df, [:binindex_x, :binindex_y])
     #giddf = select(gdf, groupindices => :gid)
 
@@ -580,19 +578,20 @@ function binmap(
         if !ismissing(k[i].binindex_x) && !ismissing(k[i].binindex_y)
             groupdf = gdf[i]
             binvalues[k[i].binindex_x, k[i].binindex_y] = mapfunc(
-                groupdf.z, groupdf.weight, args...
-                )
+                groupdf.z,
+                groupdf.weight,
+            )
         end
     end
     emptybins = sum(ismissing.(binvalues))
     if emptybins != 0
-        @warn @sprintf("%.2f %% of the bins are empty.", emptybins/(nbinsx*nbinsy)*100)
+        @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy) * 100)
     end
     if normalise
         dx = diff(xedges)[1]
         dy = diff(yedges)[1]
-        dA = dx*dy
-        binvalues = binvalues ./ (dA*sum(binvalues))
+        dA = dx * dy
+        binvalues = binvalues ./ (dA * sum(binvalues))
     end
     if logz
         binvalues = log10.(binvalues)
@@ -607,13 +606,13 @@ function binmap_witherror(
     args...
     ;
     kwargs...
-    )
+)
 
     xx, mean_bm = binmap(data, args...; kwargs...)
     bm_arr = Matrix{Float64}(undef, nsplits, length(mean_bm))
     ni = length(data)
     i = 1
-    stride = floor(Int, ni/nsplits)
+    stride = floor(Int, ni / nsplits)
     for k in 1:nsplits
         if k != nsplits
             _, bm = binmap(data[i:i+stride-1], args...; kwargs...)
@@ -629,5 +628,5 @@ function binmap_witherror(
 end
 
 
-weighted_average(value, weight) = sum(value .* weight)/sum(weight)
+weighted_average(value, weight) = sum(value .* weight) / sum(weight)
 weighted_count(value, weight) = sum(weight)
