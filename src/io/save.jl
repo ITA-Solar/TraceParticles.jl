@@ -116,7 +116,6 @@ end
 
 function save_gcastates(
     filename::String,
-    nbatches::Int,
     fields_itp::Vector{<:AbstractInterpolation}
 )
     name, extension = splitext(filename)
@@ -128,6 +127,7 @@ function save_gcastates(
             CSV.write(filename * "_gcastatef_$i.csv", dfgcaf)
         end
     elseif extension == ".h5"
+        _, nbatches = tp.h5_nbatches(filename)
         h5_sol = h5open(filename, "r")
         h5_gcastates0 = h5open(name * "_gcastates0.h5", "w")
         h5_gcastatesf = h5open(name * "_gcastatesf.h5", "w")
