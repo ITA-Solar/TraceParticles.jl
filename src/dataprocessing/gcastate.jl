@@ -757,10 +757,29 @@ function ensembleofgcastates(
                 solution[i][7], # electric field
                 ;
                 time=solution[i][9],
-                )
-        else 
+            )
+        else
             error("Field interpolation objects unknown")
         end
     end
     return initialstates, finalstates
+end
+
+"""
+    kineticenergy(
+        gcastate::GCAState
+    )
+Kinetic energy of a charged particle based on its guiding centre state
+represented by a `GCAState` object.
+"""
+function kineticenergy(gcastate::GCAState)
+    kineticenergy(
+        gcastate.state[4],
+        gcastate.vperp,
+        gcastate.exbdrift,
+        gcastate.∇Bdrift,
+        gcastate.curvaturedrift,
+        gcastate.polarisationdrift,
+        gcastate.mass
+    )
 end
