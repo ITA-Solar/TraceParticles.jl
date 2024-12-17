@@ -1,6 +1,13 @@
 using HDF5
+using Distributed
 
 params_name = ARGS[1]
+if length(ARGS) > 1
+    np = parse(Int, ARGS[2])
+    for i in 1:np
+        addprocs(1)
+    end
+end
 paramsfile = joinpath(pwd(), basename(params_name))
 include(paramsfile)
 try
