@@ -92,6 +92,7 @@ struct GCAState
     dbdtacc::Real
     bfield::Vector{<:Real}
     efield::Vector{<:Real}
+    dbdt::Vector{<:Real}
     L_B::Real
 
     function GCAState(
@@ -158,7 +159,7 @@ struct GCAState
         # Compute parallel acceleration
         mirroracc = magneticmirror_acceleration(b̂, ∇B, μ, m)
         paralacc = parallel_acceleration(b̂, E_vec, q, m)
-        dbdtacc = drift_dbdt_acceleration(ExBdrift, ∇Bdrift, dbdt)
+        dbdtacc = fermi_acceleration(ExBdrift, ∇Bdrift, dbdt)
         # Compute the perpendicular velocity
         # Other auxiliary quantities
         vperp = √(2B * μ / m) # The perpendicular velocity
@@ -202,6 +203,7 @@ struct GCAState
             -1ones(3), -1ones(3), -1ones(3),
             -1, -1, -1,
             bfield, efield,
+            -1ones(3),
             -1
         )
     end
@@ -438,6 +440,9 @@ function DataFrame(gcastates::Vector{GCAState}; lowmem=false)
         :polarisationdrift_x => (:polarisationdrift, 1),
         :polarisationdrift_y => (:polarisationdrift, 2),
         :polarisationdrift_z => (:polarisationdrift, 3),
+        :dbdt_x => (:dbdt, 1),
+        :dbdt_y => (:dbdt, 2),
+        :dbdt_z => (:dbdt, 3),
     )
     if !lowmem
         newcols[:Rx] = (:state, 1)
