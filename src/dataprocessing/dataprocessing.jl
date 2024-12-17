@@ -204,31 +204,44 @@ function csv_to_h5(filename, batchnr)
     end
 end
 
+function h5_nbatches(filename)
+    h5open(filename, "r") do h5_file
+        groups = keys(h5_file)
+        nbatches = length(
+            findall(g -> occursin(r"batch_\d+", g), groups)
+        )
+        return 1:nbatches, nbatches
+    end
+end
+
 
 function h5_getbatch(filename, batchnr)
-    df = h5open(filename, "r") do h5_file
+    h5open(filename, "r") do h5_file
         DataFrame(read(h5_file["batch_$batchnr"]))
     end
 end
 
 
 function h5_getdataset(filename, dataset, batchnr)
-    data = h5open(filename, "r") do h5_file
-        read(h5_file["batch_$batchnr/" * dataset])
+    h5open(filename, "r") do h5_file
+        read(h5_file["batch_$batchnr/"*dataset])
     end
 end
-function h5_getdataset(filename, dataset; batches=[1])
-    nbatches = length(batches)
+function h5_getdataset(filename, dataset; batches=nothing)
+    if isnothing(batches)
+        batches, nbatches = h5_nbatches(filename)
+    else
+        nbatches = length(batches)
+    end
     groupnames = ["batch_$i/" for i in batches]
-
     data = reduce(vcat,
         h5open(filename, "r") do h5_file
-            firstbatch = read(h5_file[groupnames[1] * dataset])
+            firstbatch = read(h5_file[groupnames[1]*dataset])
             npart = length(firstbatch)
             data = Vector{Vector{eltype(firstbatch)}}(undef, nbatches)
             data[1] = firstbatch
             for i in 2:nbatches
-               data[i] = read(h5_file[groupnames[i] * dataset])
+                data[i] = read(h5_file[groupnames[i]*dataset])
             end
             data
         end
@@ -236,8 +249,12 @@ function h5_getdataset(filename, dataset; batches=[1])
 end
 
 
-function h5_getall(filename; batches=[1])
-    nbatches = length(batches)
+function h5_getall(filename; batches=nothing)
+    if isnothing(batches)
+        batches, nbatches = h5_nbatches(filename)
+    else
+        nbatches = length(batches)
+    end
     groupnames = ["batch_$i" for i in batches]
 
     df = reduce(vcat,
@@ -252,11 +269,14 @@ function h5_getall(filename; batches=[1])
 end
 
 
-function h5_getenergies(filename; batches=[1], units="eV")
-    fname0 = filename * "_gcastates0.h5"
-    fnamef = filename * "_gcastatesf.h5"
-    e0 = h5_getdataset(fname0, "energy"; batches=batches)
-    ef = h5_getdataset(fnamef, "energy"; batches=batches)
+function h5_getenergies(filename; batches=nothing, units="eV")
+    if isnothing(batches)
+        batches, _ = h5_nbatches(filename * ".h5")
+    end
+    filename0 = filename * "_gcastates0.h5"
+    filenamef = filename * "_gcastatesf.h5"
+    e0 = h5_getdataset(filename0, "energy"; batches=batches)
+    ef = h5_getdataset(filenamef, "energy"; batches=batches)
     if units == "eV"
         e0 = e0 * J2eV
         ef = ef * J2eV
