@@ -20,6 +20,7 @@ Use following tags for commit messages:
        [DOC] : Documentation only
        [REP] : Repository related changes (e.g., changes in the ignore list, remove files)
        [UTL] : Changes in utils
+       [CLN] : Clean source code. Remove unneccessary code, change formatting, etc.
 
 Commit message examples:
 
