@@ -1,4 +1,5 @@
-# tp
+# TestParticles.jl 
+#### (Previously named 'tp')
 Embedding test particles in magnetohydrodynamic environments, or any electromagnetic field. Test particles move independently and their motion is governed by the Lorentz force. This code uses [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/) to solve the particles' equations of motion.
 
 See [examplerun.jl](https://github.com/ITA-Solar/tp/blob/develop/examplerun.jl) for a simple test particle run in a simple analytic electromagnetic field. See [tprun.jl](https://github.com/ITA-Solar/tp/blob/develop/src/tprun.jl) for an example workflow when running larger ensembles with interpolated electromagnetic fields, either in serial og in parallel.
