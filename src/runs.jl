@@ -196,6 +196,31 @@ end
 
 
 """
+    rerun_idxs(fname, idxs)
+Rerun the the test particles of index `idxs` from the experiment defined by
+`fname`.
+"""
+function rerun_idxs(
+    fname::String,
+    idxs::AbstractVector
+    ;
+    kwargs...
+)
+    u0, mu0 = h5_getinitialconditions(fname)
+    u0 = u0[idxs]
+    mu0 = mu0[idxs]
+    nparticles = length(idxs)
+    return rerun(
+        u0,
+        mu0,
+        nparticles,
+        fname;
+        kwargs...
+    )
+end
+
+
+"""
     rerun(u0, mu0, nparticles, fname; kwargs)
 Reruns test particles in the experiment defined by `fname`. The initial
 positions and velocities of the particles are arbitrary, defined in `u0`,
