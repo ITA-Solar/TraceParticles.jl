@@ -277,6 +277,7 @@ function rerun(
         ;
         prob_func=tp.PposPvel(u0, mu0, tspans),
         # Use default output function. I.e. return the whole solution
+        safetycopy=false,
     )
 
     solve_args = (alg, EnsembleSerial())
