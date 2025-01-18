@@ -1,7 +1,5 @@
 using tp
 using DifferentialEquations
-using Interpolations
-using Distributed
 
 """
 We will in this example simulate two charged particles embedded in an
