@@ -241,16 +241,24 @@ function rerun(
     fname::String;
     reltol=nothing,
     abstol=nothing,
-    maxiters=10_000,
+    maxiters=nothing,
+    alg=Tsit5(),
+    gcatol=nothing,
 )
     include(fname * ".jl")
     tspans = [tspan for _ in 1:nparticles]
+    if !isnothing(gcatol)
+        solve_kwargs[:callback] = CallbackSet(
+            solve_kwargs[:callback].discrete_callbacks[1],
+            tp.GCABreakDownCB("lowmem", "2Dxz", tolerance=gcatol)
+        )
+    end
     s_kwargs = (
-        reltol=isnothing(reltol) ? solve_kwargs.reltol : reltol,
-        abstol=isnothing(abstol) ? solve_kwargs.abstol : abstol,
-        maxiters=maxiters,
+        reltol=isnothing(reltol) ? solve_kwargs[:reltol] : reltol,
+        abstol=isnothing(abstol) ? solve_kwargs[:abstol] : abstol,
+        maxiters=isnothing(maxiters) ? solve_kwargs[:maxiters] : maxiters,
         trajectories=nparticles,
-        callback=solve_kwargs.callback
+        callback=solve_kwargs[:callback],
     )
 
     prob = ODEProblem(
@@ -271,7 +279,7 @@ function rerun(
         # Use default output function. I.e. return the whole solution
     )
 
-    solve_args = (Tsit5(), EnsembleSerial())
+    solve_args = (alg, EnsembleSerial())
     @info "Re-running $fname with $nparticles particles..."
     @time sol = DifferentialEquations.solve(
         ensemble_prob,
