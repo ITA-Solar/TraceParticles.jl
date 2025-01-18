@@ -151,35 +151,38 @@ function tprun(
     end
     return ensemble_algorithm
 end
+"""
+    rerun_nonthermals(fname, nparticles)
+Rerun the `nparticles` most energetic particles from the experiment defined by
+`fname`.
+"""
 function rerun_nonthermals(
     fname::String,
     nparticles::Int
     ;
-    relativegain::Bool=false,
-    reltol=nothing,
-    abstol=nothing,
-    maxiters=10_000,
+    kwargs...
 )
-    u0, mu0, _ = find_nonthermals(fname, nparticles; relativegain=relativegain)
+    u0, mu0, _ = find_nonthermals(fname, nparticles)
     return rerun(
         u0,
         mu0,
         nparticles,
         fname;
-        reltol=reltol,
-        abstol=abstol,
-        maxiters=maxiters,
+        kwargs...
     )
 end
 
 
+"""
+    rerun_maxiters(fname, nparticles)
+Rerun the `nparticles` particles with most timesteps from the experiment
+defined by `fname`.
+"""
 function rerun_maxiters(
     fname::String,
     nparticles::Int
     ;
-    reltol=nothing,
-    abstol=nothing,
-    maxiters=10_000,
+    kwargs...
 )
     u0, mu0, _ = find_maxiters(fname, nparticles)
     return rerun(
@@ -187,13 +190,25 @@ function rerun_maxiters(
         mu0,
         nparticles,
         fname;
-        reltol=reltol,
-        abstol=abstol,
-        maxiters=maxiters,
+        kwargs...
     )
 end
 
 
+"""
+    rerun(u0, mu0, nparticles, fname; kwargs)
+Reruns test particles in the experiment defined by `fname`. The initial
+positions and velocities of the particles are arbitrary, defined in `u0`,
+and their magnetic moments are defined in `mu0`. Some parameters of the
+experiment may be adjusted through keyword arguments. These are
+
+# Keyword arguments
+- `reltol`
+- `abstol`
+- `maxiters`
+- `alg`: solver algorithm
+- `gcatol`: Tolerance for the guiding centre approximation.
+"""
 function rerun(
     u0::Vector{<:Vector{<:Real}},
     mu0::Vector{<:Real},
