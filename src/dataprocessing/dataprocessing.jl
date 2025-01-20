@@ -14,10 +14,10 @@ Return the initial state (or initial condition) of particle simulation stored
 as a DataFrame.
 """
 function getinitialstate(df::DataFrame)
-    return df[:,[:x0, :y0, :z0, :vparal0]]
+    return df[:, [:x0, :y0, :z0, :vparal0]]
 end
 function getfinalstate(df::DataFrame)
-    return df[:,[:xf, :yf, :zf, :vparalf]]
+    return df[:, [:xf, :yf, :zf, :vparalf]]
 end
 function getmagneticmoments(df::DataFrame)
     return df.magneticmoment
@@ -37,13 +37,13 @@ Return the initial state (or initial condition) of a vector of `ODEsolution`'s.
 """
 function getinitialstate(
     u::Vector{<:ODESolution},
-    )
+)
     npart = length(u)[1]
     ndof = length(u[1].u[1])
     RealT = typeof(u[1].u[1][1])
     u0 = Array{RealT}(undef, ndof, npart)
     for i = 1:npart
-        u0[:,i] .= u[i].u[1]
+        u0[:, i] .= u[i].u[1]
     end
     return u0
 end
@@ -57,9 +57,9 @@ Return the initial state (or initial condition) of a solution stored as a
 3D-array.
 """
 function getinitialstate(
-    u::Array{<:Real, 3},
-    )
-    return u[1,:,:]
+    u::Array{<:Real,3},
+)
+    return u[1, :, :]
 end
 
 
@@ -71,13 +71,13 @@ Return the final state of a vector of `ODEsolution`'s.
 """
 function getfinalstate(
     u::Vector{<:ODESolution},
-    )
+)
     npart = length(u)[1]
     ndof = length(u[1].u[1])
     RealT = typeof(u[1].u[1][1])
     uf = Array{RealT}(undef, ndof, npart)
     for i = 1:npart
-        uf[:,i] .= u[i].u[end]
+        uf[:, i] .= u[i].u[end]
     end
     return uf
 end
@@ -90,9 +90,9 @@ end
 Return the final state of a solution stored as a 3D-array.
 """
 function getfinalstate(
-    u::Array{<:Real, 3},
-    )
-    return u[end,:,:]
+    u::Array{<:Real,3},
+)
+    return u[end, :, :]
 end
 
 
@@ -104,7 +104,7 @@ Return the final times of a vector of `ODEsolution`'s.
 """
 function getfinaltime(
     u::Vector{<:ODESolution},
-    )
+)
     return [u.t[end] for u in u.u]
 end
 
@@ -133,7 +133,7 @@ function generate_probdistr(
     args...
     ;
     kwargs...
-    )
+)
     xx, yy, bm = binmap(xvalues, yvalues, zvalues, args...; kwargs...)
     normbm = copy(bm)
     # Empty bins have NaN-values. Set them to zero to reflect their values in
@@ -145,7 +145,7 @@ function generate_probdistr(
     end
     dxs = [diff(xx)[1], diff(yy)[1]]
     proddxs = abs(prod(dxs))
-    normfactor = sum(normbm)*proddxs
+    normfactor = sum(normbm) * proddxs
     normbm /= normfactor
     itp = linear_interpolation((xx, yy), normbm, extrapolation_bc=Flat())
     return itp, xx, yy, normbm, bm
@@ -166,12 +166,12 @@ function saturate_distribution(
     yy,
     gridded_dist,
     threshold
-    )
+)
     saturated_dist = copy(gridded_dist)
-    saturated_dist[saturated_dist .< threshold] .= threshold
+    saturated_dist[saturated_dist.<threshold] .= threshold
     dxs = [diff(xx)[1], diff(yy)[1]]
     proddxs = abs(prod(dxs))
-    normfactor = sum(saturated_dist)*proddxs
+    normfactor = sum(saturated_dist) * proddxs
     saturated_dist /= normfactor
     itp = linear_interpolation((xx, yy), saturated_dist, extrapolation_bc=Flat())
     return itp, saturated_dist
