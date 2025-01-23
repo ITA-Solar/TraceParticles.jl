@@ -377,10 +377,10 @@ end
 """
     binmap(
         data,
-        weights=ones(length(data)),
-        mapfunc::Function = (x,w) -> sum(w),
         args...
         ;
+        weights=ones(length(data)),
+        mapfunc::Function = (x,w) -> sum(w),
         xvalues=nothing,
         xedges=nothing,
         nbins= 100,
@@ -398,10 +398,10 @@ Returns the midpoints of the bins and the mapped values of the bins.
 """
 function binmap(
     data,
-    weights=ones(length(data)),
-    mapfunc::Function=(x, w) -> sum(w),
     args...
     ;
+    weights=ones(length(data)),
+    mapfunc::Function=(x, w) -> sum(w),
     xvalues=nothing,
     xedges=nothing,
     nbins=100,
