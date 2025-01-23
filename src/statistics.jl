@@ -476,13 +476,12 @@ function binmap(
 
     # Some post-processing. Normalise the binvalues if requested.
     if normalise
+        if logx
+            error("Normalisation for non-uniform binning has a bug.")
+        end
         mask = ismissing.(binvalues)
         bm = binvalues[.!mask]
         dx = diff(xedges)[.!mask]
-        # The normalisation factor is the sum of the binvalues times the binwidth,
-        # assuming the binwidth is constant. Empty bins are NaN, which should begin
-        # zero in a probability distribution. They are therefore not included in
-        # the sum.
         normfactor = sum(dx .* bm)
         binvalues = binvalues ./ normfactor
     end
@@ -588,6 +587,9 @@ function binmap(
         @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy) * 100)
     end
     if normalise
+        if logx || logy
+            error("Normalisation for non-uniform binning is not implemented.")
+        end
         dx = diff(xedges)[1]
         dy = diff(yedges)[1]
         dA = dx * dy
