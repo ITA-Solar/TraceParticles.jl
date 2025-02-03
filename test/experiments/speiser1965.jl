@@ -105,8 +105,8 @@ prob = ODEProblem(
     lorentzforce!,
     [pos0; vel0],
     tspan,
-    (charge, mass, emfields_itp)
-    )
+    (charge=charge, mass=mass, fields=emfields_itp)
+)
 
 #...............................................................................
 # RUN SIMULATION

@@ -183,16 +183,16 @@ params_GCA = (
 
 # Problem functions
 prob_func_FO(prob, i, _) = remake(prob, u0=ic_FO[i], p=(
-    params_FO[1][i],
-    params_FO[2][i],
-    params_FO[3],
-    ))
- prob_func_GCA(prob, i, _) = remake(prob, u0=ic_GCA[i], p=(
-    params_GCA[1][i],
-    params_GCA[2][i],
-    params_GCA[3][i],
-    params_GCA[4],
-    ))
+    charge=params_FO[1][i],
+    mass=params_FO[2][i],
+    fields=params_FO[3],
+))
+prob_func_GCA(prob, i, _) = remake(prob, u0=ic_GCA[i], p=(
+    charge=params_GCA[1][i],
+    mass=params_GCA[2][i],
+    magneticmoment=params_GCA[3][i],
+    fields=params_GCA[4],
+))
 
 # ODEProblems
 prob_FO = ODEProblem(lorentzforce!, zeros(6), tspan)

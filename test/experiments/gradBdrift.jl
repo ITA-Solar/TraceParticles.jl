@@ -115,17 +115,17 @@ vperp = √(v^2 - vparal^2)
 # CREATE PROBLEM
 # Non-relativisitc Euler-Cromer ?
 prob_FO = ODEProblem(
-    lorentzforce!, 
+    lorentzforce!,
     [pos0; vel0],
     tspan,
-    (charge, mass, emfields_itp),
-    )
+    (charge=charge, mass=mass, fields=emfields_itp),
+)
 prob_GCA = ODEProblem(
     guidingcentreapproximation!,
     [pos0; vparal],
     tspan,
-    (charge, mass, μ, emfields_itp)
-    )
+    (charge=charge, mass=mass, magneticmoment=μ, fields=emfields_itp)
+)
 
 #...............................................................................
 # RUN SIMULATION
