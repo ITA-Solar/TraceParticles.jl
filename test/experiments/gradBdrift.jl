@@ -26,8 +26,8 @@ dt = 0.01         # Time step [s]                      |
 # Use a final time equal to 10 gyrations for the full  |
 # orbit, according to the parameters set (mass, charge,|
 # vel0, pos0, B0, a)                                   |
-tf = 10*1/1.7507  # End time of simulation [s]         |
-tspan = (0.0, tf)
+tf = 10 * 1 / 1.7507  # End time of simulation [s]     |
+tspan = (0.0, tf)     # simulation time span           |
 #tf = 2.3 #n=10   # End time of simulation [s]         |
 #......................................................|
 
@@ -45,21 +45,21 @@ vel0 = [0.0, 0.1, 0.0]
 # SPATIAL PARAMETERS (x, y, z)
 numdims = 3
 # Lower bounds of the three spatial axes
-xi0 = (0., 0., 0.)
+xi0 = (0.0, 0.0, 0.0)
 # Upper bound of the three spatial axes
-xif = (1., 1., 1.)
+xif = (1.0, 1.0, 1.0)
 # Grid resolution of the axes
 #n = (10, 10, 2)
 ni = (100, 100, 2)
- 
+
 #...............................................
 # MAGNETIC FIELD PARAMETERS
 a = 10.0 # gradient in magnetic field
 B0 = 6.0 # Additional constant
 function gradBfield(
     y::Float64,
-    )
-    return [0.0, 0.0, a*y + B0]
+)
+    return [0.0, 0.0, a * y + B0]
 end
 
 #...............................................
@@ -80,22 +80,22 @@ Ey = 0.0
 xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
 Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
 Efield = zeros(size(Bfield))
-Efield[1,:,:,:] .= Ex
-Efield[2,:,:,:] .= Ey
+Efield[1, :, :, :] .= Ex
+Efield[2, :, :, :] .= Ey
 #Efield[1,:,1:30,:] .= 0.0
-Bfield = stack(discretise((x,y,z) -> gradBfield(y), xx, yy, zz))
+Bfield = stack(discretise((x, y, z) -> gradBfield(y), xx, yy, zz))
 # Create interpolation objects
-emfields = eachslice(vcat(Bfield, Efield), dims=(2,3,4))
-emfields_itp = linear_interpolation((xx, yy, zz), emfields, 
+emfields = eachslice(vcat(Bfield, Efield), dims=(2, 3, 4))
+emfields_itp = linear_interpolation((xx, yy, zz), emfields,
     extrapolation_bc=Flat()
-    )
+)
 
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 # SIMULATION DURATION
 #
-numsteps = trunc(Int64, tf/dt)   # Number of timesteps in the simulation
+numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
 #println("Number of time steps = $numsteps.")
 
 #-------------------------------------------------------------------------------
@@ -105,11 +105,11 @@ numsteps = trunc(Int64, tf/dt)   # Number of timesteps in the simulation
 B⃗ = emfields_itp(pos0...)[1:3]
 E⃗ = zeros(3)
 B = norm(B⃗)
-b̂ = B⃗/B
+b̂ = B⃗ / B
 v = norm(vel0)
 vparal = vel0 ⋅ b̂
 vperp = √(v^2 - vparal^2)
-μ = mass*vperp^2/(2B)
+μ = mass * vperp^2 / (2B)
 
 #-------------------------------------------------------------------------------
 # CREATE PROBLEM
@@ -140,11 +140,11 @@ sol_GCA = DifferentialEquations.solve(prob_GCA)
 # Initial gyrofrequency
 B = norm(gradBfield(pos0[2]))
 vperp = √(vel0[1]^2 + vel0[2]^2)
-ff = charge*B/(mass*2π)
-rL = mass*vperp/(charge*B)
-L = a/B
-vdrift = [-a*mass*vel0[2]^2/(2charge*B^2), 0.0, 0.0]
-posf_anal = tf*vdrift + pos0
+ff = charge * B / (mass * 2π)
+rL = mass * vperp / (charge * B)
+L = a / B
+vdrift = [-a * mass * vel0[2]^2 / (2charge * B^2), 0.0, 0.0]
+posf_anal = tf * vdrift + pos0
 @testset verbose = true "GCA: Defualt alg." begin
     @test isapprox(posf_anal, sol_GCA.u[end][1:3], rtol=0.0001)
     @test isapprox(sol_FO.u[end][1:3], sol_GCA.u[end][1:3], rtol=0.001)
@@ -152,4 +152,4 @@ end # testset GCA: Euler
 @testset verbose = true "Full orbit: Defualt alg." begin
     @test isapprox(posf_anal, sol_FO.u[end][1:3], rtol=0.001)
 end # testset GCA: Euler
-    
+

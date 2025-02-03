@@ -30,18 +30,18 @@ and the chosen numerical solver, scheme and interpolation chosen.
 numDims = 3       # Number of spatial dimensions
 numParticles = 2  # Number of particles to simulae
 #   (electron, proton)
-tf = 2*2π/(5.93096958e7) # s. End time of simulation
-tspan = (0,tf)
+tf = 2 * 2π / (5.93096958e7) # s. End time of simulation
+tspan = (0, tf)
 #   multiple of electron (1eV) gyrofreq. at Bz=3.3e-4 G
 numSteps = 1000   # Number of timesteps in the simulation
-dt = tf/numSteps  # Size of timestep
+dt = tf / numSteps  # Size of timestep
 # The electromagnetic field is static and homogeneous. Hence the mesh only 
 # needs one cell, i.e. the boundary.
 Bx = 0.0  # magnetic field component only in the positive z-direction
 By = 0.0
 Bz = 3.37213e-4 # G (so that electron larmor radius is 1 cm)
 Ex = 0.0
-Ey = 0.02Bz/tf  # Electric field component only in the positive y-direction
+Ey = 0.02Bz / tf  # Electric field component only in the positive y-direction
 Ez = 0.0
 
 # Particle conditions
@@ -50,7 +50,7 @@ qp = tp.e   # Proton charge
 me = tp.m_e # Electron mass
 mp = tp.m_p # Proton mass
 # Set initial position and velocities
-vdriftx = Ey/Bz
+vdriftx = Ey / Bz
 # Electron initial velocity
 vxe = 0.0#593_096.95848 # m/s (1eV electron
 vye = 0.0
@@ -74,23 +74,23 @@ times = LinRange(0, tf, numSteps + 1)
 
 # Gyrofrequency
 function ω(q, B, m)
-    return q*B/m
+    return q * B / m
 end
 # Larmor radius
 function larmorRadius(ω, vperp)
-    return vperp/ω
+    return vperp / ω
 end
 # x-position
 function x(t, x0, ωt, rL, Ey, Bz)
-    return @. rL*sin(ωt*t) + Ey/Bz*t
+    return @. rL * sin(ωt * t) + Ey / Bz * t
 end
 # y-positoin
 function y(t, y0, ωt, rL, Ex, Bz)
-    return @. -rL + rL*cos(ωt*t) - Ex/Bz*t
+    return @. -rL + rL * cos(ωt * t) - Ex / Bz * t
 end
 # z-position
 function z(t, z0, vz0, ω, Ez, Bz)
-    return @. z0 + 0.5ω/Bz*Ez*t^2 + vz0*t
+    return @. z0 + 0.5ω / Bz * Ez * t^2 + vz0 * t
 end
 
 # Define gyrofrequency and Larmor radius for both particles
@@ -106,14 +106,14 @@ pose = zeros(Float64, numDims, numSteps + 1)
 posp = zeros(Float64, numDims, numSteps + 1)
 pose[1, :] .= x(times, x0e, ωe, rLe, Ey, Bz)
 pose[2, :] .= y(times, y0e, ωe, rLe, Ex, Bz)
-pose[3, :] .= z(times, z0e, vze,  ωe, Ez, Bz)
+pose[3, :] .= z(times, z0e, vze, ωe, Ez, Bz)
 posp[1, :] .= x(times, x0p, ωp, rLp, Ey, Bz)
 posp[2, :] .= y(times, y0p, ωp, rLp, Ex, Bz)
 posp[3, :] .= z(times, z0p, vzp, ωp, Ez, Bz)
 
 analytic_ex = linear_interpolation(times, x(times, x0e, ωe, rLe, Ey, Bz))
 analytic_ey = linear_interpolation(times, y(times, y0e, ωe, rLe, Ex, Bz))
-analytic_ez = linear_interpolation(times, z(times, z0e, vze,  ωe, Ez, Bz))
+analytic_ez = linear_interpolation(times, z(times, z0e, vze, ωe, Ez, Bz))
 analytic_px = linear_interpolation(times, x(times, x0p, ωp, rLp, Ey, Bz))
 analytic_py = linear_interpolation(times, y(times, y0p, ωp, rLp, Ex, Bz))
 analytic_pz = linear_interpolation(times, z(times, z0p, vzp, ωp, Ez, Bz))
@@ -133,10 +133,10 @@ xx = [-0.1, 1.1]
 yy = [-0.1, 1.1]
 zz = [-0.1, 1.1]
 # Create interpolation objects
-emfields = eachslice(vcat(B, E), dims=(2,3,4))
-emfields_itp = linear_interpolation((xx, yy, zz), emfields, 
+emfields = eachslice(vcat(B, E), dims=(2, 3, 4))
+emfields_itp = linear_interpolation((xx, yy, zz), emfields,
     extrapolation_bc=Flat()
-    )
+)
 
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
@@ -150,7 +150,7 @@ params_FO = (
     [-tp.e, tp.e],
     [tp.m_e, tp.m_p],
     emfields_itp
-    )
+)
 
 # GCA particles
 # Set initial position and velocities
@@ -159,8 +159,8 @@ velGCA = zeros(Float64, numDims + 3, numParticles) # Velocity
 vperpe = √(vxe^2 + vye^2)
 vperpp = √(vxp^2 + vyp^2)
 # Magnetic moments of particles
-μₑ = me*vperpe^2/2Bz
-μₚ = mp*vperpp^2/2Bz
+μₑ = me * vperpe^2 / 2Bz
+μₚ = mp * vperpp^2 / 2Bz
 
 #  Create initial condition vector  and params
 ic_GCA = [[x0e, y0e, z0e, vze], [x0p, y0p, z0p, vzp]]
@@ -169,7 +169,7 @@ params_GCA = (
     [tp.m_e, tp.m_p],
     [μₑ, μₚ],
     emfields_itp
-    )
+)
 
 #-------------------------------------------------------------------------------
 # PUSHERS TO TEST:
@@ -204,7 +204,7 @@ eprob_GCA = EnsembleProblem(prob_GCA, prob_func=prob_func_GCA)
 # SOLVE
 sol_FO = DifferentialEquations.solve(eprob_FO, Tsit5, reltol=1.1e-4, trajectories=2)
 sol_GCA = DifferentialEquations.solve(eprob_GCA, Tsit5, reltol=1.1e-4, trajectories=2)
-    
+
 #-------------------------------------------------------------------------------
 # CALCULATE DEVIATIONS FROM ANALYTICAL SOLUTION
 # Calculate the root mean squared error between numerical and analytical 
@@ -218,24 +218,24 @@ rmse_ez = 0.0
 rmse_px = 0.0
 rmse_py = 0.0
 rmse_pz = 0.0
-nsteps_e = length(sol_FO[:,1].t)
-nsteps_p = length(sol_FO[:,2].t)
+nsteps_e = length(sol_FO[:, 1].t)
+nsteps_p = length(sol_FO[:, 2].t)
 for i = 1:nsteps_e
-    global rmse_ex += (sol_FO[i,1][1] - analytic_ex(sol_FO[:,1].t[i]))^2
-    global rmse_ey += (sol_FO[i,1][2] - analytic_ey(sol_FO[:,1].t[i]))^2
-    global rmse_ez += (sol_FO[i,1][3] - analytic_ez(sol_FO[:,1].t[i]))^2
+    global rmse_ex += (sol_FO[i, 1][1] - analytic_ex(sol_FO[:, 1].t[i]))^2
+    global rmse_ey += (sol_FO[i, 1][2] - analytic_ey(sol_FO[:, 1].t[i]))^2
+    global rmse_ez += (sol_FO[i, 1][3] - analytic_ez(sol_FO[:, 1].t[i]))^2
 end
 for i = 1:nsteps_p
-    global rmse_px += (sol_FO[i,2][1] - analytic_px(sol_FO[:,2].t[i]))^2
-    global rmse_py += (sol_FO[i,2][2] - analytic_py(sol_FO[:,2].t[i]))^2
-    global rmse_pz += (sol_FO[i,2][3] - analytic_pz(sol_FO[:,2].t[i]))^2
+    global rmse_px += (sol_FO[i, 2][1] - analytic_px(sol_FO[:, 2].t[i]))^2
+    global rmse_py += (sol_FO[i, 2][2] - analytic_py(sol_FO[:, 2].t[i]))^2
+    global rmse_pz += (sol_FO[i, 2][3] - analytic_pz(sol_FO[:, 2].t[i]))^2
 end
-rmse_ex = sqrt(rmse_ex/nsteps_e)
-rmse_ey = sqrt(rmse_ey/nsteps_e)
-rmse_ez = sqrt(rmse_ez/nsteps_e)
-rmse_px = sqrt(rmse_px/nsteps_p)
-rmse_py = sqrt(rmse_py/nsteps_p)
-rmse_pz = sqrt(rmse_pz/nsteps_p)
+rmse_ex = sqrt(rmse_ex / nsteps_e)
+rmse_ey = sqrt(rmse_ey / nsteps_e)
+rmse_ez = sqrt(rmse_ez / nsteps_e)
+rmse_px = sqrt(rmse_px / nsteps_p)
+rmse_py = sqrt(rmse_py / nsteps_p)
+rmse_pz = sqrt(rmse_pz / nsteps_p)
 
 #-------------------------------------------------------------------------------
 # TEST RESULTS
@@ -250,9 +250,9 @@ end # testset Vay
 # GCA using DifferentialEquations.jl
 @testset verbose = true "GCA: Default alg." begin
     # Electron
-    @test isapprox(sol_GCA[2,1][1], 0.02, rtol=1e-13)
-    @test isapprox(sol_GCA[2,1][2], 0.00, atol=1e-15)
-    @test isapprox(sol_GCA[2,1][3], 0.00, atol=1e-15)
+    @test isapprox(sol_GCA[2, 1][1], 0.02, rtol=1e-13)
+    @test isapprox(sol_GCA[2, 1][2], 0.00, atol=1e-15)
+    @test isapprox(sol_GCA[2, 1][3], 0.00, atol=1e-15)
 end
 
 
