@@ -9,7 +9,7 @@
 #
 #-------------------------------------------------------------------------------
 
-module tp
+module TestParticles
 
 #---------------#
 #  Use packages #
@@ -34,6 +34,7 @@ using JLD2
 using Distributed
 
 using BifrostTools
+
 
 #-------------------------------------------------------------------------------
 """
@@ -137,7 +138,7 @@ export
     get_efield,
     get_fieldlength,
     get_scalesratio,
-    get_characteristicfieldlength,
+    get_characteristicfieldlength
 # statistics.jl
 export
     binmap,

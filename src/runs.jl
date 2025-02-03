@@ -250,7 +250,7 @@ function rerun(
     if !isnothing(gcatol)
         solve_kwargs[:callback] = CallbackSet(
             solve_kwargs[:callback].discrete_callbacks[1],
-            tp.GCABreakDownCB("lowmem", "2Dxz", tolerance=gcatol)
+            GCABreakDownCB("lowmem", "2Dxz", tolerance=gcatol)
         )
     end
     s_kwargs = (
@@ -329,7 +329,7 @@ function convergencetest(
     ensemble_prob = EnsembleProblem(
         prob
         ;
-        prob_func=tp.PposPvel(u0, mu0, tspans),
+        prob_func=PposPvel(u0, mu0, tspans),
         # Use default output function. I.e. return the whole solution
         output_func=(sol, i) -> (
             (

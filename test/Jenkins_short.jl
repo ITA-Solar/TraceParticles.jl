@@ -7,7 +7,6 @@
 #-------------------------------------------------------------------------------
 #
 
-using tp
 using LinearAlgebra
 using DifferentialEquations
 using Interpolations
@@ -31,8 +30,8 @@ verbose = 4
             testeulerCromer(verbose ≥ 4)
         end
         @testset verbose = verbose ≥ 3 "Solvers" begin
-        #    testfullOrbit(verbose ≥ 4)
-        #    testrelfullOrbitExplLeapFrog(verbose ≥ 4)
+            #    testfullOrbit(verbose ≥ 4)
+            #    testrelfullOrbitExplLeapFrog(verbose ≥ 4)
         end
     end # testset Unit tests
 
@@ -41,7 +40,7 @@ verbose = 4
         #    test_tp_save_and_tp_load(verbose >= 4)
         #end
     end
-    
+
     @testset verbose = verbose ≥ 3 "Experiments" begin
         @testset verbose = true "ExB-drift" begin
             include("experiments/ExBdrift.jl")
