@@ -49,14 +49,12 @@ include("mathematics.jl")
 include("statistics.jl")
 include("physics.jl")
 include("equations_of_motion.jl")
-include("solvers.jl")
 include("callbacks.jl")
 include("problem_functions.jl")
 include("output_functions.jl")
 include("reduction_functions.jl")
 include("parameterstructs.jl")
 include("numerical_methods/ode_schemes.jl")
-include("numerical_methods/sde_schemes.jl")
 include("numerical_methods/differentiations.jl")
 include("numerical_methods/interpolations.jl")
 include("io/save.jl")
@@ -88,12 +86,6 @@ export
     hybridgcafo!
 # statistics.jl
 export maxwellianvelocitysample
-# numerical_methods/sde_schemes
-export
-    euler_maruyama,
-    milstein_central
-# solvers.jl
-export solve_stoppingtime
 # callbacks.jl
 export
     GCAInvalidCondition,
