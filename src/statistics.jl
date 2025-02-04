@@ -20,7 +20,7 @@
 Function returning the values of `x` on a 1D normalised normal distribution with
 expectation value `μ` and standard deviation `σ`.
 
-See also [`Utilities.uniformdistr`](@ref).
+See also [`uniformdistr`](@ref).
 """
 function normaldistr(
     x::AbstractVector,
@@ -37,25 +37,6 @@ function normaldistr(
     return 1 / (σ * √(2π)) * exp(-0.5((x - μ) / σ)^2)
 end
 
-function bivariate_normaldistr(
-    x::Real,
-    y::Real,
-    μx::Real,
-    μy::Real,
-    σx::Real,
-    σy::Real,
-    corr::Real # correlation
-)
-    normfactor = 1 / (2π * σx * σy * √(1 - corr^2))
-    return normfactor * exp(
-        -1 / (2 * (1 - corr^2)) * (
-            (x - μx)^2 / σx^2 +
-            (y - μy)^2 / σy^2 -
-            2 * corr * (x - μx) * (y - μy) / (σx * σy)
-        )
-    )
-end
-
 """
     uniformdistr(
         x::Vector{T} where {T<:Real},
@@ -65,7 +46,7 @@ end
 Function returning the values of `x` on a 1D normalised unifrom distribution on
 the interval [`a, `b`].
 
-See also [`Utilities.normaldistr`](@ref).
+See also [`normaldistr`](@ref).
 """
 function uniformdistr(
     x::Array{T} where {T<:Real},
@@ -245,32 +226,10 @@ function maxwellianvelocitysample(
 )
     T = temperature_itp.(args...)
     μ = 0.0
-    σ = sqrt.(tp.k_B * T / mass) # Standard deviation of the Maxwell
+    σ = sqrt.(TestParticles.k_B * T / mass) # Standard deviation of the Maxwell
     # distribution at this temperature
     return randn.(rng, precision, μ, σ, 3)
 end
-
-
-"""
-    importancesampling(
-        target  ::Function, 
-        proposal::Function, 
-        randgen ::Function, 
-        N       ::Integer,    
-        )
-Sample `N` points from the `proposal`-distribution and compute the importance
-weights with respect to the `target`-distribution.
-"""
-function importancesampling(
-    target::Function, # Target distribution
-    proposal::Function, # Proposal distruv
-    randgen::Function, # Random variable generator. Following proposal pdf.
-    dims::Tuple{Vararg{Integer}}, # Number of samples
-)
-    samples = randgen(dims)
-    weights = target(samples) ./ proposal(samples)
-    return samples, weights
-end # function importancesampling
 
 
 """
@@ -600,35 +559,3 @@ function binmap(
     end
     return midpoints(xedges), midpoints(yedges), binvalues
 end
-
-
-function binmap_witherror(
-    data,
-    nsplits,
-    args...
-    ;
-    kwargs...
-)
-
-    xx, mean_bm = binmap(data, args...; kwargs...)
-    bm_arr = Matrix{Float64}(undef, nsplits, length(mean_bm))
-    ni = length(data)
-    i = 1
-    stride = floor(Int, ni / nsplits)
-    for k in 1:nsplits
-        if k != nsplits
-            _, bm = binmap(data[i:i+stride-1], args...; kwargs...)
-        else
-            _, bm = binmap(data[i:end], args...; kwargs...)
-        end
-        i += stride
-        bm_arr[k, :] .= bm
-    end
-    std_bm = mapslices(std, bm_arr; dims=1)
-    error_bm = std_bm ./ sqrt(nsplits)
-    return xx, mean_bm, error_bm
-end
-
-
-weighted_average(value, weight) = sum(value .* weight) / sum(weight)
-weighted_count(value, weight) = sum(weight)
