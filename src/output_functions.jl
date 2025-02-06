@@ -24,34 +24,34 @@ function output_func_max_lightweight(sol, i)
         x0=x0, y0=y0, z0=z0, vparal0=vparal0,
         xf=xf, yf=yf, zf=zf, vparalf=vparalf,
         sol.prob.p[param_to_save]...,
-        t0 = first(sol.t),
-        tf = last(sol.t),
-        nt = length(sol.t),
-        maxrl = maxrl.max,
-        maxrl_x = maxrl.max_u[1],
-        maxrl_y = maxrl.max_u[2],
-        maxrl_z = maxrl.max_u[3],
-        maxrl_vparal = maxrl.max_u[4],
-        maxrl_t = maxrl.max_t,
-        minlb = minlb.min,
-        minlb_x = minlb.min_u[1],
-        minlb_y = minlb.min_u[2],
-        minlb_z = minlb.min_u[3],
-        minlb_vparal = minlb.min_u[4],
-        minlb_t = minlb.min_t,
-        maxscalesratio = maxscalesratio.max,
-        maxscalesratio_x = maxscalesratio.max_u[1],
-        maxscalesratio_y = maxscalesratio.max_u[2],
-        maxscalesratio_z = maxscalesratio.max_u[3],
-        maxscalesratio_vparal = maxscalesratio.max_u[4],
-        maxscalesratio_t = maxscalesratio.max_t,
-        meanrl = meanrl,
-        meanlb = meanlb,
-        meanscalesratio = meanscalesratio,
-        retcode = string(sol.retcode),
-        retmsg = sol.prob.p.userdata.retmsg,
-        ),
-        false
+        t0=first(sol.t),
+        tf=last(sol.t),
+        nt=length(sol.t),
+        maxrl=maxrl.max,
+        maxrl_x=maxrl.max_u[1],
+        maxrl_y=maxrl.max_u[2],
+        maxrl_z=maxrl.max_u[3],
+        maxrl_vparal=maxrl.max_u[4],
+        maxrl_t=maxrl.max_t,
+        minlb=minlb.min,
+        minlb_x=minlb.min_u[1],
+        minlb_y=minlb.min_u[2],
+        minlb_z=minlb.min_u[3],
+        minlb_vparal=minlb.min_u[4],
+        minlb_t=minlb.min_t,
+        maxscalesratio=maxscalesratio.max,
+        maxscalesratio_x=maxscalesratio.max_u[1],
+        maxscalesratio_y=maxscalesratio.max_u[2],
+        maxscalesratio_z=maxscalesratio.max_u[3],
+        maxscalesratio_vparal=maxscalesratio.max_u[4],
+        maxscalesratio_t=maxscalesratio.max_t,
+        meanrl=meanrl,
+        meanlb=meanlb,
+        meanscalesratio=meanscalesratio,
+        retcode=string(sol.retcode),
+        retmsg=sol.prob.p.userdata.retmsg,
+    ),
+    false
 end
 
 
@@ -69,11 +69,11 @@ function output_func_lightweight(sol, i)
     return (
         u0=u0,
         uf=uf,
-        charge = sol.prob.p.charge,
-        mass = sol.prob.p.mass,
+        charge=sol.prob.p.charge,
+        mass=sol.prob.p.mass,
         magneticmoment=sol.prob.p.magneticmoment,
-        ),
-        false
+    ),
+    false
 end
 
 function find_max_larmorradius(sol; ntimes=5length(sol.t))
@@ -82,13 +82,13 @@ function find_max_larmorradius(sol; ntimes=5length(sol.t))
         time = sol.t[1]
         farray = larmorradius(sol[1][1:2:3], sol.prob.p)
         max = MaxValue(farray, sol[1], time)
-        mean = sum(farray)/length(farray)
+        mean = sum(farray) / length(farray)
     else
         times = range(first(sol.t), last(sol.t), length=ntimes)
         farray = [f(t) for t in times]
         maxidx = argmax(farray)
         max = MaxValue(farray[maxidx], sol(times[maxidx]), times[maxidx])
-        mean = sum(farray)/length(farray)
+        mean = sum(farray) / length(farray)
     end
     return max, mean
 end
@@ -96,14 +96,14 @@ end
 
 function find_min_fieldlength(sol; ntimes=5length(sol.t))
     f(t) = characteristicfieldlength(
-        sol(first(t))[1:2:3], 
+        sol(first(t))[1:2:3],
         sol.prob.p.fields[1:3]
-        )
+    )
     if ntimes == 1
         time = sol.t[1]
         farray = characteristicfieldlength(
             sol[1][1:2:3], sol.prob.p.fields[1:3]
-            )
+        )
         min = MinValue(farray, sol[1], time)
         mean = farray
     else
@@ -111,7 +111,7 @@ function find_min_fieldlength(sol; ntimes=5length(sol.t))
         farray = [f(t) for t in times]
         minidx = argmin(farray)
         min = MinValue(farray[minidx], sol(times[minidx]), times[minidx])
-        mean = sum(farray)/length(farray)
+        mean = sum(farray) / length(farray)
     end
     return min, mean
 end
@@ -120,14 +120,14 @@ end
 function find_max_scalesratio(sol; ntimes=5length(sol.t))
     frl(t) = larmorradius(sol(first(t))[1:2:3], sol.prob.p)
     flb(t) = characteristicfieldlength(
-        sol(first(t))[1:2:3], 
+        sol(first(t))[1:2:3],
         sol.prob.p.fields[1:3]
-        )
-    f(t) = frl(t)/flb(t)
+    )
+    f(t) = frl(t) / flb(t)
     if ntimes == 1
         time = sol.t[1]
-        farray = larmorradius(sol[1][1:2:3], sol.prob.p)/
-            characteristicfieldlength(sol[1][1:2:3], sol.prob.p.fields[1:3])
+        farray = larmorradius(sol[1][1:2:3], sol.prob.p) /
+                 characteristicfieldlength(sol[1][1:2:3], sol.prob.p.fields[1:3])
         max = MaxValue(farray, sol[1], time)
         mean = farray
     else
@@ -135,7 +135,7 @@ function find_max_scalesratio(sol; ntimes=5length(sol.t))
         farray = [f(t) for t in times]
         maxidx = argmax(farray)
         max = MaxValue(farray[maxidx], sol(times[maxidx]), times[maxidx])
-        mean = sum(farray)/length(farray)
+        mean = sum(farray) / length(farray)
     end
     return max, mean
 end
