@@ -475,6 +475,20 @@ function fermi_acceleration(
 end
 
 
+"""
+    fieldgradients(
+        R::Vector{<:Real},
+        itpvec
+    )
+Calculate gradients of the electromagnetic field given by the function `itpvec`.
+The gradient that are calculated are
+- ∇b, ∇ExB and ∇B
+
+The magnetic and electric field vectors are created by the call
+```
+B_vec, E_vec = emfieldatpos(R, itpvec)
+```
+"""
 function fieldgradients(
     R::Vector{<:Real},
     itpvec
@@ -502,6 +516,12 @@ function fieldgradients(
     return ∇b, ∇ExB, ∇B, B_vec, E_vec
 end
 
+
+"""
+    drifts(R, vparal, q, m, μ, itpvec)
+Calculates and returns the perpendicular drifts in the guiding centre
+approximation
+"""
 function drifts(
     R::Vector{<:Real},
     vparal::Real,
