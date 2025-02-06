@@ -28,14 +28,20 @@ function ∇(
 end
 function ∇(
     coords::Vector{<:Real},
+    itpvec::Vector
+)
+    res = ForwardDiff.gradient(coords) do x
+        norm([itp(x...) for itp in itpvec])
+    end
+end
+function ∇(
+    coords::Vector{<:Real},
     itp::AbstractInterpolation,
 )
     res = ForwardDiff.gradient(coords) do x
         norm(itp(x...)[1:3])
     end
 end
-)
-    end
 
 
 """
