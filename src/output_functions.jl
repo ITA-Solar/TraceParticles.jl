@@ -76,6 +76,17 @@ function output_func_lightweight(sol, i)
     false
 end
 
+
+"""
+    find_max_larmorradius(sol; ntimes=5length(sol.t))
+Find the maximum larmor radius of the particle's trajectory using the inherent
+interpolation function in the particle solution. Also returns the mean larmor
+radius. The solution is evaluated at `ntimes` points in time.
+
+`sol` should return the solution at a given time `t` with the syntax `sol(t)`,
+and the initial and final times must be accessible with `first(sol.t)` and
+`last(sol.t)`, respectively.
+"""
 function find_max_larmorradius(sol; ntimes=5length(sol.t))
     f(t) = larmorradius(sol(first(t))[1:2:3], sol.prob.p)
     if ntimes == 1
@@ -94,6 +105,16 @@ function find_max_larmorradius(sol; ntimes=5length(sol.t))
 end
 
 
+"""
+    find_min_fieldlength(sol; ntimes=5length(sol.t))
+Find the minimum field length of the particle's trajectory using the inherent
+interpolation function in the particle solution. Also returns the mean field
+length. The solution is evaluated at `ntimes` points in time.
+
+`sol` should return the solution at a given time `t` with the syntax `sol(t)`,
+and the initial and final times must be accessible with `first(sol.t)` and
+`last(sol.t)`, respectively.
+"""
 function find_min_fieldlength(sol; ntimes=5length(sol.t))
     f(t) = characteristicfieldlength(
         sol(first(t))[1:2:3],
@@ -117,6 +138,16 @@ function find_min_fieldlength(sol; ntimes=5length(sol.t))
 end
 
 
+"""
+    find_max_scalesratio(sol; ntimes=5length(sol.t))
+Find the maximum scales ratio of the particle's trajectory using the inherent
+interpolation function in the particle solution. Also returns the mean scales
+ratio. The solution is evaluated at `ntimes` points in time.
+
+`sol` should return the solution at a given time `t` with the syntax `sol(t)`,
+and the initial and final times must be accessible with `first(sol.t)` and
+`last(sol.t)`, respectively.
+"""
 function find_max_scalesratio(sol; ntimes=5length(sol.t))
     frl(t) = larmorradius(sol(first(t))[1:2:3], sol.prob.p)
     flb(t) = characteristicfieldlength(

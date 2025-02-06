@@ -1,3 +1,7 @@
+"""
+    print_reduction_overview(batchnr, nbatches, expdir, filename, I)
+Prints some meta-information about the current batch.
+"""
 function print_reduction_overview(batchnr, nbatches, expdir, filename, I)
     println("")
     println("=================================================================",
@@ -11,6 +15,10 @@ function print_reduction_overview(batchnr, nbatches, expdir, filename, I)
 end
 
 
+"""
+    print_batch_statistics(batch)
+Prints some statistics about the current batch.
+"""
 function print_batch_statistics(batch)
     println("")
     println("Timestamp:                   $(now())")
@@ -26,6 +34,16 @@ function print_batch_statistics(batch)
 end
 
 
+"""
+    SaveBatchAsDF(expdir, expname, batchsize, nbatches)
+Reduction functor that saves the batch as a DataFrame.
+The struct instance is callable and its fields are
+- `expdir::String`: The directory where the data is saved.
+- `expname::String`: The name of the experiment.
+- `batchnr::Int`: The current batch number.
+- `batchsize::Int`: The size of the batch.
+- `nbatches::Int`: The total number of batches.
+"""
 mutable struct SaveBatchAsDF
     datadir::String
     expname::String
@@ -57,6 +75,16 @@ function (self::SaveBatchAsDF)(u, batch, I)
 end
 
 
+"""
+    SaveBatchAsHDF5(expdir, expname, batchsize, nbatches)
+Reduction functor that saves the batch as an HDF5 file.
+The struct instance is callable and its fields are
+- `expdir::String`: The directory where the data is saved.
+- `expname::String`: The name of the experiment.
+- `batchnr::Int`: The current batch number.
+- `batchsize::Int`: The size of the batch.
+- `nbatches::Int`: The total number of batches.
+"""
 mutable struct SaveBatchAsHDF5
     datadir::String
     expname::String
@@ -146,7 +174,13 @@ function (self::SaveBatchAsHDF5_2)(u, batch, I)
 
     return u, false
 end
-function get_filename(reduction::SaveBatchAsHDF5_2)
+
+
+"""
+    get_filename(reduction::SaveBatchAsHDF5)
+Returns the filename for the current batch from the reduction functor.
+"""
+function get_filename(reduction::SaveBatchAsHDF5)
     joinpath(
         reduction.expdir,
         reduction.expname,
