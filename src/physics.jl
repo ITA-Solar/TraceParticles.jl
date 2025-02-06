@@ -530,6 +530,7 @@ function drifts(
     return ExBdrift, ∇Bdrift, Rdrift, Pdrift
 end
 
+
 """
     gca_drift_and_acceleration(
         ∇b         ::Matrix{<:Real},
@@ -592,7 +593,6 @@ function gca_drift_and_acceleration(
     dRdt = vparal_vec + dRperpdt
     return [dRdt; dvparaldt]
 end
-
 
 
 
@@ -717,6 +717,7 @@ function get_gca_velocities(
     return vparal, mu, vel_in_E_frame
 end
 
+
 """
     get_fullorbit(
         magneticfield::Vector{<:Real},
@@ -830,25 +831,6 @@ function cosineof_pitchangle(
 )
     B = norm(magneticfield)
     return sqrt(1 / (2B * magneticmoment / (mass * parallel_velocity^2) + 1))
-end
-
-
-"""
-    maxwellboltzmanndistr(
-    v          ::AbstractArray{<:Real},
-    temperature::Real,
-    mass       ::Real
-    )
-Return the probability of the velocity `v` of a Maxwell-Boltzmann 
-distribution with given particle `temperature` and `mass`.
-"""
-function maxwellboltzmanndistr(
-    v::AbstractArray{<:Real},
-    temperature::Real,
-    mass::Real
-)
-    σ = √(k_B * temperature / mass) # Standard deviation of velocity
-    return @. (1 / (2π))^(3 / 2) * σ^(-3) * exp(-0.5(v / σ)^2) * 4π * v^2
 end
 
 
@@ -1027,59 +1009,6 @@ function fadeevEquilibrium(
     return (xx, yy, zz), (dx, dy, dz), A
 
 end # function FadeevEquilibrium
-
-
-"""
-    gcagradients_from_emfield(
-        bField ::Array{T, 4} where {T<:Real},
-        eField ::Array{T, 4} where {T<:Real},
-        xCoords::Vector{T} where {T<:Real},
-        yCoords::Vector{T} where {T<:Real},
-        zCoords::Vector{T} where {T<:Real},
-        scheme ::Function
-        )
-Compute the gradients used in the guiding centre approximation from an
-electromagnetic field. The gradients are:
-- The gradient of the magnetic field strength
-- the gradient of the magnetic field direction
-- the gradient of the E cross B drift.
-"""
-function gcagradients_from_emfield(
-    bField::Array{T,4} where {T<:Real},
-    eField::Array{T,4} where {T<:Real},
-    xCoords::Vector{T} where {T<:Real},
-    yCoords::Vector{T} where {T<:Real},
-    zCoords::Vector{T} where {T<:Real},
-    scheme::Function
-)
-    wfp = typeof(bField[1])
-    nx, ny, nz, ncomp = size(bField)
-    println("---> Creating mesh of B")
-    BB = norm4(bField, axis=4)
-    b̂ = zeros(wfp, nx, ny, nz, ncomp)
-    ExBdrift = zeros(wfp, nx, ny, nz, ncomp)
-    # I guess this could be done much more efficiently
-    println("---> Creating mesh of b, and ExB")
-    for i = 1:nx
-        for j = 1:ny
-            for k = 1:nz
-                B⃗ = bField[i, j, k, :]
-                E⃗ = eField[i, j, k, :]
-                B = BB[i, j, k]
-                b̂[i, j, k, :] .= B⃗ ./ B
-                ExBdrift[i, j, k, :] .= (E⃗ × B⃗) ./ B^2
-            end
-        end
-    end
-    println("---> Differentiating B")
-    ∇B = ∇(BB, xCoords, yCoords, zCoords, scheme)
-    println("---> Differentiating b")
-    ∇b̂ = ∇(b̂, xCoords, yCoords, zCoords, scheme)
-    println("---> Differentiating ExB")
-    ∇ExBdrift = ∇(ExBdrift, xCoords, yCoords, zCoords, scheme)
-    return ∇B, ∇b̂, ∇ExBdrift
-end
-
 """
     lorentzfactor(speed::Real)
 The relativistic Lorentz factor in SI units.
