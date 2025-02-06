@@ -131,8 +131,6 @@ function perpendicular_velocity(
 end
 
 
-
-
 """
     magneticmoment(perpendicular_velocity, mass, magneticfieldstrength)
 Return the magnetic moment of a chargred particle in a magnetic field.
@@ -174,7 +172,7 @@ function characteristicfieldlength(
     itpvec_grad::Vector{<:AbstractInterpolation}
 )
     fieldstrength = norm([itp(position...) for i in itpvec_strength])
-    grad = [itp(position...) for i in itpvec_grad]
+    grad = [itp(position...) for itp in itpvec_grad]
     return characteristicfieldlength(fieldstrength, grad)
 end
 
