@@ -1,27 +1,4 @@
 """
-    maxrl_minlb_maxscalesratio(sol, i)
-Output function for ensemble simulations using `DifferentialEquations`.
-
-Finds the maximum larmor radius, minimum field length and maximum scales ratio
-of the particle's trajectory using the inherent interpolation function in the
-particle solution. Also returns the full particle solution.
-"""
-function output_func_max_full(sol, i)
-    ntimes = length(sol.t)
-    maxrl = find_max_larmorradius(sol, ntimes=ntimes)
-    minlb = find_min_fieldlength(sol, ntimes=ntimes)
-    maxscalesratio = find_max_scalesratio(sol, ntimes=ntimes)
-    return (
-        sol=sol,
-        larmorradius=maxrl,
-        fieldlength=minlb,
-        scalesratio=maxscalesratio
-        ),
-        false
-end
-
-
-"""
     output_func_max_lightweight(sol, i)
 Output function for ensemble simulations using `DifferentialEquations`.
 
@@ -161,28 +138,4 @@ function find_max_scalesratio(sol; ntimes=5length(sol.t))
         mean = sum(farray)/length(farray)
     end
     return max, mean
-end
-
-
-"""
-    out_sol_maxrl_opt(sol, i)
-Output function for ensemble simulations using `DifferentialEquations`. 
-
-Finds the maximum larmor radius during the particle's trajectory using
-`Optimization`. Also returns the full particle solution.
-"""
-function out_sol_maxrl_opt(sol, i)
-    fminus(t,_) =  -larmorradius(sol(first(t))[1:2:3], sol.prob.p)
-    optf = OptimizationFunction(fminus, Optimization.AutoForwardDiff())
-    min_guess = (first(sol.t) + last(sol.t))/2
-    optprob = OptimizationProblem(
-        optf, [min_guess], lb = [first(sol.t)], ub = [last(sol.t)]
-        )
-    opt = Optimization.solve(optprob, NLopt.GN_ORIG_DIRECT_L())
-    maxrl = MaxValue(-opt.minimum, sol(opt.u), opt.u)
-    return (
-        sol=sol,
-        larmorradius=maxrl
-        ),
-        false
 end
