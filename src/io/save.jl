@@ -11,7 +11,7 @@
 
 
 """
-    save_gcastates(filename, nbatches, fields_itp)
+    save_gcastates(filename, fields_itp)
 Calculates the GCAStates of the initial and final states of an ensamble of
 test particles.
 """
@@ -21,14 +21,12 @@ function save_gcastates(
 )
     name, extension = splitext(filename)
     if extension == ".csv"
-        for i in 1:nbatches
-            df = DataFrame(CSV.File(filename * "_$i.csv"))
-            dfgca0, dfgcaf = GCAState(df, fields_itp, components="all")
-            CSV.write(filename * "_gcastate0_$i.csv", dfgca0)
-            CSV.write(filename * "_gcastatef_$i.csv", dfgcaf)
-        end
+        df = DataFrame(CSV.File(filename))
+        dfgca0, dfgcaf = GCAState(df, fields_itp, components="all")
+        CSV.write(filename * "_gcastate0.csv", dfgca0)
+        CSV.write(filename * "_gcastatef.csv", dfgcaf)
     elseif extension == ".h5"
-        _, nbatches = tp.h5_nbatches(filename)
+        _, nbatches = h5_nbatches(filename)
         h5_sol = h5open(filename, "r")
         h5_gcastates0 = h5open(name * "_gcastates0.h5", "w")
         h5_gcastatesf = h5open(name * "_gcastatesf.h5", "w")
