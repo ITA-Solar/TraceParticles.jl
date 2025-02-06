@@ -12,6 +12,7 @@ using DifferentialEquations
 using Interpolations
 
 
+include("testfields.jl")
 include("test_schemes.jl")
 #include("test_interpolations_tp.jl")
 #include("test_solvers.jl") # This file declear global variables whcich can't

@@ -75,8 +75,6 @@ export
     get_fullorbit!,
     cosineof_pitchangle,
     kineticenergy,
-    magneticdipolefield,
-    magneticmirrorfield
 # equations_of_motion.jl
 export
     guidingcentreapproximation!,
