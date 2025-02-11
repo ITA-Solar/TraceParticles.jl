@@ -252,3 +252,59 @@ function csv_to_h5(filename, batchnr)
         end
     end
 end
+
+
+#____/\_____/\_________________________________________________________________
+#
+# Creating interpolation objects from Bifrost input (MHD snapshots)
+#
+
+"""
+    create_bifrost_interpolators(
+        brxp::BifrostExperiment,
+        snap::Integer,
+        itp_type::Interpolations.InterpolationType,
+        itp_bc::Interpolations.BoundaryCondition;
+        filename::String
+        ;
+        units="si",
+        auxvariables=["tg", "ne"],
+    )
+Create interpolation objects from the MHD fields in a Bifrost snapshot and save
+them as JLD2-files.
+"""
+function create_bifrost_itps(
+    brxp::BifrostExperiment,
+    snap::Integer,
+    itp_type::Interpolations.InterpolationType,
+    itp_bc::Interpolations.BoundaryCondition;
+    filename::String,
+    units="si",
+    auxvariables=["tg", "ne"],
+)
+    # Create interpolator for the electromagnetic field
+    interpolator = get_br_emfield_vecof_interpolators(
+        brxp,
+        snap,
+        itp_type=itp_type,
+        itp_bc=itp_bc,
+        units=units,
+        destagger=true,
+    )
+    @save string(filename, "BE.jld2") interpolator
+
+    # Create interpolators for the auxiliary variables
+    for var in auxvariables
+        interpolator = get_br_var_interpolator(
+            brxp,
+            snap,
+            var,
+            itp_type=itp_type,
+            itp_bc=itp_bc,
+            units=units,
+            destagger=true,
+        )
+        @save string(filename, "_$var.jld2") interpolator
+    end
+
+end
