@@ -75,43 +75,6 @@ function perpendicular_velocity(
     vperp = vel_in_E_frame - vparal * b_vec
     return vperp
 end
-function perpendicular_velocity(
-    R::Vector{<:Real},
-    μ::Real,
-    m::Real,
-    itp::AbstractInterpolation
-)
-    B = norm(itp(R...)[1:3])
-    return perpendicular_velocity(μ, m, B)
-end
-function perpendicular_velocity(
-    R::Vector{<:Real},
-    μ::Real,
-    m::Real,
-    itpvec::Vector{<:AbstractInterpolation},
-)
-    B = norm([itp(R...) for itp in itpvec[1:3]])
-    return perpendicular_velocity(μ, m, B)
-end
-
-"""
-    perpendicular_velocity(
-        position::Vector{<:Real},
-        velocity::Vector{<:Real},
-        itp::AbstractInterpolation
-)
-"""
-function perpendicular_velocity(
-    state::Vector{<:Real},
-    itp::AbstractInterpolation
-)
-    position = state[1:3]
-    velocity = state[4:6]
-    fields = itp(position...)
-    B_vec = fields[1:3]
-    E_vec = fields[4:6]
-    return perpendicular_velocity(velocity, B_vec, E_vec)
-end
 
 
 """
