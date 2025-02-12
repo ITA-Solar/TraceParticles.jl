@@ -30,5 +30,5 @@ Use following tags for commit messages:
 Commit message examples:
 
 * "[BUG] Add missing initialisation to tg array"
-* "[FIX] Add lowercase castig to params"
+* "[FIX] Add lowercase casting to params"
 * "[CLN] Remove unnecessary allocation for dynamic arrays."
