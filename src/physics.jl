@@ -32,31 +32,14 @@ function larmorradius(
 end
 function larmorradius(
     R::Vector{<:Real},
-    μ::Real,
-    q::Real,
-    m::Real,
-    itp::AbstractInterpolation
+    params::NamedTuple
 )
-    B = norm(itp(R...)[1:3])
-    vperp = perpendicular_velocity(μ, m, B)
-    return larmorradius(m, vperp, q, B)
+    itpvec = params.fields[1:3]
+    μ = params.magneticmoment
+    q = params.charge
+    m = params.mass
+    r_L = larmorradius(R, μ, q, m, itpvec)
 end
-function larmorradius(
-    state::Vector{<:Real},
-    mass::Real,
-    charge::Real,
-    itp::AbstractInterpolation
-)
-    position = state[1:3]
-    velocity = state[4:6]
-    fields = itp(position...)
-    B_vec = fields[1:3]
-    E_vec = fields[4:6]
-    B = norm(B_vec)
-    vperp = norm(perpendicular_velocity(velocity, B_vec, E_vec))
-    return larmorradius(mass, vperp, charge, B)
-end
-
 
 """
     gyrofrequency(mass, charge, magneticfieldstrength)
