@@ -57,8 +57,8 @@ include("parameterstructs.jl")
 include("differentiations.jl")
 include("io.jl")
 include("bifrost.jl")
-include("dataprocessing/dataprocessing.jl")
 include("get.jl")
+include("dataprocessing.jl")
 include("gcastate.jl")
 
 
