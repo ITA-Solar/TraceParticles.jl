@@ -87,8 +87,11 @@ end
 
 
 """
-    characteristicfieldlength(fieldstrength, fieldstrengthgradient)
 Return the characteristic length of a field.
+
+# Methods
+    characteristicfieldlength(fieldstrength, fieldstrengthgradient)
+    characteristicfieldlength(position, itpvec)
 """
 function characteristicfieldlength(
     fieldstrength::Real,
@@ -104,22 +107,80 @@ function characteristicfieldlength(
     grad = ∇(position, itpvec)
     return characteristicfieldlength(fieldstrength, grad)
 end
-function characteristicfieldlength(
-    position::Vector{<:Real},
-    itp::AbstractInterpolation
+
+
+"""
+Calculates the ratio between the Larmor radius and the characteristic field
+length of the magnetic field.
+
+# Methods
+    scalesratio(R, itpvec, ∇B, params)
+    scalesratio(pos, vel, itpvec, ∇B, params)
+    scalesratio(statevector, time, params, switch)
+
+# Arguments
+- `R`, the guiding centre location.
+- `pos`, the 3 component particle position.
+- `vel`, the 3 component particle velocity.
+- `itpvec`, the magnetic field, as a vector of interpolation objects for each
+    component
+- `∇B`, the gradient of the magnetic field, as a vector of components.
+- `params`, `NamedTuple` containing the parameters charge, mass and magnetic
+    moment.
+- `statevector`, the state vector of the particle.
+- `time`, the time of the state vector.
+- `switch`, an integer value that determines the type of calculation to be
+    performed. 1 for guiding centre approximation, 2 for full orbit.
+"""
+function scalesratio(
+    R::Vector{<:Real},
+    itpvec::Vector{Any},
+    ∇B::Vector{<:Real},
+    params::Any
 )
-    fieldstrength = norm(itp(position...)[1:3])
-    grad = ∇(position, itp)
-    return characteristicfieldlength(fieldstrength, grad)
+    μ = params.magneticmoment
+    q = params.charge
+    m = params.mass
+    B = norm([itp(R...) for itp in itpvec[1:3]])
+    L_B = characteristicfieldlength(B, ∇B)
+    vperp = perpendicular_velocity(μ, m, B)
+    r_L = larmorradius(m, vperp, q, B)
+    return r_L / L_B
 end
-function characteristicfieldlength(
-    position::Vector{<:Real},
-    itpvec_strength::Vector{<:AbstractInterpolation},
-    itpvec_grad::Vector{<:AbstractInterpolation}
+function scalesratio(
+    pos::Vector{<:Real},
+    vel::Vector{<:Real},
+    itpvec::Vector{<:AbstractInterpolation},
+    ∇B::Vector{<:Real},
+    params::Any
 )
-    fieldstrength = norm([itp(position...) for i in itpvec_strength])
-    grad = [itp(position...) for itp in itpvec_grad]
-    return characteristicfieldlength(fieldstrength, grad)
+    q = params.charge
+    m = params.mass
+    Bvec = [itp(pos...) for itp in itpvec[1:3]]
+    Evec = [itp(pos...) for itp in itpvec[4:6]]
+    B = norm(Bvec)
+    L_B = characteristicfieldlength(B, ∇B)
+    vperp = norm(perpendicular_velocity(vel, Bvec, Evec))
+    r_L = larmorradius(m, vperp, q, B)
+    return r_L / L_B
+end
+function scalesratio(statevector, time, params, switch)
+    pos = statevector[1:3]
+    ∇B = ∇(pos, params.fields)
+    if switch == 1
+        scalesratio(pos, params.fields, ∇B, params)
+    elseif switch == 2
+        vel = statevector[4:6]
+        scalesratio(pos, vel, params.fields, ∇B, params)
+    else
+        error("Unknown switch value.")
+    end
+end
+function scalesratio_2Dxz(u, time, params)
+    R = [u[1], u[3]]
+    itpvec = params.fields[1:3]
+    ∇B = ∇(R, itpvec)
+    scalesratio(R, itpvec, ∇B, params)
 end
 
 

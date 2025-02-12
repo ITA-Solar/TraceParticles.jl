@@ -186,54 +186,6 @@ function gcabreakdownaffect!(integrator)
     terminate!(integrator)
 end
 
-
-"""
-    scalesratio(
-        R::Vector{<:Real},
-        itpvec::Vector{<:AbstractInterpolation},
-        ∇B::Vector{<:Real},
-        params::NamedTuple
-        )
-Calculates the ratio between the Larmor radius and the characteristic field
-length of the magnetic field.
-
-# Arguments
-- `R`, the guiding centre location.
-- `itpvec`, the magnetic field, as a vector of interpolation objects for each
-    component
-- `∇B`, the gradient of the magnetic field, as a vector of components.
-- `params`, `NamedTuple` containing the parameters charge, mass and magnetic
-    moment.
-"""
-function scalesratio(
-    R::Vector{<:Real},
-    itpvec::Vector{<:AbstractInterpolation},
-    ∇B::Vector{<:Real},
-    params::NamedTuple
-    )
-    μ = params.magneticmoment
-    q = params.charge
-    m = params.mass
-    B = norm([itp(R...) for itp in itpvec])
-    L_B = characteristicfieldlength(B, ∇B)
-    vperp = perpendicular_velocity(μ, m, B)
-    r_L = larmorradius(m, vperp, q, B)
-    return r_L/L_B
-end
-function scalesratio_2Dxz(u, t, params)
-    R = [u[1], u[3]]
-    itpvec = params.fields[1:3]
-    ∇B = ∇(R, itpvec)
-    scalesratio(R, itpvec, ∇B, params)
-end
-function scalesratio_highmem_2Dxz(u, t, params)
-    R = [u[1], u[3]]
-    itpvec = params.fields
-    ∇B = [itpvec[i](R...) for i in 7:9]
-    scalesratio(R, itpvec, ∇B, params)
-end
-
-
 function hybridswitch_affect!(integrator)
     integrator.p.gca = !integrator.p.gca
 end
@@ -254,15 +206,4 @@ function maxaffect_larmorradius_2Dxz!(integrator)
     integrator.p.larmorradius.max = r_L
     integrator.p.larmorradius.max_u = copy(integrator.u)
     integrator.p.larmorradius.max_t = integrator.t
-end
-# Helper function
-function larmorradius(
-    R::Vector{<:Real},
-    params::NamedTuple
-)
-    itpvec = params.fields[1:3]
-    μ = params.magneticmoment
-    q = params.charge
-    m = params.mass
-    r_L = larmorradius(R, μ, q, m, itpvec)
 end
