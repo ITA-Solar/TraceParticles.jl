@@ -58,6 +58,7 @@ include("differentiations.jl")
 include("io.jl")
 include("bifrost.jl")
 include("dataprocessing/dataprocessing.jl")
+include("get.jl")
 include("dataprocessing/gcastate.jl")
 
 
@@ -87,7 +88,7 @@ export
     GCAValidCondition,
     switch2fo_affect!,
     switch2gca_affect!
-# io/bifrost_input.jl
+# bifrost.jl
 export
     get_br_emfield_interpolator,
     get_br_emfield_vecof_interpolators,
@@ -110,7 +111,6 @@ export
 export
     GCAState,
     get_drifts,
-    get_stateidx,
     get_x,
     get_y,
     get_z,
@@ -124,14 +124,27 @@ export
     get_bfield,
     get_efield,
     get_fieldlength,
-    get_scalesratio,
-    get_characteristicfieldlength
+    get_scalesratio
+# get.jl
+export
+    get_observable,
+    get_exbdrift,
+    get_fermi,
+    get_betatron,
+    get_polarisationacc,
+    get_driftenergy,
+    get_perpenergy,
+    get_parallelenergy
 # statistics.jl
 export
     binmap,
     rejectionsample
 # paramerterstructs.jl
 export HybridParams
+# runs.jl
+export
+    singlerun,
+    rerun_nonthermals
 
 #-------------------------------------------------------------------------------
 end
