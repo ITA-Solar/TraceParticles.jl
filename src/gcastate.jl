@@ -100,7 +100,7 @@ struct GCAState
         q::Real,
         m::Real,
         μ::Real,
-        itpvec::Vector{<:AbstractInterpolation};
+        itpvec::Vector{<:Any};
         time=0.0,
         dimensionality="2Dxz"
     )
@@ -162,7 +162,7 @@ struct GCAState
         dbdtacc = fermi_acceleration(ExBdrift, ∇Bdrift, dbdt)
         # Compute the perpendicular velocity
         # Other auxiliary quantities
-        vperp = √(2B * μ / m) # The perpendicular velocity
+        vperp = perpendicular_velocity(μ, m, B)
         Ek = kineticenergy(
             vparal, vperp, ExBdrift, ∇Bdrift, Rdrift, Pdrift, m
         )

@@ -59,7 +59,7 @@ include("io.jl")
 include("bifrost.jl")
 include("dataprocessing/dataprocessing.jl")
 include("get.jl")
-include("dataprocessing/gcastate.jl")
+include("gcastate.jl")
 
 
 #---------#
