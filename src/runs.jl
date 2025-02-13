@@ -91,6 +91,9 @@ function rerun(
     maxiters=nothing,
     alg=Tsit5(),
     gcatol=nothing,
+    onlymagneticfield=false,
+    emfields=nothing,
+    EoM=nothing
 )
     include(fname * ".jl")
     tspans = [tspan for _ in 1:nparticles]
@@ -108,21 +111,41 @@ function rerun(
         callback=solve_kwargs[:callback],
     )
 
+    if isnothing(emfields)
+        fields = fields_itp
+    else
+        fields = emfields
+    end
+    if onlymagneticfield
+        fi = Vector{Any}(undef, 6)
+        for i in 1:3
+            fi[i] = fields[i]
+        end
+        for i in 4:6
+            fi[i] = (x, z) -> 0.0
+        end
+        fields = fi
+    end
+    if isnothing(EoM)
+        eqs = eom
+    else
+        eqs = EoM
+    end
     prob = ODEProblem(
-        eom,
+        eqs,
         u0[1],
         tspans[1],
         (
             charge=charge,
             mass=mass,
-            fields=fields_itp,
+            fields=fields,
             magneticmoment=mu0[1],
         )
     )
     ensemble_prob = EnsembleProblem(
         prob
         ;
-        prob_func=tp.PposPvel(u0, mu0, tspans),
+        prob_func=PposPvel(u0, mu0, tspans),
         # Use default output function. I.e. return the whole solution
         safetycopy=false,
     )
