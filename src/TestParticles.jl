@@ -11,29 +11,32 @@
 
 module TestParticles
 
-#---------------#
-#  Use packages #
-#---------------#---------------------------------------------------------------
-using LinearAlgebra
-using Random
-using Dates
+#________/\_____________________________________________________________________
+#
+#  Dependencies
+#
+#____/\______/\_________________________________________________________________
 
+# Mathematics
+using LinearAlgebra
 using DifferentialEquations
 using ForwardDiff
-using FiniteDifferences
 using Interpolations
-using Optimization, OptimizationNLopt
-using DataFrames
-using CSV
+# Statistics
+using Random
 using StatsBase
+# Data representation
+using DataFrames
+# I/O
+using CSV
 using HDF5
-
 using Printf
 using JLD2
-
-using Distributed
-
 using BifrostTools
+# Parallel computing
+using Distributed
+# Logging
+using Dates
 
 
 #_______________________________________________________________________________
