@@ -60,6 +60,7 @@ include("bifrost.jl")
 include("get.jl")
 include("dataprocessing.jl")
 include("gcastate.jl")
+include("runs.jl")
 
 
 #---------#
@@ -143,8 +144,9 @@ export
 export HybridParams
 # runs.jl
 export
-    singlerun,
-    rerun_nonthermals
+    rerun_nonthermals,
+    rerun_maxiters,
+    rerun_idxs
 
 #-------------------------------------------------------------------------------
 end
