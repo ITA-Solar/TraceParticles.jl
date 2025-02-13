@@ -304,7 +304,13 @@ function create_bifrost_itps(
     filename::String,
     units="si",
     auxvariables=["tg", "ne"],
+    normalise=[false, false],
 )
+    if length(auxvariables) != length(normalise)
+        throw(ArgumentError(
+            "Length of `auxvariables` and `normalise` must be equal."
+        ))
+    end
     # Create interpolator for the electromagnetic field
     interpolator = get_br_emfield_vecof_interpolators(
         brxp,
@@ -317,7 +323,7 @@ function create_bifrost_itps(
     @save string(filename, "BE.jld2") interpolator
 
     # Create interpolators for the auxiliary variables
-    for var in auxvariables
+    for (var, norm) in zip(auxvariables, normalise)
         interpolator = get_br_var_interpolator(
             brxp,
             snap,
@@ -325,6 +331,7 @@ function create_bifrost_itps(
             itp_type=itp_type,
             itp_bc=itp_bc,
             units=units,
+            normalise=norm,
             destagger=true,
         )
         @save string(filename, "_$var.jld2") interpolator
