@@ -250,60 +250,6 @@ function kineticenergy(
 end
 
 
-"""
-    kineticenergy(
-        gcastate::GCAState
-    )
-Kinetic energy of a charged particle based on its guiding centre state
-represented by a `GCAState` object.
-"""
-function kineticenergy(gcastate::GCAState)
-    kineticenergy(
-        gcastate.state[4],
-        gcastate.vperp,
-        gcastate.exbdrift,
-        gcastate.∇Bdrift,
-        gcastate.curvaturedrift,
-        gcastate.polarisationdrift,
-        gcastate.mass
-    )
-end
-
-
-"""
-    kineticenergy(
-        state::Vector{<:Real}, # Guiding centre state
-        q::Real, # Particle charge
-        m::Real, # Particle mass
-        μ::Real, # Particle magnetic moment
-        itpvec::Vector{<:AbstractInterpolation}, 
-        dimensionality="3D",
-)
-Kinetic energy of a charged particle based on its guiding centre, parallel
-velocity, magnetic moment, and the electromagnetic field in which it is
-embedded.
-"""
-function kineticenergy(
-    state::Vector{<:Real}, # Guiding centre state
-    q::Real, # Particle charge
-    m::Real, # Particle mass
-    μ::Real, # Particle magnetic moment
-    itpvec::Vector{<:AbstractInterpolation}, # electromagnetic field interpolators
-    time::Real
-    ;
-    dimensionality="2Dxz"
-)
-    kineticenergy(GCAState(
-        state,
-        q,
-        m,
-        μ,
-        itpvec;
-        time=time,
-        dimensionality=dimensionality,
-    ))
-end
-
 
 """
 Calculate the E cross B drift in a given electromagnetic field. 
@@ -332,7 +278,6 @@ function exbdrift(magneticfield::Vector{<:Real}, electricfield::Vector{<:Real})
     b̂ = magneticfield * B_inv     # Magnetic field direction (unit vector)
     return exbdrift(b̂, electricfield, B_inv)
 end
-
 
 
 """

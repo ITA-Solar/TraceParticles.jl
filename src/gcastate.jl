@@ -629,3 +629,61 @@ function ensembleofgcastates(
     )
     DataFrame(gcastates; lowmem=lowmem)
 end
+
+
+#____/\_____/\_________________________________________________________________
+#
+# Functions uses GCAState types
+#
+
+"""
+    kineticenergy(
+        state::Vector{<:Real}, # Guiding centre state
+        q::Real, # Particle charge
+        m::Real, # Particle mass
+        μ::Real, # Particle magnetic moment
+        itpvec::Vector{<:AbstractInterpolation},
+        dimensionality="3D",
+)
+Kinetic energy of a charged particle based on its guiding centre, parallel
+velocity, magnetic moment, and the electromagnetic field in which it is
+embedded.
+"""
+function kineticenergy(
+    state::Vector{<:Real}, # Guiding centre state
+    q::Real, # Particle charge
+    m::Real, # Particle mass
+    μ::Real, # Particle magnetic moment
+    itpvec::Vector{<:Any}, # electromagnetic field interpolators
+    time::Real
+    ;
+    dimensionality="2Dxz"
+)
+    kineticenergy(GCAState(
+        state,
+        q,
+        m,
+        μ,
+        itpvec;
+        time=time,
+        dimensionality=dimensionality,
+    ))
+end
+"""
+    kineticenergy(
+        gcastate::GCAState
+    )
+Kinetic energy of a charged particle based on its guiding centre state
+represented by a `GCAState` object.
+"""
+function kineticenergy(gcastate::GCAState)
+    kineticenergy(
+        gcastate.state[4],
+        gcastate.vperp,
+        gcastate.exbdrift,
+        gcastate.∇Bdrift,
+        gcastate.curvaturedrift,
+        gcastate.polarisationdrift,
+        gcastate.mass
+    )
+end
