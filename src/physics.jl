@@ -191,10 +191,10 @@ Return the kinetic energy of a particle.
     kineticenergy(velocity::Any, mass::Any)
     kineticenergy(velocity::Vector, mass::Any)
 """
-function kineticenergy(velocity, mass)
+function kineticenergy(velocity::Real, mass::Real)
     0.5 * mass * velocity^2
 end
-function kineticenergy(velocity::Vector, mass)
+function kineticenergy(velocity::Vector, mass::Real)
     kineticenergy(norm(velocity), mass)
 end
 
@@ -252,29 +252,21 @@ end
 
 """
     kineticenergy(
-        bfield           ::Vector{<:Real},
-        efield           ::Vector{<:Real},
-        parallel_velocity::Real,
-        magneticmoment   ::Real,
-        mass             ::Real,
-        )
-Return the kinetic energy of charged particle given the `parallel_velocity`
-of its *guiding centre*, its `magnetic_moment`, its `mass`, and the external
-electromagnetic field. Drifts other than the E cross B drift are neglected.
+        gcastate::GCAState
+    )
+Kinetic energy of a charged particle based on its guiding centre state
+represented by a `GCAState` object.
 """
-function kineticenergy(
-    bfield::Vector{<:Real},
-    efield::Vector{<:Real},
-    parallel_velocity::Real,
-    magneticmoment::Real,
-    mass::Real,
-)
-    velsquared = parallel_velocity^2 + perpendicular_velocity(
-                     magneticmoment,
-                     mass,
-                     norm(bfield)
-                 )^2 + norm(exbdrift(bfield, efield))^2
-    return 0.5 * mass * velsquared
+function kineticenergy(gcastate::GCAState)
+    kineticenergy(
+        gcastate.state[4],
+        gcastate.vperp,
+        gcastate.exbdrift,
+        gcastate.∇Bdrift,
+        gcastate.curvaturedrift,
+        gcastate.polarisationdrift,
+        gcastate.mass
+    )
 end
 
 
