@@ -9,6 +9,80 @@
 # Contains functions for processing results.
 #-------------------------------------------------------------------------------
 
+"""
+    find_nonthermals(
+        fname::String,
+        nparticles::Int;
+        relativegain::Bool=false,
+        )
+Find the `nparticles` most energetic particles from the test particle ensemble
+stored as HDF5 files with the filename `fname`.
+"""
+function find_nonthermals(
+    fname::String,
+    nparticles::Int;
+    relativegain::Bool=false,
+)
+    expname, _ = splitext(fname)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(expname)
+    e0, ef = h5_getenergies(expname)
+
+    sortby = relativegain ? (ef .- e0) ./ e0 : ef
+    idxs = sortperm(sortby)[end-nparticles+1:end]
+    u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
+    mu0 = mu0[idxs]
+
+    return u0, mu0, idxs
+end
+
+
+"""
+    find_maxiters(
+        fname::String,
+        nparticles::Int;
+    )
+Find the `nparticles` particles with most timesteps from the test particle
+ensemble stored as HDF5 files with the filename `fname`.
+"""
+function find_maxiters(
+    fname::String,
+    nparticles::Int;
+)
+    expname, _ = splitext(fname)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(expname)
+    nt = h5_getdataset(fname, "nt")
+    sortby = nt
+    idxs = sortperm(sortby)[end-nparticles+1:end]
+    u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
+    mu0 = mu0[idxs]
+
+    return u0, mu0, idxs
+end
+
+
+"""
+    get_u0(
+        fname::String;
+        mask=nothing
+    )
+Get the initial state of the test particles stored in the HDF5-file `fname`.
+Optionally filter out particles using a mask.
+"""
+function get_u0(
+    fname::String;
+    mask=nothing
+)
+    expname, _ = splitext(fname)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(expname)
+    u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in eachindex(x0)]
+
+    if isnothing(mask)
+        return u0, mu0
+    else
+        return u0[mask], mu0[mask]
+    end
+end
+
 
 """
     generate_probdistr(

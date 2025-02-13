@@ -10,6 +10,7 @@
 #-------------------------------------------------------------------------------
 
 
+
 #____/\_____/\_________________________________________________________________
 #
 # Saving routines
@@ -170,6 +171,28 @@ function h5_getenergies(filename; batches=nothing, units="eV")
         ef *= J2eV
     end
     return e0, ef
+end
+
+
+"""
+    h5_getinitialstate(filename)
+Returns `x0`, `y0`, `z0`, `vparal0`, and `magneticmoment` from a test particle
+ensemble stored in a HDF5-file.
+"""
+function h5_getinitialstate(filename; batches=nothing)
+    _, ext = splitext(filename)
+    if ext != ".h5"
+        error("Filename must be a HDF5 file with extension .h5")
+    end
+    if isnothing(batches)
+        batches, _ = h5_nbatches(filename)
+    end
+    x0 = h5_getdataset(filename, "x0"; batches=batches)
+    y0 = h5_getdataset(filename, "y0"; batches=batches)
+    z0 = h5_getdataset(filename, "z0"; batches=batches)
+    vparal0 = h5_getdataset(filename, "vparal0"; batches=batches)
+    mu0 = h5_getdataset(filename, "magneticmoment"; batches=batches)
+    return x0, y0, z0, vparal0, mu0
 end
 
 
