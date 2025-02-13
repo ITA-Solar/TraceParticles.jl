@@ -324,6 +324,7 @@ function get_drifts(gcastates::Vector{GCAState})
     ]
 end
 
+
 """
     get_driftnorm(gcastates::Vector{GCAState})
 Return the total drift velocity at each state in a vector of GCAStates.
@@ -338,72 +339,25 @@ function get_driftnorm(gcastates::Vector{GCAState})
 end
 
 
-"""
-    get_forces(gcastates::Vector{GCAState})
-Calculate and return the forces acting on a GCA-particle. The parallel forces
-are straightforward, since we already have the parallel acceleration terms in
-the `GCAState`. The perpendicular drift forces and the "gyration force" needs
-to be evaluated through differentiation. Since the latter forces are evaluated
-at a time between the `GCAState`s, the parallel forces are interpolated in
-time.
-"""
-function get_forces(gcastates::Vector{GCAState})
-    # Perpendicular acceleration
-    # Use first order upwind finite difference scheme to evaluate acceleration
-    drifts = get_drifts(gcastates)
-    times = get_time(gcastates)
-    Δdrifts = [diff(drift) for drift in drifts]
-    Δt = diff(times)
-    perpendicular_acceleration = [Δv ./ Δt for Δv in Δdrifts]
-
-    # "Gyration force"
-    Δvperp = diff(get_vperp(gcastates))
-    append!(perpendicular_acceleration, [Δvperp ./ Δt])
-
-    # Energy change
-    ΔE = diff(get_energy(gcastates))
-    ΔEΔt = ΔE ./ Δt
-    # Take the pairwise average of the parallel acceleration to get the
-    # acceleration at the same time.
-    pairwiseaverage(x) = ((x.+circshift(x, -1))/2)[1:end-1]
-    mirroracc = pairwiseaverage(get_mirroracc(gcastates))
-    parallelacc = pairwiseaverage(get_paralacc(gcastates))
-    acceleration = [[parallelacc, mirroracc]; perpendicular_acceleration]
-    force = get_mass(gcastates) * acceleration
-
-    # Return a NamedTuple of the time and force components.
-    return (
-        time=pairwiseaverage(times),
-        parallel=force[1],
-        mirror=force[2],
-        exb=force[3],
-        gradb=force[4],
-        curvature=force[5],
-        polarisation=force[6],
-        vperp=force[7],
-        energy=ΔEΔt
-    )
-end
-
 #-------------------------------------------------------------------------------
 # To retrieve various quantities from a vector of a vector of GCAStates.
 function get_initialenergies(states::Vector{Vector{GCAState}})
-    e0 = [s[1].energy for s in states]
+    [s[1].energy for s in states]
 end
 function get_finalenergies(states::Vector{Vector{GCAState}})
-    ef = [s[end].energy for s in states]
+    [s[end].energy for s in states]
 end
 function get_initialx(states::Vector{Vector{GCAState}})
-    e0 = [s[1].state[1] for s in states]
+    [s[1].state[1] for s in states]
 end
 function get_finalx(states::Vector{Vector{GCAState}})
-    ef = [s[end].state[1] for s in states]
+    [s[end].state[1] for s in states]
 end
 function get_initialz(states::Vector{Vector{GCAState}})
-    e0 = [s[1].state[3] for s in states]
+    [s[1].state[3] for s in states]
 end
 function get_finalz(states::Vector{Vector{GCAState}})
-    ef = [s[end].state[3] for s in states]
+    [s[end].state[3] for s in states]
 end
 
 
@@ -674,112 +628,4 @@ function ensembleofgcastates(
         kwargs...
     )
     DataFrame(gcastates; lowmem=lowmem)
-end
-
-function ensembleofgcastates(
-    solution::Vector{<:Vector{<:Real}},
-    magneticmoments::Vector{<:Real},
-    times::Vector{<:Real},
-    itpvec::Vector{<:AbstractInterpolation},
-    ;
-    components="exb",
-    charge=tp.e,
-    mass=tp.m_e,
-    dimensionality="2Dxz",
-    lowmem=false,
-)
-    nofparticles = length(solution)
-    particlestates = Vector{GCAState}(undef, nofparticles)
-    Threads.@threads for i in 1:nofparticles
-        if components == "all"
-            particlestates[i] = GCAState(
-                solution[i],
-                charge,
-                mass,
-                magneticmoments[i],
-                itpvec
-                ;
-                time=times[i],
-                dimensionality=dimensionality,)
-        elseif components == "exb"
-            if dimensionality == "2Dxz"
-                Rx = solution[i][1]
-                Rz = solution[i][3]
-                bfield = [itpvec[i](Rx, Rz) for i in 1:3]
-                efield = [itpvec[i](Rx, Rz) for i in 4:6]
-            else
-                error("Dimensionality not implemented")
-            end
-            particlestates[i] = GCAState(
-                solution[i],
-                charge,
-                mass,
-                magneticmoments[i],
-                bfield,
-                efield
-                ;
-                time=times[i]
-            )
-        end
-    end
-    return particlestates
-end
-
-function ensembleofgcastates(
-    solution::Vector{Tuple{Any,Any,Any,Vector,Vector,Vector,Vector,Any,Any}}
-    ;
-    components="exb",
-    charge=tp.e,
-    mass=tp.m_e,
-    dimensionality="2Dxz"
-)
-    nofparticles = length(solution)
-    initialstates = Vector{GCAState}(undef, nofparticles)
-    finalstates = Vector{GCAState}(undef, nofparticles)
-    for i in 1:nofparticles
-        if components == "exb"
-            initialstates[i] = GCAState(
-                solution[i],
-                charge,
-                mass,
-                solution[i][3], # magnetic moment
-                solution[i][4], # magnetic field
-                solution[i][5], # electric field
-                ;
-                time=solution[i][9],
-            )
-            finalstates[i] = GCAState(
-                solution[i],
-                charge,
-                mass,
-                solution[i][3], # magnetic moment
-                solution[i][6], # magnetic field
-                solution[i][7], # electric field
-                ;
-                time=solution[i][9],
-            )
-        else
-            error("Field interpolation objects unknown")
-        end
-    end
-    return initialstates, finalstates
-end
-
-"""
-    kineticenergy(
-        gcastate::GCAState
-    )
-Kinetic energy of a charged particle based on its guiding centre state
-represented by a `GCAState` object.
-"""
-function kineticenergy(gcastate::GCAState)
-    kineticenergy(
-        gcastate.state[4],
-        gcastate.vperp,
-        gcastate.exbdrift,
-        gcastate.∇Bdrift,
-        gcastate.curvaturedrift,
-        gcastate.polarisationdrift,
-        gcastate.mass
-    )
 end
