@@ -36,12 +36,7 @@ using Distributed
 using BifrostTools
 
 
-#-------------------------------------------------------------------------------
-"""
-        Abstract types
-"""
-abstract type AbstractMesh end
-
+#_______________________________________________________________________________
 
 include("utils.jl")
 include("constants.jl")
@@ -63,51 +58,51 @@ include("get.jl")
 include("runs.jl")
 
 
-#---------#
-# Exports #
-#---------#---------------------------------------------------------------------
-# physics.jl
+#________/\_____________________________________________________________________
+#
+# Exports
+#
+#____/\______/\_________________________________________________________________
+
+
+# runs.jl
 export
-    get_guidingcentre,
-    get_guidingcentre!,
-    get_fullorbit,
-    get_fullorbit!,
-    cosineof_pitchangle,
-    kineticenergy,
+    rerun_nonthermals,
+    rerun_maxiters,
+    rerun_idxs
 # equations_of_motion.jl
 export
     guidingcentreapproximation!,
     gca_2Dxz!,
-    lorentzforce!,
-    lorentzforce,
-    hybridgcafo!
+    lorentzforce!
 # statistics.jl
 export maxwellianvelocitysample
 # callbacks.jl
 export
-    GCAInvalidCondition,
-    GCAValidCondition,
-    switch2fo_affect!,
-    switch2gca_affect!
-# bifrost.jl
+    OutOfDomainCondition_2Dxz,
+    outofdomainaffect!,
+    GCABreakDownCB
+# problem_functions.jl
 export
-    get_br_emfield_interpolator,
-    get_br_emfield_vecof_interpolators,
-    get_br_emfield_numdensity_gastemp_interpolator,
-    get_br_var_interpolator
+    UposMBvel,
+    DposMBvel,
+    PposPvel
+# output_functions.jl
+export
+    output_func_max_lightweight
+# reduction_functions.jl
+export
+    SaveBatchAsDF,
+    SaveBatchAsHDF5,
+    get_filename
+# io.jl
 export
     h5_getall,
     h5_getbatch,
     h5_getdataset,
-    h5_getenergies
-# utils.jl
-export
-    dropdims,
-    create3Daxes,
-    discretise,
-    UserData,
-    MaxValue,
-    MinValue
+    h5_getenergies,
+    h5_getinitialstate,
+    save_gcastates
 # gcastate.jl
 export
     GCAState,
@@ -138,15 +133,7 @@ export
     get_parallelenergy
 # statistics.jl
 export
-    binmap,
-    rejectionsample
-# paramerterstructs.jl
-export HybridParams
-# runs.jl
-export
-    rerun_nonthermals,
-    rerun_maxiters,
-    rerun_idxs
+    binmap
 
 #-------------------------------------------------------------------------------
 end
