@@ -69,10 +69,98 @@ mutable struct MinValue{T1,T2,T3}
 end
 
 
+"""
+    findslice(x, y, z, xlim, ylim, zlim)
+    findslice(x, z, xlim, zlim)
+Find the ranges which slices the `BifrostExperiment` according to the given
+limits.
+"""
+function findslice(
+    x::AbstractVector,
+    y::AbstractVector,
+    z::AbstractVector,
+    xlim::Any,
+    ylim::Any,
+    zlim::Any
+    ;
+    verbose=true
+)
+    if isnothing(xlim)
+        slicex = 1:length(x)
+    else
+        slicex = findall(x -> xlim[1] <= x <= xlim[2], x)
+        if length(slicex) == 0
+            error("xlim did not match any points in the mesh. Wrong units?")
+        end
+    end
+    if isnothing(zlim)
+        slicez = 1:length(z)
+    else
+        slicez = findall(z -> zlim[1] <= z <= zlim[2], z)
+        if length(slicez) == 0
+            error("zlim did not match any points in the mesh. Wrong units?")
+        end
+    end
+    if isnothing(ylim)
+        slicey = 1:length(y)
+    else
+        slicey = findall(y -> y > ylim, y)[1]
+        if length(slicez) == 0
+            error("zlim did not match any points in the mesh. Wrong units?")
+        end
+    end
+    if verbose
+        @info "Range of x-axis: $(slicex[1]:slicex[end])"
+        @info "Range of y-axis: $(slicey[1]:slicey[end])"
+        @info "Range of z-axis: $(slicez[1]:slicez[end])"
+    end
+    return slicex, slicey, slicez
+end
+function findslice(
+    x::AbstractVector,
+    z::AbstractVector,
+    xlim::Any,
+    zlim::Any
+    ;
+    verbose=true
+)
+    if isnothing(xlim)
+        slicex = 1:length(x)
+    else
+        slicex = findall(x -> xlim[1] <= x <= xlim[2], x)
+        if length(slicex) == 0
+            error("xlim did not match any points in the mesh. Wrong units?")
+        end
+    end
+    if isnothing(zlim)
+        slicez = 1:length(z)
+    else
+        slicez = findall(z -> zlim[1] <= z <= zlim[2], z)
+        if length(slicez) == 0
+            error("zlim did not match any points in the mesh. Wrong units?")
+        end
+    end
+    if verbose
+        @info "Range of x-axis: $(slicex[1]:slicex[end])"
+        @info "Range of z-axis: $(slicez[1]:slicez[end])"
+    end
+    return slicex, slicez
+end
+
+
 #----------------------------------------#
 # Vector potential generation            #
 # Mesh generation from analytical fields #
 #-------------------------------------------------------------------------------
+
+"""
+    create3Daxes(
+        (x0, y0, z0)::Tuple{Real,Real,Real},
+        (xf, yf, zf)::Tuple{Real,Real,Real},
+        (nx, ny, nz)::Tuple{Integer,Integer,Integer}
+    )
+Create axes from axis limits and number of grid points.
+"""
 function create3Daxes(
     (x0, y0, z0)::Tuple{Real,Real,Real},
     (xf, yf, zf)::Tuple{Real,Real,Real},
@@ -174,6 +262,10 @@ end # function normal3donlyz
 #-------------------------#
 # Particle initialisation #
 #-------------------------------------------------------------------------------
+"""
+    initparticlesuniform(numparticles, pos0, posf, vel0, velf, seed)
+Distribute positions and velocities uniformly according to limits.
+"""
 function initparticlesuniform(
     numparticles::Integer,
     pos0::Vector{T} where {T<:Real},
@@ -194,6 +286,11 @@ function initparticlesuniform(
     return positions, velocities
 end # function initparticlesuniform
 
+
+"""
+    initparticlesmaxwellian(numparticles, pos0, posf, vel0, velf, seed)
+Distribute positions uniformly and velocities Maxwellian according to limits.
+"""
 function initparticlesmaxwellian(
     numparticles::Integer,
     pos0::Vector{T} where {T<:Real},
