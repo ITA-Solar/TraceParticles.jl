@@ -559,3 +559,31 @@ function binmap(
     end
     return midpoints(xedges), midpoints(yedges), binvalues
 end
+
+
+"""
+    normfactor_2Duniformmesh(var, axes; xlim=nothing, zlim=nothing)
+Calculate the normalisation factor of the 2D, gridded scalar-field `var` in the
+region defined by `xlim` and `zlim`. If `xlim` and `zlim` are not given, the
+normalisation factor is calculated over the entire grid.
+"""
+function normfactor_2Duniformmesh(
+    var::Matrix{<:Real},
+    axes::Tuple{AbstractVector,AbstractVector};
+    xlim=nothing,
+    zlim=nothing,
+)
+    if !(isnothing(xlim) && isnothing(zlim))
+        slicex, slicez = findslice(
+            axes[1],
+            axes[2],
+            xlim,
+            zlim,
+        )
+        var = var[slicex, slicez]
+        axes = (axes[1][slicex], axes[2][slicez])
+    end
+    dxvec = [diff(ax)[1] for ax in axes]
+    dv = prod(dxvec)
+    return sum(var) * dv
+end

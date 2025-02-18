@@ -117,3 +117,38 @@ function get_br_emfield_numdensity_gastemp_interpolator(
     return fields_itp
 end
 
+"""
+    normfactor_2Duniformmesh(
+        brxp, snap, var; xlim=[-Inf, Inf], zlim=[-Inf, Inf], units="si"
+    )
+Calculate the normalisation factor of a Bifrost scalar field.
+"""
+function normfactor_2Duniformmesh(
+    brxp::BifrostExperiment,
+    snap::Integer,
+    var::String,
+    ;
+    xlim=[-Inf, Inf],
+    zlim=[-Inf, Inf],
+    units="si",
+)
+    if var == "ne"
+        var = get_electron_density(brxp, snap; units=units)
+    else
+        var = get_var(brxp, snap, var; units=units, destagger=true)
+    end
+
+    # Normalise the variable over the full domain
+    axes = get_axes(brxp, units=units)
+    axes = dropdims(axes)
+    var /= normfactor_2Duniformmesh(var[:, 1, :], axes)
+
+    # Normalise the variable over the limits.
+    if units == "si"
+        axes = (1e6brxp.mesh.x, 1e6brxp.mesh.z)
+    else
+        axes = (brxp.mesh.x, brxp.mesh.z)
+    end
+    var = var[:, 1, :]
+    return normfactor_2Duniformmesh(var, axes; xlim=xlim, zlim=zlim)
+end
