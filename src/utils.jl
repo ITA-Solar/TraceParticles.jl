@@ -148,6 +148,24 @@ function findslice(
 end
 
 
+"""
+    get_itpcoefs(itp)
+Extract the coefficients of an interpolation object.
+"""
+function get_itpcoefs(itp::Interpolations.Extrapolation)
+    return itp.itp.itp.coefs
+end # function get_itpcoefs
+
+
+"""
+    get_itpaxes(itp)
+Extract the axes of an interpolation object.
+"""
+function get_itpaxes(itp::Interpolations.Extrapolation)
+    return itp.itp.ranges
+end # function get_itpaxes
+
+
 #----------------------------------------#
 # Vector potential generation            #
 # Mesh generation from analytical fields #
