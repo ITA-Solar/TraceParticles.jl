@@ -35,7 +35,7 @@ end
 
 
 """
-    SaveBatchAsDF(expdir, expname, batchsize, nbatches)
+    SaveBatchAsCSV(expdir, expname, batchsize, nbatches)
 Reduction functor that saves the batch as a DataFrame.
 The struct instance is callable and its fields are
 - `expdir::String`: The directory where the data is saved.
@@ -44,7 +44,7 @@ The struct instance is callable and its fields are
 - `batchsize::Int`: The size of the batch.
 - `nbatches::Int`: The total number of batches.
 """
-mutable struct SaveBatchAsDF
+mutable struct SaveBatchAsCSV
     datadir::String
     expname::String
     batchnr::Int
@@ -60,7 +60,7 @@ mutable struct SaveBatchAsDF
         new(expdir, expname, batchnr, batchsize, nbatches)
     end
 end
-function (self::SaveBatchAsDF)(u, batch, I)
+function (self::SaveBatchAsCSV)(u, batch, I)
     # Save the batch as a DataFrame
     self.batchnr += 1
     filename = self.expname * "_$(self.batchnr).csv"

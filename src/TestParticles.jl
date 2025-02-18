@@ -95,7 +95,7 @@ export
     output_func_max_lightweight
 # reduction_functions.jl
 export
-    SaveBatchAsDF,
+    SaveBatchAsCSV,
     SaveBatchAsHDF5,
     get_filename
 # io.jl
