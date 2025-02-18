@@ -228,3 +228,69 @@ function energyfraction(
     return sum(nonthermalcounts .* nothermalbinwidhts)
 end
 
+
+#____/\_____/\_________________________________________________________________
+#
+# Filtering/masking data
+#
+
+
+"""
+    particlemaskfunction(
+        ;
+        x0lim=nothing,
+        y0lim=nothing
+        z0lim=nothing,
+        xflim=nothing,
+        yflim=nothing
+        zflim=nothing,
+        timelim=nothing,
+        retmsg=nothing,
+)
+Create a function that filters out particles based on the specified limits.
+The function accepts a dictionary which it filters based on the key-limit pairs
+- `:x0` for `x0lim`
+- `:y0` for `y0lim`
+- `:z0` for `z0lim`
+- `:xf` for `xflim`
+- `:yf` for `yflim`
+- `:zf` for `zflim`
+- `:tf` for `timelim`
+- `:retmsg` for `retmsg`
+
+It assumes the dictionary has the key `:x0` to find out how many particles there
+are in the dataset.
+"""
+function particlemaskfunction(
+    ;
+    x0lim=nothing,
+    y0lim=nothing,
+    z0lim=nothing,
+    xflim=nothing,
+    yflim=nothing,
+    zflim=nothing,
+    timelim=nothing,
+    retmsg=nothing,
+)
+
+    conditions = Dict{Symbol,Function}()
+    if !isnothing(retmsg)
+        conditions[:retmsg] = x -> retmsg == x
+    end
+    for (sym, limit) in zip(
+        (:x0, :y0, :z0, :xf, :yf, :zf, :tf),
+        (x0lim, y0lim, z0lim, xflim, yflim, zflim, timelim)
+    )
+        if !isnothing(limit)
+            conditions[sym] = x -> limit[1] <= x <= limit[2]
+        end
+    end
+    return (data) -> begin
+        findall(
+            i -> begin
+                all([func(data[sym][i]) for (sym, func) in conditions])
+            end,
+            eachindex(data[:x0])
+        )
+    end
+end
