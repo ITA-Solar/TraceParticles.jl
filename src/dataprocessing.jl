@@ -153,4 +153,78 @@ function saturate_distribution(
 end
 
 
+"""
+    energyfraction(
+        energies::Vector{<:Real},
+        fractionlimits::Tuple{Any,Any};
+        weights=ones(length(energies)),
+        logx=true,
+        nbins=200,
+    )
+Calculate the fraction of the total energy in the specified range of energies.
+"""
+function energyfraction(
+    energies::Vector{<:Real},
+    fractionlimits::Tuple{Any,Any};
+    weights=ones(length(energies)),
+    logx=true,
+    nbins=200,
+)
+    # Create the bin edges
+    if logx
+        binedges = 10.0 .^
+                   range(
+            log10(minimum(energies)),
+            log10(maximum(energies)),
+            length=nbins + 1
+        )
+    else
+        binedges = range(
+            minimum(energies),
+            maximum(energies),
+            length=nbins + 1
+        )
+    end
+
+    # Fit the histogram
+    hist = fit(
+        Histogram,
+        energies,
+        Weights(weights),
+        binedges
+    )
+    hist = normalize(hist, mode=:pdf)
+    bincentres = midpoints(binedges)
+    binwidths = diff(binedges)
+
+    # Finda all indices of the bins that are within the limits
+    lowerlimit = fractionlimits[1]
+    upperlimit = fractionlimits[2]
+    if isnothing(lowerlimit) && isnothing(upperlimit)
+        fraction_idxs = findall(
+            e -> true,
+            bincentres
+        )
+    elseif isnothing(lowerlimit)
+        fraction_idxs = findall(
+            e -> e <= upperlimit,
+            bincentres
+        )
+    elseif isnothing(upperlimit)
+        fraction_idxs = findall(
+            e -> lowerlimit < e,
+            bincentres
+        )
+    else
+        fraction_idxs = findall(
+            e -> lowerlimit < e <= upperlimit,
+            bincentres
+        )
+    end
+
+    # Calculate the fraction of the total energy in the specified range
+    nonthermalcounts = hist.weights[fraction_idxs]
+    nothermalbinwidhts = binwidths[fraction_idxs]
+    return sum(nonthermalcounts .* nothermalbinwidhts)
+end
 
