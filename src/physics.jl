@@ -759,7 +759,7 @@ function get_fullorbit!(
     mass::Real,
     phaseangle::Real,           # Arbitrary phase angle of gyration.
     itpvec
-    )
+)
     B = norm(magneticfield) # Magnetic field strength
     b = magneticfield / B   # Magnetic field direction (unit vector)
     v_exb = exbdrift(magneticfield, electricfield) # get E cross B drift,
@@ -803,7 +803,7 @@ end
 The relativistic Lorentz factor in SI units.
 """
 function lorentzfactor(speed::Real)
-    return 1 / √(1 - speed^2 * tp.cSqrdInv)
+    return 1 / √(1 - speed^2 * cSqrdInv)
 end
 
 """

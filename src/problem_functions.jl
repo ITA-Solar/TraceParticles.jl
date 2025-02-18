@@ -77,8 +77,7 @@ end
 
 
 """
-Draws x, y, and z positions from a given distribution using the rejection
-sampling method.
+Draws x, y, and z positions from a given distribution using rejection sampling.
 """
 struct DposMBvel
     rng::AbstractRNG
@@ -122,5 +121,4 @@ function (self::DposMBvel)(prob, i, repeat)
             userdata=UserData("None")
         )
     )
-end 
-
+end
