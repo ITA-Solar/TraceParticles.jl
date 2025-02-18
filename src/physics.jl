@@ -134,7 +134,7 @@ length of the magnetic field.
 """
 function scalesratio(
     R::Vector{<:Real},
-    itpvec::Vector{Any},
+    itpvec::Vector{<:Any},
     ∇B::Vector{<:Real},
     params::Any
 )
@@ -164,7 +164,12 @@ function scalesratio(
     r_L = larmorradius(m, vperp, q, B)
     return r_L / L_B
 end
-function scalesratio(statevector, time, params, switch)
+function scalesratio(
+        statevector::Vector{<:Real},
+        time::Real,
+        params::NamedTuple,
+        switch::Int
+    )
     pos = statevector[1:3]
     ∇B = ∇(pos, params.fields)
     if switch == 1

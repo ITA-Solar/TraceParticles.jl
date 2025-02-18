@@ -629,7 +629,54 @@ function ensembleofgcastates(
     )
     DataFrame(gcastates; lowmem=lowmem)
 end
-
+function ensembleofgcastates(
+    solution::Vector{<:Vector{<:Real}},
+    magneticmoments::Vector{<:Real},
+    times::Vector{<:Real},
+    itpvec::Vector{<:AbstractInterpolation},
+    ;
+    components="all",
+    charge=e,
+    mass=m_e,
+    dimensionality="2Dxz",
+    lowmem=false,
+)
+    nofparticles = length(solution)
+    particlestates = Vector{GCAState}(undef, nofparticles)
+    Threads.@threads for i in 1:nofparticles
+        if components == "all"
+            particlestates[i] = GCAState(
+                solution[i],
+                charge,
+                mass,
+                magneticmoments[i],
+                itpvec
+                ;
+                time=times[i],
+                dimensionality=dimensionality,)
+        elseif components == "exb"
+            if dimensionality == "2Dxz"
+                Rx = solution[i][1]
+                Rz = solution[i][3]
+                bfield = [itpvec[i](Rx, Rz) for i in 1:3]
+                efield = [itpvec[i](Rx, Rz) for i in 4:6]
+            else
+                error("Dimensionality not implemented")
+            end
+            particlestates[i] = GCAState(
+                solution[i],
+                charge,
+                mass,
+                magneticmoments[i],
+                bfield,
+                efield
+                ;
+                time=times[i]
+            )
+        end
+    end
+    return particlestates
+end
 
 #____/\_____/\_________________________________________________________________
 #

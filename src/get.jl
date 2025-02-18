@@ -26,24 +26,32 @@ function getfinalstate(df::DataFrame)
 end
 
 
-function get_observable(
-    sol::ODESolution,
-    observable::Function,
-    ;
-    times=nothing,
-    tspan=(first(sol.t), last(sol.t)),
-    nsteps=1000,
-    kwargs...
-)
-    if isnothing(times)
-        times = range(tspan[1], tspan[2], length=nsteps)
-    end
-    obs = [
-        observable(sol, t; kwargs...)
-        for t in times
-    ]
-    return obs
+"""
+    getfinaltimes(df::DataFrame)
+Return the start time of the particle simulation stored as a DataFrame.
+"""
+function getinitialtimes(df::DataFrame)
+    return df.t0
 end
+
+
+"""
+    getfinaltimes(df::DataFrame)
+Return the end time of the particle simulation stored as a DataFrame.
+"""
+function getfinaltimes(df::DataFrame)
+    return df.tf
+end
+
+
+"""
+    getmagneticmoments(df::DataFrame)
+Return the magnetic moments of the particle simulation stored as a DataFrame.
+"""
+function getmagneticmoments(df::DataFrame)
+    return df.magneticmoment
+end
+
 
 """
 Get the observable `sym` from an `ODESolution` or a vector of `ODESolution`s.
@@ -198,6 +206,24 @@ function get_observable(
         ]
         return r_L ./ L_B
     end
+end
+function get_observable(
+    sol::ODESolution,
+    observable::Function,
+    ;
+    times=nothing,
+    tspan=(first(sol.t), last(sol.t)),
+    nsteps=1000,
+    kwargs...
+)
+    if isnothing(times)
+        times = range(tspan[1], tspan[2], length=nsteps)
+    end
+    obs = [
+        observable(sol, t; kwargs...)
+        for t in times
+    ]
+    return obs
 end
 
 
