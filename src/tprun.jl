@@ -72,7 +72,8 @@ will use distributed computing.
 
 
 commandlineparams = ARGS[1]
-include(joinpath(pwd(), basename(commandlineparams)))
+paramsfile = joinpath(pwd(), basename(commandlineparams))
+include(paramsfile)
 #exp_params = experiment_parameters()
 
 try
@@ -87,8 +88,6 @@ requirements = [
     :mass,
     :fields_itp,
     :tspan,
-    :prob_func,
-    :trajectories
 ]
 for i in requirements
     try
@@ -113,14 +112,14 @@ expdir = datadir * "/" * expname
 paramsbackup = expdir * "/" * expname * ".jl"
 try
     mkdir(expdir)
-    cp(params, paramsbackup)
+    cp(paramsfile, paramsbackup)
 catch
     println("The directory $(pwd() * "/" * expdir) already exists.
      Do you want to delete it and re-run? y/n")
     if readline() == "y"
         rm(expdir, recursive=true)
         mkdir(expdir)
-        cp(params, paramsbackup)
+        cp(paramsfile, paramsbackup)
     else
         error("Exiting.")
     end
@@ -264,14 +263,8 @@ if !(:reduction in keys(ensembleprob_kwargs))
 else
     try
         println("\nPost-processing: Computing GCAStates...")
-        extension = try
-            extension
-        catch
-            ".h5"
-        end
-        @time tp.save_gcastates(
-            joinpath(expdir, expname) * extension, nbatches, fields_itp
-        )
+        filename = tp.get_filename(ensembleprob_kwargs.reduction)
+        @time tp.save_gcastates(filename, fields_itp)
         println("                 Success")
     catch e
         println("                 Failed:\n", e)
