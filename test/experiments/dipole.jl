@@ -100,9 +100,9 @@ end
 # PARTICLE CREATION
 # Set initial position and velocities
 B⃗ = [itp(R0...) for itp in emfields_itp][1:3]
-μ = tp.magneticmoment(vperp, mass, norm(B⃗))
+μ = TestParticles.magneticmoment(vperp, mass, norm(B⃗))
 E⃗ = [0.0, 0.0, 0.0]
-u0 = tp.get_fullorbit(B⃗, E⃗, R0, vparal, μ, charge, mass, 0.0)
+u0 = TestParticles.get_fullorbit(B⃗, E⃗, R0, vparal, μ, charge, mass, 0.0)
 
 fo_params = (charge, mass, emfields_itp)
 gca_params = (charge=charge, mass=mass, magneticmoment=μ, emfields_itp)

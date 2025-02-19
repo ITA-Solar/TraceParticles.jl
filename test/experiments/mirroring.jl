@@ -63,14 +63,17 @@ ni = (100, 100, 100)
 #
 #-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
+
+
+
 analytical_field = false
 if analytical_field
     emfields_itp(x, y, z) = [magneticmirrorfield(x, y, z, B0, L); zeros(3)]
 else
-    xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
+    xx, yy, zz, dx, dy, dz = TestParticles.create3Daxes(xi0, xif, ni)
     Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
     Efield = zeros(size(Bfield))
-    Bfield = stack(discretise(
+    Bfield = stack(TestParticles.discretise(
         (x, y, z) -> magneticmirrorfield(x, y, z, B0, L),
         xx,
         yy,
@@ -97,7 +100,7 @@ numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
 # Set initial position and velocities
 B⃗ = [itp(pos0...) for itp in emfields_itp][1:3]
 E⃗ = zeros(3)
-R0, vparal, μ = tp.get_guidingcentre(pos0, vel0, B⃗, E⃗, charge, mass)
+R0, vparal, μ = TestParticles.get_guidingcentre(pos0, vel0, B⃗, E⃗, charge, mass)
 #-------------------------------------------------------------------------------
 # CREATE PROBLEM
 prob_FO = ODEProblem(

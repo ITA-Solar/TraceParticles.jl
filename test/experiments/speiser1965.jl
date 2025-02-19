@@ -31,8 +31,8 @@ tspan = (0, tf)   # timespan                           |
 
 #...............................................
 # PARTICLE TYPE
-mass = tp.m_p
-charge = tp.e
+mass = TestParticles.m_p
+charge = TestParticles.e
 
 #...............................................
 # INITIAL CONDITIONS
@@ -77,11 +77,11 @@ Ez = -a
 #
 #-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
-xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
+xx, yy, zz, dx, dy, dz = TestParticles.create3Daxes(xi0, xif, ni)
 Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
 Efield = zeros(size(Bfield))
 Efield[3, :, :, :] .= Ez
-Bfield = stack(discretise(
+Bfield = stack(TestParticles.discretise(
     (x, y, z) -> speiserBfield(x),
     xx,
     yy,

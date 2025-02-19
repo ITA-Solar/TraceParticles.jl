@@ -77,13 +77,13 @@ Ey = 0.0
 #
 #-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
-xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
+xx, yy, zz, dx, dy, dz = TestParticles.create3Daxes(xi0, xif, ni)
 Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
 Efield = zeros(size(Bfield))
 Efield[1, :, :, :] .= Ex
 Efield[2, :, :, :] .= Ey
 #Efield[1,:,1:30,:] .= 0.0
-Bfield = stack(discretise((x, y, z) -> gradBfield(y), xx, yy, zz))
+Bfield = stack(TestParticles.discretise((x, y, z) -> gradBfield(y), xx, yy, zz))
 # Create interpolation objects
 emfields = eachslice(vcat(Bfield, Efield), dims=(2, 3, 4))
 emfields_itp = linear_interpolation((xx, yy, zz), emfields,
