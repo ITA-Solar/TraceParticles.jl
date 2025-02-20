@@ -588,7 +588,7 @@ function get_guidingcentre(
 
     B = norm(magneticfield) # Magnetic field strength
     B_inv = 1 / B
-    b_vec = magneticfield / B_inv     # Magnetic field direction (unit vector)
+    b_vec = magneticfield * B_inv     # Magnetic field direction (unit vector)
     ExBdrift = exbdrift(magneticfield, electricfield)
     vel_in_E_frame = vel - ExBdrift
     # Calculate the guiding centre posistion 
