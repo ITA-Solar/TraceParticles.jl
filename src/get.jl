@@ -114,16 +114,13 @@ end
 function get_observable(
     sol::ODESolution,
     sym::Symbol;
-    times=nothing,
     tspan=(first(sol.t), last(sol.t)),
     nsteps=1000,
+    times=range(tspan[1], tspan[2], length=nsteps),
     magnitude=false,
     component=nothing,
     kwargs...
 )
-    if isnothing(times)
-        times = range(tspan[1], tspan[2], length=nsteps)
-    end
     if sym == :x
         return [sol(t)[1] for t in times]
     elseif sym == :y
@@ -211,14 +208,11 @@ function get_observable(
     sol::ODESolution,
     observable::Function,
     ;
-    times=nothing,
     tspan=(first(sol.t), last(sol.t)),
     nsteps=1000,
+    times=range(tspan[1], tspan[2], length=nsteps),
     kwargs...
 )
-    if isnothing(times)
-        times = range(tspan[1], tspan[2], length=nsteps)
-    end
     obs = [
         observable(sol, t; kwargs...)
         for t in times
@@ -226,6 +220,15 @@ function get_observable(
     return obs
 end
 
+function get_stateidx(
+    sol::ODESolution,
+    idx::Int;
+    tspan=(first(sol.t), last(sol.t)),
+    nsteps=1000,
+    times=range(tspan[1], tspan[2], length=nsteps),
+)
+    return [sol(t)[idx] for t in times]
+end
 
 """
     get_exbdrift(

@@ -121,6 +121,7 @@ export
 # get.jl
 export
     get_observable,
+    get_stateidx,
     get_exbdrift,
     get_fermi,
     get_betatron,
