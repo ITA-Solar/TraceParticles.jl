@@ -23,3 +23,15 @@ function skewsymmetric_matrix(vector::Vector{Float32})
         vector[3] 0.0f0 -vector[1]
         -vector[2] vector[1] 0.0f0]
 end
+
+
+"""
+    strength_direction_invers(vec::Vector{<:Real})
+Returns the strength, inverse, and direction of a vector.
+"""
+function strength_direction_invers(vec::Vector{<:Real})
+    strength = norm(vec)
+    invers = 1/strength
+    direction = vec * invers
+        return strength, direction, invers
+end

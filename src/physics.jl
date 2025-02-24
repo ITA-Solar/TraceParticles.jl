@@ -98,6 +98,51 @@ end
 
 
 """
+    vparal_and_magneticmoment(vel, magneticfield, electricfield, mass)
+    vparal_and_magneticmoment(vel, gyrationvelocity, b_vec, B, mass)
+Calculate the parallel velocity and magnetic moment of a charged particle in a
+electromagnetic field.
+"""
+function vparal_and_magneticmoment(
+    vel::Vector{<:Real},
+    magneticfield::Vector{<:Real},
+    electricfield::Vector{<:Real},
+    mass::Real
+)
+    B, b_vec, B_inv = strength_direction_invers(magneticfield)
+    vel_in_E_frame = vel - exbdrift(b_vec, electricfield, B_inv)
+    vparal_and_magneticmoment(vel, vel_in_E_frame, b_vec, B, mass)
+end
+function vparal_and_magneticmoment(
+    vel::Vector{<:Real},
+    gyrationvelocity::Vector{<:Real},
+    b_vec::Vector{<:Real},
+    B::Real,
+    mass::Real
+)
+    vparal = vel ⋅ b_vec
+    vperp = perpendicular_velocity(gyrationvelocity, b_vec, vparal)
+    mu = magneticmoment(norm(vperp), mass, B)
+    return vparal, mu
+end
+
+"""
+    guidingcentre(pos, gyrationvelocity, b_vec, B, mass, charge)
+Calculate the guiding centre position of a charged particle in a magnetic field.
+"""
+function guidingcentre(
+    pos::Vector{<:Real},
+    gyrationvelocity::Vector{<:Real},
+    b_vec::Vector{<:Real},
+    B::Real,
+    mass::Real,
+    charge::Real
+)
+    return pos + mass / (charge * B) * (gyrationvelocity × b_vec)
+end
+
+
+"""
 Return the characteristic length of a field.
 
 # Methods
@@ -638,20 +683,16 @@ function get_guidingcentre!(
     magneticfield::Vector{<:Real},
     electricfield::Vector{<:Real},
     charge::Real,
-    mass::Real
+    mass::Real,
 )
-    B = norm(magneticfield) # Magnetic field strength
-    b_vec = magneticfield / B     # Magnetic field direction (unit vector)
-    ExBdrift = exbdrift(magneticfield, electricfield)
-    vel_in_E_frame = vel - ExBdrift
+    B, b_vec, B_inv = strength_direction_invers(magneticfield)
+    vel_in_E_frame = vel - exbdrift(b_vec, electricfield, B_inv)
     # Calculate the guiding centre posistion
-    R = pos + mass / (charge * B) * (vel_in_E_frame × b_vec)
+    R = guidingcentre(pos, vel_in_E_frame, b_vec, B, mass, charge)
     # Calculate the velocity parallell to the magnetic field -- vparal
-    vparal = vel ⋅ b_vec
-    # Calculate mangetic moment -- mu
-    vperp = vel_in_E_frame - vparal * b_vec
+    # and the magnetic moment -- mu
+    vparal, mu = vparal_and_magneticmoment(vel, vel_in_E_frame, b_vec, B, mass)
     # In place return
-    mu = magneticmoment(norm(vperp), mass, B)
     u[1:3] = R
     u[4] = vparal
     return mu

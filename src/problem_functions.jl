@@ -104,7 +104,7 @@ function (self::DposMBvel)(prob, i, repeat)
     vel = maxwellianvelocitysample(self.rng, self.tg_itp, mass, Rx, Rz)
     bfield_at_pos = [prob.p.fields[i](Rx, Rz) for i in 1:3]
     efield_at_pos = [prob.p.fields[i](Rx, Rz) for i in 4:6]
-    vparal, magneticmoment, _ = get_gca_velocities(
+    vparal, magneticmoment = vparal_and_magneticmoment(
         vel,
         bfield_at_pos,
         efield_at_pos,
