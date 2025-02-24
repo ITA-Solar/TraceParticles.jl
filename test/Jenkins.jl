@@ -6,8 +6,17 @@
 # repository.
 #-------------------------------------------------------------------------------
 
-include("Jenkins_short.jl")
+using TestParticles
+using Test
+using LinearAlgebra
+using DifferentialEquations
+using Interpolations
 
+verbose = 4
+
+include("testfields.jl")
+
+include("Jenkins_short.jl")
 @testset verbose = verbose ≥ 1 "Long tests" begin
     @testset verbose = verbose ≥ 3 "Experiments" begin
         @testset verbose = true "Dipole" begin

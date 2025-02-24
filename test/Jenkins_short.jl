@@ -7,28 +7,35 @@
 #-------------------------------------------------------------------------------
 #
 
+using TestParticles
+using Test
 using LinearAlgebra
 using DifferentialEquations
 using Interpolations
 
-
 include("testfields.jl")
 
-verbose = 4
+if !isdefined(Main, :verbose)
+    verbose = 3
+end
 
 @testset verbose = verbose ≥ 1 "Quick tests" begin
 
-    @testset verbose = verbose ≥ 3 "Experiments" begin
-        @testset verbose = true "ExB-drift" begin
+    @testset verbose = verbose ≥ 3 "Unit tests" begin
+        include("test_physics.jl")
+    end
+
+    @testset verbose = verbose ≥ 3 "Regression tests" begin
+        @testset verbose = verbose ≥ 4 "ExB-drift" begin
             include("experiments/ExBdrift.jl")
         end # testset ExB-drift
-        @testset verbose = true "∇B-drift" begin
+        @testset verbose = verbose ≥ 4 "∇B-drift" begin
             include("experiments/gradBdrift.jl")
         end # testset ∇B-drift
-        @testset verbose = true "Mirroring" begin
+        @testset verbose = verbose ≥ 4 "Mirroring" begin
             include("experiments/mirroring.jl")
         end # testset mirroring
-        @testset verbose = true "Speiser (1965)" begin
+        @testset verbose = verbose ≥ 4 "Speiser (1965)" begin
             include("experiments/speiser1965.jl")
         end # testset Speiser 1965
     end # testset Experiments
