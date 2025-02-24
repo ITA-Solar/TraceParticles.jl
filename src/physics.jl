@@ -57,23 +57,34 @@ field.
 # Methods
     perpendicular_velocity(velocity, magneticfield, electricfield)
     perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength)
+    perpendicular_velocity(velocity, b_vec, vparal)
 """
-function perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength::Real)
+function perpendicular_velocity(
+    magnetic_moment::Real,
+    mass::Real,
+    magneticfieldstrength::Real
+)::Real
     sqrt(2magnetic_moment * magneticfieldstrength / mass)
 end
 function perpendicular_velocity(
     vel::Vector{<:Real},
     magneticfield::Vector{<:Real},
     electricfield::Vector{<:Real},
-)
+)::Vector{<:Real}
     B = norm(magneticfield) # Magnetic field strength
     b_vec = magneticfield / B   # Magnetic field direction (unit vector)
     ExBdrift = exbdrift(magneticfield, electricfield) # get E cross B drift,
     vel_in_E_frame = vel - ExBdrift
     vparal = vel ⋅ b_vec
-    # Calculate mangetic moment -- mu
-    vperp = vel_in_E_frame - vparal * b_vec
+    vperp = perpendicular_velocity(vel_in_E_frame, b_vec, vparal)
     return vperp
+end
+function perpendicular_velocity(
+    gyrationvelocity::Vector{<:Real},
+    b_vec::Vector{<:Real},
+    vparal::Real
+)::Vector{<:Real}
+    return gyrationvelocity - vparal * b_vec
 end
 
 
@@ -139,13 +150,10 @@ function scalesratio(
     params::Any
 )
     μ = params.magneticmoment
-    q = params.charge
     m = params.mass
     B = norm([itp(R...) for itp in itpvec[1:3]])
-    L_B = characteristicfieldlength(B, ∇B)
     vperp = perpendicular_velocity(μ, m, B)
-    r_L = larmorradius(m, vperp, q, B)
-    return r_L / L_B
+    return scalesratio(B, ∇B, vperp, params.charge, params.mass)
 end
 function scalesratio(
     pos::Vector{<:Real},
@@ -154,22 +162,29 @@ function scalesratio(
     ∇B::Vector{<:Real},
     params::Any
 )
-    q = params.charge
-    m = params.mass
     Bvec = [itp(pos...) for itp in itpvec[1:3]]
     Evec = [itp(pos...) for itp in itpvec[4:6]]
     B = norm(Bvec)
-    L_B = characteristicfieldlength(B, ∇B)
     vperp = norm(perpendicular_velocity(vel, Bvec, Evec))
+    return scalesratio(B, ∇B, vperp, params.charge, params.mass)
+end
+function scalesratio(
+    B::Real,
+    ∇B::Vector{<:Real},
+    vperp::Real,
+    q::Real,
+    m::Real
+)
+    L_B = characteristicfieldlength(B, ∇B)
     r_L = larmorradius(m, vperp, q, B)
     return r_L / L_B
 end
 function scalesratio(
-        statevector::Vector{<:Real},
-        time::Real,
-        params::NamedTuple,
-        switch::Int
-    )
+    statevector::Vector{<:Real},
+    time::Real,
+    params::NamedTuple,
+    switch::Int
+)
     pos = statevector[1:3]
     ∇B = ∇(pos, params.fields)
     if switch == 1
