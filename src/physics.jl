@@ -624,44 +624,6 @@ function gca_drift_and_acceleration(
 end
 
 
-
-"""
-    get_guidingcentre(
-        pos          ::Vector{<:Real},
-        vel          ::Vector{<:Real},
-        magneticfield::Vector{<:Real},
-        electricfield::Vector{<:Real},
-        charge       ::Real,
-        mass         ::Real
-        )
-Calculates and returns the guiding-centre position, parallel velocity, and
- magnetic moment of a charged particle in a electromagnetic field. 
-"""
-function get_guidingcentre(
-    pos::Vector{<:Real},
-    vel::Vector{<:Real},
-    magneticfield::Vector{<:Real},
-    electricfield::Vector{<:Real},
-    charge::Real,
-    mass::Real
-)
-
-    B = norm(magneticfield) # Magnetic field strength
-    B_inv = 1 / B
-    b_vec = magneticfield * B_inv     # Magnetic field direction (unit vector)
-    ExBdrift = exbdrift(magneticfield, electricfield)
-    vel_in_E_frame = vel - ExBdrift
-    # Calculate the guiding centre posistion 
-    R = pos + mass / (charge * B) * (vel_in_E_frame × b_vec)
-    # Calculate the velocity parallell to the magnetic field -- vparal
-    vparal = vel ⋅ b_vec
-    # Calculate mangetic moment -- mu
-    vperp = vel_in_E_frame - vparal * b_vec
-    mu = magneticmoment(norm(vperp), mass, B)
-    return R, vparal, mu
-end
-
-
 """
     get_guidingcentre!(
         u            ::Vector{<:Real},
@@ -696,50 +658,6 @@ function get_guidingcentre!(
     u[1:3] = R
     u[4] = vparal
     return mu
-end
-
-
-"""
-    get_guidingcentre_2Dxzitp(
-        pos          ::Vector{<:Real},
-        vel          ::Vector{<:Real},
-        emfields_itpvec::Vector{<:AbstractInterpolation},
-        charge       ::Real,
-        mass         ::Real
-        )
-Same as `get_guidingcentre` but with interpolation vector for the
-electromagnetic fields.
-"""
-function get_guidingcentre_2Dxzitp(
-    pos::Vector{<:Real},
-    vel::Vector{<:Real},
-    emfields_itpvec::Vector{<:AbstractInterpolation},
-    charge::Real,
-    mass::Real
-)
-    posx, poz = pos[1], pos[3]
-    magneticfield = [emfields_itpvec[i](posx, poz) for i = 1:3]
-    electricfield = [emfields_itpvec[i](posx, poz) for i = 4:6]
-    get_guidingcentre(pos, vel, magneticfield, electricfield, charge, mass)
-end
-
-
-function get_gca_velocities(
-    vel::Vector{<:Real},
-    magneticfield::Vector{<:Real},
-    electricfield::Vector{<:Real},
-    mass::Real
-)
-    B = norm(magneticfield) # Magnetic field strength
-    b_vec = magneticfield / B     # Magnetic field direction (unit vector)
-    ExBdrift = exbdrift(magneticfield, electricfield)
-    vel_in_E_frame = vel - ExBdrift
-    # Calculate the velocity parallell to the magnetic field -- vparal
-    vparal = vel ⋅ b_vec
-    # Calculate mangetic moment -- mu
-    vperp = vel_in_E_frame - vparal * b_vec
-    mu = magneticmoment(norm(vperp), mass, B)
-    return vparal, mu, vel_in_E_frame
 end
 
 

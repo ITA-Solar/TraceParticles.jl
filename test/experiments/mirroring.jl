@@ -100,7 +100,10 @@ numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
 # Set initial position and velocities
 B⃗ = [itp(pos0...) for itp in emfields_itp][1:3]
 E⃗ = zeros(3)
-R0, vparal, μ = TestParticles.get_guidingcentre(pos0, vel0, B⃗, E⃗, charge, mass)
+statevector = zeros(4)
+μ = TestParticles.get_guidingcentre!(statevector, pos0, vel0, B⃗, E⃗, charge, mass)
+R0 = statevector[1:3]
+vparal = statevector[4]
 #-------------------------------------------------------------------------------
 # CREATE PROBLEM
 prob_FO = ODEProblem(
