@@ -19,7 +19,8 @@ h = 6.62607015e − 34 # J Hz^-1.................. Planck's constant
 ϵ_0 = 8.8541878128e − 12 # F m^-1.......Vacuum electric permittivity
 m_e = 9.1093837015e-31 # Kg ........................ Electron mass
 m_p = 1.67262192369e-27 # Kg ......................... Proton mass
-cSqrdInv = 1 / c^2 # s^2 m^-2 ........ Inverse of the light speed squared
+csqrd = c^2 # s^2 m^-2 ........ Inverse of the light speed squared
+csqrdinv = 1 / csqrd # s^2 m^-2 ........ Inverse of the light speed squared
 
 # Unit conversion
 J2eV = 6.24150907e18 # 1 J * 6.24e12 eV/J........................energy

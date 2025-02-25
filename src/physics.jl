@@ -782,7 +782,7 @@ end
 The relativistic Lorentz factor in SI units.
 """
 function lorentzfactor(speed::Real)
-    return 1 / √(1 - speed^2 * cSqrdInv)
+    return 1 / √(1 - speed^2 * csqrdinv)
 end
 
 """

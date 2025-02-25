@@ -378,7 +378,7 @@ end
 @testset "lorentzfactor" begin
     speed = 1.0e5
     result = lorentzfactor(speed)
-    @test isapprox(result, 1 / sqrt(1 - speed^2 * TestParticles.cSqrdInv), rtol=1e-6)
+    @test isapprox(result, 1 / sqrt(1 - speed^2 * TestParticles.csqrdinv), rtol=1e-6)
 end
 
 @testset "kineticspeed" begin
