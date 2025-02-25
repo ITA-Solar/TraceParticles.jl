@@ -104,22 +104,7 @@ export
     save_gcastates
 # gcastate.jl
 export
-    GCAState,
-    get_drifts,
-    get_x,
-    get_y,
-    get_z,
-    get_vparal,
-    get_mu,
-    get_time,
-    get_energy,
-    get_vperp,
-    get_larmorradius,
-    get_gyrofrequency,
-    get_bfield,
-    get_efield,
-    get_fieldlength,
-    get_scalesratio
+    GCAState
 # get.jl
 export
     get_observable,
