@@ -62,7 +62,7 @@ struct RelativisticConditionGCA_2Dxz
     fractionofrestenergy::Real
 
     function RelativisticConditionGCA_2Dxz(mass, fraction=0.002)
-        return new(fraction * mass)
+        return new(fraction * mass * csqrd)
     end
 end
 function (self::RelativisticConditionGCA_2Dxz)(u, _, integrator)
