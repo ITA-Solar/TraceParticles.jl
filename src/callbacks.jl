@@ -201,31 +201,6 @@ function (functor::GCABreakDownCondition_2Dxz)(u, t, integrator)
     return ratio > functor.tolerance
 end
 
-struct GCABreakDownCondition_highmem_2Dxz
-    tolerance::Real
-end
-function (functor::GCABreakDownCondition_highmem_2Dxz)(u, t, integrator)
-    ratio = scalesratio_highmem_2Dxz(u, t, integrator.p)
-    return ratio > functor.tolerance
-end
-
-
-function GCABreakDownCB(
-    method::String,
-    dimensionality::String
-    ;
-    tolerance::Real=1.0
-)
-    if method * dimensionality == "lowmem2Dxz"
-        condition = GCABreakDownCondition_2Dxz(tolerance)
-    elseif method * dimensionality == "highmem2Dxz"
-        condition = GCABreakDownCondition_highmem_2Dxz(tolerance)
-    else
-        error("Unknown method.")
-    end
-    return DiscreteCallback(condition, gcabreakdownaffect!)
-end
-
 function gcabreakdownaffect!(integrator)
     integrator.p.userdata.retmsg = "GCABreakDown"
     terminate!(integrator)

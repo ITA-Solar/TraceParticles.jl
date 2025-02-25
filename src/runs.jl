@@ -100,7 +100,10 @@ function rerun(
     if !isnothing(gcatol)
         solve_kwargs[:callback] = CallbackSet(
             solve_kwargs[:callback].discrete_callbacks[1],
-            GCABreakDownCB("lowmem", "2Dxz", tolerance=gcatol)
+            DiscreteCallback(
+                GCABreakDownCondition_2Dxz(gcatol),
+                gcabreakdownaffect!
+            )
         )
     end
     s_kwargs = (

@@ -78,9 +78,10 @@ export maxwellianvelocitysample
 export
     OutOfDomainCondition_2Dxz,
     RelativisticConditionGCA_2Dxz,
+    GCABreakDownCondition_2Dxz,
     outofdomainaffect!,
     relativisticaffect!,
-    GCABreakDownCB
+    gcabreakdownaffect!
 # problem_functions.jl
 export
     UposMBvel,
