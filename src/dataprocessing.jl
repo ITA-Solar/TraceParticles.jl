@@ -140,10 +140,15 @@ function saturate_distribution(
     xx,
     yy,
     gridded_dist,
-    threshold
+    threshold;
+    from_below=true
 )
     saturated_dist = copy(gridded_dist)
-    saturated_dist[saturated_dist.<threshold] .= threshold
+    if from_below
+        saturated_dist[saturated_dist.<threshold] .= threshold
+    else
+        saturated_dist[saturated_dist.>threshold] .= threshold
+    end
     dxs = [diff(xx)[1], diff(yy)[1]]
     proddxs = abs(prod(dxs))
     normfactor = sum(saturated_dist) * proddxs
