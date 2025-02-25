@@ -77,7 +77,9 @@ export maxwellianvelocitysample
 # callbacks.jl
 export
     OutOfDomainCondition_2Dxz,
+    RelativisticConditionGCA_2Dxz,
     outofdomainaffect!,
+    relativisticaffect!,
     GCABreakDownCB
 # problem_functions.jl
 export
