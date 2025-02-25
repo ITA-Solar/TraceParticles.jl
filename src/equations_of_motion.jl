@@ -121,27 +121,10 @@ function guidingcentreapproximation!(du, u, p, _)
     vparal = u[4] # Particle velocity parallel to the magnetic field
     # Extract parameters
     q, m, μ, itpvec = p.charge, p.mass, p.magneticmoment, p.fields
-    # Interpolate the electromagnetic field to the guiding centre position.
-    B_vec, E_vec = emfieldatpos(R, itpvec)
-
     # Calculate the field gradients.
-    jacobian_matrix = ForwardDiff.jacobian(R) do x
-        if typeof(itpvec) <: Vector
-            vec = [itp(x...) for itp in itpvec]
-        else
-            vec = itpvec(x...)
-        end
-        B_vec_fd = vec[1:3]
-        E_vec_fd = vec[4:6]
-        B_fd = norm(B_vec_fd)
-        b_fd = B_vec_fd / B_fd
-        return [b_fd; E_vec_fd × b_fd / B_fd; B_fd]
-    end
-    ∇b = jacobian_matrix[1:3, :]
-    ∇ExB = jacobian_matrix[4:6, :]
-    ∇B = jacobian_matrix[7, :]
+    ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, itpvec)
 
-    # We index du with 1:4 to allow aribitrary size of u.
+    # We index `du` with 1:4 to allow aribitrary size of u.
     # (This is necessary when doing hybrid swtich method).
     du[1:4] = gca_drift_and_acceleration(
         ∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ
