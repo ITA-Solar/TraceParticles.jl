@@ -47,6 +47,51 @@ end
 
 
 # -----------------------------------------------------------------------------
+# Relativistic particles
+# -----------------------------------------------------------------------------
+
+"""
+    RelativisticConditionGCA_2Dxz
+Callback condition for checking if the GCA particle is relativistic. Returns
+`true` if the particle's kinetic energy is a user defined fraction of the rest
+energy. Perpendicular drifts other than E cross B drift are neglected.
+
+Default fraction is 0.002, which is 1022 eV for an electron.
+"""
+struct RelativisticConditionGCA_2Dxz
+    fractionofrestenergy::Real
+
+    function RelativisticConditionGCA_2Dxz(mass, fraction=0.002)
+        return new(fraction * mass)
+    end
+end
+function (self::RelativisticConditionGCA_2Dxz)(u, _, integrator)
+    Rx, _, Rz, vparal = u[1:3]
+    μ = integrator.p.magneticmoment
+    mass = integrator.p.mass
+
+    B_vec = [itp(Rx, Rz) for itp in integrator.p.fields[1:3]]
+    B_vec = [itp(Rx, Rz) for itp in integrator.p.fields[4:6]]
+    v_E = exbdrift(B_vec, E_vec)
+    B = norm(B_vec)
+    vperp = perpendicular_velocity(μ, mass, B)
+    energy = kineticenergy(vparal, vperp, v_E, mass)
+    return energy > self.fractionofrestenergy
+end
+
+
+"""
+    relativisticaffect!(integrator)
+Callback affect which terminates the integration and sets the return message to
+"Relativistic".
+"""
+function relativisticaffect!(integrator)
+    integrator.p.userdata.retmsg = "Relativistic"
+    terminate!(integrator)
+end
+
+
+# -----------------------------------------------------------------------------
 # Hybrid switching
 # -----------------------------------------------------------------------------
 """
