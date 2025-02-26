@@ -40,6 +40,13 @@ function outside2dnullpointzoom(u, _, _) # (u, t, integrator)
     return u[1] <= 14.52e6 || u[1] >= 18.83e6 ||
            u[3] <= -7.79e6 || u[3] >= -3.88e6
 end
+
+
+"""
+    outofdomainaffect!(integrator)
+Callback affect which terminates the integration and sets the return message to
+"OutofDomain".
+"""
 function outofdomainaffect!(integrator)
     integrator.p.userdata.retmsg = "OutofDomain"
     terminate!(integrator)
@@ -179,20 +186,26 @@ end
 
 
 """
-    GCABreakDownCondition
+    GCAInvalidCondition
+Callback condition for checking GCA assumption. Returns `true` if the ratio
+between the particle Larmor radius and the characteristic length of the
+magnetic field is higher than a `tolerance`.
+"""
+struct GCAInvalidCondition
+    tolerance::Real
+end
+function (self::GCAInvalidCondition)(u, t, integrator)
+    integrator.p.switch == 1 &&
+        scalesratio(u, t, integrator.p, integrator.p.switch) > self.tolerance
+end
+
+
+"""
+    GCABreakDownCondition_2Dxz
 Callback condition for checking GCA assumption. Returns `true` if the ratio
 between the particle Larmor radius and the characteristic length of the
 magnetic field is higher than a tolerance `switchtol`.
 """
-struct GCABreakDownCondition
-    tolerance::Real
-end
-function (functor::GCABreakDownCondition)(u, t, integrator)
-    ratio = scalesratio(u, t, integrator.p)
-    return ratio > functor.tolerance
-end
-
-
 struct GCABreakDownCondition_2Dxz
     tolerance::Real
 end
@@ -201,6 +214,11 @@ function (functor::GCABreakDownCondition_2Dxz)(u, t, integrator)
     return ratio > functor.tolerance
 end
 
+"""
+    gcabreakdownaffect!(integrator)
+Callback affect which terminates the integration and sets the return message to
+"GCABreakDown".
+"""
 function gcabreakdownaffect!(integrator)
     integrator.p.userdata.retmsg = "GCABreakDown"
     terminate!(integrator)

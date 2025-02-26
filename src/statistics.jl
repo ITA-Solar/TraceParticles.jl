@@ -216,6 +216,19 @@ end # function rand
 #----------#
 # Sampling #
 #----------#--------------------------------------------------------------------
+
+"""
+    maxwellianvelocitysample(
+        rng::AbstractRNG,
+        temperature_itp::Any,
+        mass::Real,
+        args...
+        ;
+        precision::DataType=Float64,
+    )
+Draw a velocity component sample from a Maxwellian distribution with temperature
+given by a function call with aribtrary arguments, and by a mass.
+"""
 function maxwellianvelocitysample(
     rng::AbstractRNG,
     temperature_itp::Any,

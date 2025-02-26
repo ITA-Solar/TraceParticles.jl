@@ -220,6 +220,17 @@ function get_observable(
     return obs
 end
 
+
+"""
+    get_stateidx(
+        sol::ODESolution,
+        idx::Int;
+        tspan=(first(sol.t), last(sol.t)),
+        nsteps=1000,
+        times=range(tspan[1], tspan[2], length=nsteps),
+    )
+Return the `idx`-th component of the state vector of `sol` at times `times`.
+"""
 function get_stateidx(
     sol::ODESolution,
     idx::Int;

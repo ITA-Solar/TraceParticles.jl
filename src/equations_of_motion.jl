@@ -163,7 +163,6 @@ components represents the magnetic field and the last 3 the electric field.
 
 The function uses ForwardDiff and Interpolations to calculate gradients.
 """
-
 function gca_2Dxz!(du, u, p, _)
     # NOTE: Comments are copied from 3D implementation. Running times are
     # not correct in this case since this is 2D version.

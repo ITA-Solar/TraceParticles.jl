@@ -34,18 +34,16 @@ electromagnetic field, relevant parameters, and auxiliary quantities.
         time=nothing,
         dimensionality="2Dxz"
         )
-Constructs a GCAState object from;
+Constructs a `GCAState` object from;
 * `state` - The guiding centre state; position and parallel velocity
 * `vparal` - The parallel velocity of the guiding centre
 * `q` - The charge of the particle
 * `m` - The mass of the particle
 * `μ` - The magnetic moment of the particle
 * `itpvec` - A vector of interpolation objects for the electromagnetic fields
-Optional kqyword arguments;
+**Keyword** arguments:
 * `time` - The time of the state
 * `dimensionality` - The dimensionality of the problem (default: "2Dxz")
-
-_______________________________________________________________________________
 
     GCAState(
         state ::Vector{<:Real},
@@ -57,10 +55,8 @@ _______________________________________________________________________________
         ;
         time=nothing
         )
-Constructs a partially filled GCAState object, neglecting all drifts except
+Constructs a partially filled `GCAState` object, neglecting all drifts except
 the ExB-drift.
-
-_______________________________________________________________________________
 
     GCAState(
         solution::DataFrame,

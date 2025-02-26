@@ -1,11 +1,9 @@
 # TestParticles.jl 
 #### (Previously named 'tp')
-Embedding test particles in magnetohydrodynamic environments, or any electromagnetic field. Test particles move independently and their motion is governed by the Lorentz force. This code uses [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/) to solve the particles' equations of motion.
-
-See [examplerun.jl](https://github.com/ITA-Solar/tp/blob/develop/examplerun.jl) for a simple test particle run in a simple analytic electromagnetic field. See [tprun.jl](https://github.com/ITA-Solar/tp/blob/develop/src/tprun.jl) for an example workflow when running larger ensembles with interpolated electromagnetic fields, either in serial og in parallel.
-
+TestParticles.jl provides tools for sampling and simulating charged particles in
+an electromagnetic field using
+[DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl).
 ___
-
 ### Git commit message manners
 The commit message is mainly for other people, so they should be able to understand it now and six months later. Commit messages cannot be longer than one sentence (line) and should start with a tag identifier (see the end of this section).
 
