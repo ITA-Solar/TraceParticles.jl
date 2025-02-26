@@ -5,8 +5,9 @@
 [ci-img]: https://github.com/ITA-Solar/TestParticles.jl/actions/workflows/test.yml/badge.svg
 [ci-url]: https://github.com/ITA-Solar/TestParticles.jl/actions/workflows/test.yml
 
-| Documentation | [![][docs-dev-img]][docs-dev-url]|
-| Continuous integration | [![][ci-img]][ci-url] |
+| Documentation                    | Continuous integration | 
+|    :---:                         |     :----:
+|[![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url]  |
 
 TestParticles.jl provides tools for sampling and simulating charged particles in
 an electromagnetic field using
