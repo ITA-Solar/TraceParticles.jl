@@ -5,7 +5,13 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'test/**'
+      - 'src/**'
   pull_request:
+    paths:
+      - 'test/**'
+      - 'src/**'
 
 # needed to allow julia-actions/cache to delete old caches that it has created
 permissions:
