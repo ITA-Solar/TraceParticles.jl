@@ -64,6 +64,15 @@ function emfieldatpos(
 end
 function emfieldatpos(
     pos::Vector{<:Real},
+    fields_itp::Vector{<:Any}
+)
+    fields = [itp(pos...) for itp in fields_itp]
+    B = fields[1:3]
+    E = fields[4:6]
+    return B, E
+end
+function emfieldatpos(
+    pos::Vector{<:Real},
     fields_itp::AbstractInterpolation
 )
     fields = fields_itp(pos...)
