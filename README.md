@@ -2,7 +2,7 @@
 #### (Previously named 'tp')
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [docs-dev-url]: https://ITA-Solar.github.io/TestParticles.jl/dev
-[ci-img]: https://github.com/ITA-Solar/TestParticles.jl/actions/workflows/test.yml/badge.svg
+[ci-img]: https://github.com/ITA-Solar/TestParticles.jl/actions/workflows/test.yml/badge.svg?branch=develop
 [ci-url]: https://github.com/ITA-Solar/TestParticles.jl/actions/workflows/test.yml
 
 | Documentation                    | Continuous integration | 
