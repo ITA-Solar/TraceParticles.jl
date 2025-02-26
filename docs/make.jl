@@ -6,8 +6,8 @@ makedocs(
     checkdocs = :exports,
     authors="eilifso <eilif.oyre@gmail.com>",
     pages=[
-        "Usage" => "usage.md",
-        "Index" => "index.md",
+        "Usage" => "index.md",
+        "Index" => "index_list.md",
         "Examples" => "examples.md",
         "API" => "api.md",
     ]

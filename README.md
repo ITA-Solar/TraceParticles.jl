@@ -1,5 +1,13 @@
 # TestParticles.jl 
 #### (Previously named 'tp')
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-url]: https://ITA-Solar.github.io/TestParticles.jl/dev
+[ci-img]: https://github.com/ITA-Solar/TestParticles.jl/actions/workflows/test.yml/badge.svg
+[ci-url]: https://github.com/ITA-Solar/TestParticles.jl/actions/workflows/test.yml
+
+| Documentation | [![][docs-dev-img]][docs-dev-url]|
+| Continuous integration | [![][ci-img]][ci-url] |
+
 TestParticles.jl provides tools for sampling and simulating charged particles in
 an electromagnetic field using
 [DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl).
