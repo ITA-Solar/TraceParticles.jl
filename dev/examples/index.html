@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Examples · TestParticles.jl</title><meta name="title" content="Examples · TestParticles.jl"/><meta property="og:title" content="Examples · TestParticles.jl"/><meta property="twitter:title" content="Examples · TestParticles.jl"/><meta name="description" content="Documentation for TestParticles.jl."/><meta property="og:description" content="Documentation for TestParticles.jl."/><meta property="twitter:description" content="Documentation for TestParticles.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../usage/"><img src="../assets/logo.png" alt="TestParticles.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../usage/">TestParticles.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../usage/">Usage</a></li><li><a class="tocitem" href="../">Index</a></li><li class="is-active"><a class="tocitem" href>Examples</a><ul class="internal"><li><a class="tocitem" href="#Basic-use-of-with-analytical-fields"><span>Basic use of with analytical fields</span></a></li><li><a class="tocitem" href="#Gridded-fields-and-statistical-sampling"><span>Gridded fields and statistical sampling</span></a></li><li class="toplevel"><a class="tocitem" href="#used-to-draw-new-particle-initial-conditions."><span>used to draw new particle initial conditions.</span></a></li></ul></li><li><a class="tocitem" href="../api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Examples</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Examples</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ITA-Solar/TestParticles.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ITA-Solar/TestParticles.jl/blob/develop/docs/src/examples.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h1><h2 id="Basic-use-of-with-analytical-fields"><a class="docs-heading-anchor" href="#Basic-use-of-with-analytical-fields">Basic use of with analytical fields</a><a id="Basic-use-of-with-analytical-fields-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-use-of-with-analytical-fields" title="Permalink"></a></h2><p>This example demonstrates the most basic use of <code>TestParticles</code>. The electromagnetic fields are analytically prescribed, and the initial conditions of the particle ensemble are pre-determined. In this case, the only tool that is needed from <code>TestParticles</code> are the equations of motion for the particles. The rest is setup for solving an <code>EnsembleProblem</code> from <code>DifferentialEquations</code>.</p><pre><code class="language-julia hljs">using TestParticles: lorentzforce!
+using DifferentialEquations
+
+&quot;&quot;&quot;
+We will in this example simulate two charged particles embedded in an
+electromagnetic field.
+&quot;&quot;&quot;
+eom = lorentzforce! # The equations of motion of charge particles
+                    # in a collisionless electromagntic field is the
+                    # Lorentz force.
+# Here we define the initial conditions of our two particles. The initial
+# conditions are 3 position- and 3 velocity-components, which could be
+# represented in a 6-component state vector.
+ic = [[0.0, 1.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.5, 0.0, -0.5, 0.0, 0.0]]
+# The parameters of the Lorentz equation is the particle&#39;s charge, mass and
+# functor a giving the electromagnetic fields at the particle position.
+mass = 1
+charge = [1, -1]
+struct StaticUniformElectromagneticField
+    bx::Real
+    by::Real
+    bz::Real
+    ex::Real
+    ey::Real
+    ez::Real
+end
+function (field::StaticUniformElectromagneticField)(x,y,z)
+    return [field.bx, field.by, field.bz, field.ex, field.ey, field.ez]
+end
+emfield = StaticUniformElectromagneticField(0,0,1,0,1,0)
+tspan = (0,10) # Define the simulation time-span
+npart = 2     # Define the number of particles in the simulation
+prob = ODEProblem(eom, ic[1], tspan) # Create an initial ODE-problem
+
+# Define a problem function, which will define a new ODE-problem for each
+# particle.
+function prob_func(prob, i, repeat)
+    remake(prob, u0=ic[i], p=(mass, charge[i], emfield))
+end
+# Define an output function - what to be saved from each particle solution
+# The ODESolution type contains a lot of metadata, including alogorithm
+# choice, number of algorithm switches, etc. In a large ensemble, this
+# overhead will quickly consume a lot of memory.
+#
+# In this output function we save only the initial and final state of the
+# particle, in addition to its timesteps. We set the required &quot;rerun&quot; return
+# argument to false.
+function output_func(sol,i)
+    return ([first(sol), last(sol)], sol.t), false
+end
+# Define an Ensamble-problem, to simulate the ensemble of particles
+ensamble_prob = EnsembleProblem(
+    prob # Initial problem
+    ;
+    prob_func=prob_func,
+    output_func=output_func
+)
+
+# Run the simulation
+sol = DifferentialEquations.solve(
+    ensamble_prob, 
+    EnsembleSerial()
+    ;
+    trajectories=npart
+)</code></pre><h2 id="Gridded-fields-and-statistical-sampling"><a class="docs-heading-anchor" href="#Gridded-fields-and-statistical-sampling">Gridded fields and statistical sampling</a><a id="Gridded-fields-and-statistical-sampling-1"></a><a class="docs-heading-anchor-permalink" href="#Gridded-fields-and-statistical-sampling" title="Permalink"></a></h2><p>The following example demonstrates a more complex test particle simulation, using</p><ul><li>interpolated electromagnetic field,</li><li>initial positions drawn from a proposal probability density distribution.</li><li>importance weights corresponding to a target distribution,</li><li>initial velocities drawn from Maxwell-Boltzmann distributions,</li><li>the guiding centre approximation (GCA) as equations of motion,</li><li>callbacks terminating the particle if the GCA is invalid or the particle is out of bounds,</li><li>a reduction and output function that stores the initial and final state of the solution to an HDF5-file, along with some observables,</li><li>a large particle ensemble.</li></ul><p>This script assumes you have the external electromangetic field and temperature of the system, and the  as interpolation objects stored in JLD2 files. <code>target_itp</code> and <code>proposal_itp</code> are probability density distributions</p><h1 id="used-to-draw-new-particle-initial-conditions."><a class="docs-heading-anchor" href="#used-to-draw-new-particle-initial-conditions.">used to draw new particle initial conditions.</a><a id="used-to-draw-new-particle-initial-conditions.-1"></a><a class="docs-heading-anchor-permalink" href="#used-to-draw-new-particle-initial-conditions." title="Permalink"></a></h1><p>n </p><pre><code class="language-julia hljs">using TestParticles
+using DifferentialEquations
+using Interpolations
+using JLD2
+
+JLD2.@load &quot;electromagneticfield.jld2&quot; em_fields_itp
+JLD2.@load &quot;temperature.jld2&quot; temperature_itp
+JLD2.@load &quot;target_distribution&quot; target_itp
+JLD2.@load &quot;proposal_distribution&quot; proposal_itp
+
+tspan = (0, 1)                 # Temporal bounds of the simulation [s]
+xbounds = (0.0, 31.958047e6)   # Spatial bounds [m]
+zbounds = (-32e6, 0.00)        # This is a 2.5D simulation
+
+# Particle parameters
+charge = -TestParticles.e      # Charge of particles
+mass = TestParticles.m_e       # Mass of particles
+eom = TestParticles.gca_2Dxz!  # Equation of motion
+npart = 10_000_000
+rng = MersenneTwister()        # Random number generator
+alg = Rosenbrock23()           # Numerical integration algorithm
+
+# Parameters for saving data
+expname = &quot;test&quot;
+datadir = &quot;data&quot;
+
+# Size of a &quot;particle batch&quot;
+batch_size = 1_000_000
+nbatches = ceil(Int, npart / batch_size)
+
+# Maximum value of the proposal distribution is needed for the rejection 
+# algorithm
+maxval = maximum(propdistr.itp.itp.coefs)
+samplingdomain = [xbounds, zbounds]
+
+#
+# Define Callbacks
+#
+# Terminate particle when it is outside bounds
+out_cb = DiscreteCallback(
+    tp.OutOfDomainCondition_2Dxz(xbounds, zbounds),
+    tp.outofdomainaffect!
+)
+# Terminate the particle when EoM is invalid
+gca_cb = tp.GCABreakDownCB(&quot;lowmem&quot;, &quot;2Dxz&quot;, tolerance=0.001)
+cbset = CallbackSet(out_cb, gca_cb)
+
+# Define the problem function that draws particle initial conditions.
+# `DposMBvel` draws position from the proposal distribition and velocity from
+# a Maxwell-Boltzmann distribution at the position. It also gives the particle
+# a statistical weight according to the ratio between the proposal distribution
+# and the target distribution (importance weighing).
+prob_func = DposMBvel(
+    rng, proposal_itp, target_itp, samplingdomain, maxval, temperature_itp
+)
+output_func = output_func_max_lightweight
+# The output function determines what to with each particle solution.
+# `output_func_max_lightweight` keeps only the initial and final state of the
+# solution, together with a crude estimate of the largest experienced Larmor
+# radius, smallest experienced characteristic length scale of the magnetic
+# field, and largest experiences ration between them.
+
+# The reduciton determines what to with each particle batch.
+# `SaveBatchAsHDF5` saves each batch in seperate directories in an HDF5-file.
+# It also prints some summary statistics for each batch.
+reduction = SaveBatchAsHDF5(datadir, expname, batch_size, nbatches)
+
+#
+# Define the ODE- and ensemble problem and solve
+#
+# See the documentation of DifferentialEquations.jl for more keyword arguments
+# and solver options
+#
+prob = ODEProblem(
+    eom,
+    zeros(4), # Dummy initial condition
+    ( # Parameters
+        charge=charge,
+        mass=mass,
+        fields=em_fields_itp,
+        magneticmoment=nothing # Dummy magnetic moment
+    )
+)
+
+ensemble_prob = EnsembleProblem(
+    prob;
+    prob_func=prob_func,
+    output_func=output_func,
+    reduction=reduction,
+    safetycopy=false
+)
+
+sol = solve(
+    ensemble_prob,
+    alg,
+    EnsembleSerial();
+    reltol=3e-8,
+    abstol=1e0,
+    trajectories=npart,
+    maxiters=1e6,
+    callback=cbset,
+    batch_size=batch_size,
+)
+
+# Calculate and save `GCAState`s for the initial and final solution for each
+# particle. A `GCAState` includes more information than the solution, including
+# drifts, Larmor radius, electromagnetic fields etc. See the documentation for
+# more information.
+save_gcastates(get_filename(reduction), em_fields_itp)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Index</a><a class="docs-footer-nextpage" href="../api/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Wednesday 26 February 2025 20:39">Wednesday 26 February 2025</span>. Using Julia version 1.11.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
