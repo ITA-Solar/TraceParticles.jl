@@ -21,7 +21,7 @@ struct OutOfDomainCondition_3D
     ybounds::Tuple{<:Real,<:Real}
     zbounds::Tuple{<:Real,<:Real}
 end
-function (self::OutOfDomainCondition_2Dxz)(u, _, _)
+function (self::OutOfDomainCondition_3D)(u, _, _)
     return u[1] <= self.xbounds[1] || u[1] >= self.xbounds[2] ||
     return u[2] <= self.ybounds[1] || u[2] >= self.ybounds[2] ||
            u[3] <= self.zbounds[1] || u[3] >= self.zbounds[2]
