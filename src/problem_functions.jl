@@ -88,6 +88,53 @@ struct DposMBvel
     tg_itp::AbstractInterpolation
 end
 function (self::DposMBvel)(prob, i, repeat)
+    pos, nrejections = rejectionsample(
+        self.proposal_distr,
+        self.max_value,
+        self.domain,
+        self.rng
+    )
+    acceptanceratio = 1 / (nrejections + 1)
+    weight = self.target_distr(pos...) / self.proposal_distr(pos...)
+
+    # Velocity
+    charge = prob.p.charge
+    mass = prob.p.mass
+    vel = maxwellianvelocitysample(self.rng, self.tg_itp, mass, pos...)
+    bfield_at_pos = [prob.p.fields[i](pos...) for i in 1:3]
+    efield_at_pos = [prob.p.fields[i](pos...) for i in 4:6]
+    vparal, magneticmoment = vparal_and_magneticmoment(
+        vel,
+        bfield_at_pos,
+        efield_at_pos,
+        mass
+    )
+    remake(prob, u0=[pos; vparal],
+        p=(
+            charge=charge,
+            mass=mass,
+            magneticmoment=magneticmoment,
+            fields=prob.p.fields,
+            weight=weight,
+            acceptanceratio=acceptanceratio,
+            userdata=UserData("None")
+        )
+    )
+end
+
+
+"""
+Draws x and z positions from a given distribution using rejection sampling.
+"""
+struct DposMBvel_2Dxz
+    rng::AbstractRNG
+    proposal_distr::Any
+    target_distr::Any
+    domain::Vector{Tuple{<:Real,<:Real}}
+    max_value::Real
+    tg_itp::AbstractInterpolation
+end
+function (self::DposMBvel_2Dxz)(prob, i, repeat)
     (Rx, Rz), nrejections = rejectionsample(
         self.proposal_distr,
         self.max_value,
