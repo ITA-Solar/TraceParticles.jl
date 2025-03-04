@@ -241,8 +241,7 @@ function scalesratio(
         error("Unknown switch value.")
     end
 end
-function scalesratio_2Dxz(u, time, params)
-    R = [u[1], u[3]]
+function scalesratio(R, _, params)
     itpvec = params.fields[1:3]
     ∇B = ∇(R, itpvec)
     scalesratio(R, itpvec, ∇B, params)
