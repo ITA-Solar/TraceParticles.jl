@@ -10,6 +10,25 @@ DifferentialEquations.jl.
 # -----------------------------------------------------------------------------
 
 """
+    OutOfDomainCondition_3D
+        xbounds::Tuple{<:Real, <:Real}
+        ybounds::Tuple{<:Real, <:Real}
+        zbounds::Tuple{<:Real, <:Real}
+Returns true if the particle is outside the bounds.
+"""
+struct OutOfDomainCondition_3D
+    xbounds::Tuple{<:Real,<:Real}
+    ybounds::Tuple{<:Real,<:Real}
+    zbounds::Tuple{<:Real,<:Real}
+end
+function (self::OutOfDomainCondition_2Dxz)(u, _, _)
+    return u[1] <= self.xbounds[1] || u[1] >= self.xbounds[2] ||
+    return u[2] <= self.ybounds[1] || u[2] >= self.ybounds[2] ||
+           u[3] <= self.zbounds[1] || u[3] >= self.zbounds[2]
+end
+
+
+"""
     OutOfDomainCondition_2Dxz
         xbounds::Tuple{<:Real, <:Real}
         zbounds::Tuple{<:Real, <:Real}
@@ -56,6 +75,36 @@ end
 # -----------------------------------------------------------------------------
 # Relativistic particles
 # -----------------------------------------------------------------------------
+
+"""
+    RelativisticConditionGCA
+Callback condition for checking if the GCA particle is relativistic. Returns
+`true` if the particle's kinetic energy is a user defined fraction of the rest
+energy. Perpendicular drifts other than E cross B drift are neglected.
+
+Default fraction is 0.002, which is 1022 eV for an electron.
+"""
+struct RelativisticConditionGCA
+    fractionofrestenergy::Real
+
+    function RelativisticConditionGCA(mass, fraction=0.002)
+        return new(fraction * mass * csqrd)
+    end
+end
+function (self::RelativisticConditionGCA)(u, _, integrator)
+    Rx, Ry, Rz, vparal = u[1:4]
+    μ = integrator.p.magneticmoment
+    mass = integrator.p.mass
+
+    B_vec = [itp(Rx, Ry, Rz) for itp in integrator.p.fields[1:3]]
+    E_vec = [itp(Rx, Ry, Rz) for itp in integrator.p.fields[4:6]]
+    v_E = exbdrift(B_vec, E_vec)
+    B = norm(B_vec)
+    vperp = perpendicular_velocity(μ, mass, B)
+    energy = kineticenergy(vparal, vperp, v_E, mass)
+    return energy > self.fractionofrestenergy
+end
+
 
 """
     RelativisticConditionGCA_2Dxz
@@ -199,6 +248,20 @@ function (self::GCAInvalidCondition)(u, t, integrator)
         scalesratio(u, t, integrator.p, integrator.p.switch) > self.tolerance
 end
 
+"""
+    GCABreakDownCondition
+Callback condition for checking GCA assumption. Returns `true` if the ratio
+between the particle Larmor radius and the characteristic length of the
+magnetic field is higher than a tolerance `switchtol`.
+"""
+struct GCABreakDownCondition
+    tolerance::Real
+end
+function (self::GCABreakDownCondition)(u, t, integrator)
+    ratio = scalesratio(u[1:3], t, integrator.p)
+    return ratio > self.tolerance
+end
+
 
 """
     GCABreakDownCondition_2Dxz
@@ -209,9 +272,9 @@ magnetic field is higher than a tolerance `switchtol`.
 struct GCABreakDownCondition_2Dxz
     tolerance::Real
 end
-function (functor::GCABreakDownCondition_2Dxz)(u, t, integrator)
-    ratio = scalesratio_2Dxz(u, t, integrator.p)
-    return ratio > functor.tolerance
+function (self::GCABreakDownCondition_2Dxz)(u, t, integrator)
+    ratio = scalesratio([u[1], u[3]], t, integrator.p)
+    return ratio > self.tolerance
 end
 
 """
