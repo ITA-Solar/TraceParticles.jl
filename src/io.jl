@@ -303,8 +303,9 @@ function create_bifrost_itps(
     itp_bc::Interpolations.BoundaryCondition;
     filename::String,
     units="si",
-    auxvariables=["tg", "ne"],
-    normalise=[false, false],
+    auxvariables=[],
+    normalise=fill(false, length(auxvariables)),
+    destagger=fill(false, length(auxvariables)),
 )
     if length(auxvariables) != length(normalise)
         throw(ArgumentError(
@@ -320,10 +321,10 @@ function create_bifrost_itps(
         units=units,
         destagger=true,
     )
-    @save string(filename, "BE.jld2") interpolator
+    @save string(filename, "_BE.jld2") interpolator
 
     # Create interpolators for the auxiliary variables
-    for (var, norm) in zip(auxvariables, normalise)
+    for (var, norm, dstgr) in zip(auxvariables, normalise, destagger)
         interpolator = get_br_var_interpolator(
             brxp,
             snap,
@@ -332,7 +333,7 @@ function create_bifrost_itps(
             itp_bc=itp_bc,
             units=units,
             normalise=norm,
-            destagger=true,
+            destagger=dstgr,
         )
         @save string(filename, "_$(var)_norm=$(norm).jld2") interpolator
     end

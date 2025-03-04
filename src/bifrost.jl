@@ -20,12 +20,24 @@ function get_br_var_interpolator(
     itp_bc=Flat(),
     units="si",
     normalise=false,
+    destagger=true,
     kwargs...
 )
     if variable == "ne"
-        var = get_electron_density(brxp, snap; units=units, kwargs...)
+        if destagger
+            error("Electron density is not staggered. Set `destagger=false`")
+        else
+            var = get_electron_density(brxp, snap; units=units, kwargs...)
+        end
     else
-        var = get_var(brxp, snap, variable; units=units, kwargs...)
+        var = get_var(
+            brxp,
+            snap,
+            variable;
+            units=units,
+            destagger=destagger,
+            kwargs...
+        )
     end
     var = dropdims(var)
     br_axes = get_axes(brxp, units=units)
