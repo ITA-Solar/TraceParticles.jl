@@ -76,8 +76,11 @@ export
 export maxwellianvelocitysample
 # callbacks.jl
 export
+    OutOfDomainCondition_3D,
     OutOfDomainCondition_2Dxz,
+    RelativisticConditionGCA,
     RelativisticConditionGCA_2Dxz,
+    GCABreakDownCondition,
     GCABreakDownCondition_2Dxz,
     outofdomainaffect!,
     relativisticaffect!,
@@ -102,7 +105,8 @@ export
     h5_getdataset,
     h5_getenergies,
     h5_getinitialstate,
-    save_gcastates
+    save_gcastates,
+    create_bifrost_itps
 # gcastate.jl
 export
     GCAState
