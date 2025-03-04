@@ -334,7 +334,7 @@ function create_bifrost_itps(
             normalise=norm,
             destagger=true,
         )
-        @save string(filename, "_$var.jld2") interpolator
+        @save string(filename, "_$(var)_norm=$(norm).jld2") interpolator
     end
 
 end
