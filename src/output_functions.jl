@@ -11,9 +11,14 @@ We set the required "rerun" return argument to false.
 """
 function output_func_max_lightweight(sol, i)
     ntimes = length(sol.t)
-    maxrl, meanrl = find_max_larmorradius(sol, ntimes=ntimes)
-    minlb, meanlb = find_min_fieldlength(sol, ntimes=ntimes)
-    maxscalesratio, meanscalesratio = find_max_scalesratio(sol, ntimes=ntimes)
+    posidxs = ndims(sol.prob.p.fields[1]) == 2 ? [1,3] : [1,2,3]
+    maxrl, meanrl = find_max_larmorradius(sol, ntimes=ntimes, posidxs=posidxs)
+    minlb, meanlb = find_min_fieldlength(sol, ntimes=ntimes, posidxs=posidxs)
+    maxscalesratio, meanscalesratio = find_max_scalesratio(
+        sol,
+        ntimes=ntimes,
+        posidxs=posidxs
+    )
     x0, y0, z0, vparal0 = first(sol)
     xf, yf, zf, vparalf = last(sol)
     # Select parameters to save

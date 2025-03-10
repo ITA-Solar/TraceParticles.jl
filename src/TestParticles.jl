@@ -89,6 +89,7 @@ export
 export
     UposMBvel,
     DposMBvel,
+    DposMBvel_2Dxz,
     PposPvel
 # output_functions.jl
 export
