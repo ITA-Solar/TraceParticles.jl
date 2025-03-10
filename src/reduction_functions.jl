@@ -29,6 +29,7 @@ function print_batch_statistics(batch)
     println("Number of maxiters:          $(sum(batch.retcode .== :maxiters))")
     println("Number of OutofDomain:       $(sum(batch.retmsg .== "OutofDomain"))")
     println("Number of GCABreakDown:      $(sum(batch.retmsg .== "GCABreakDown"))")
+    println("Number of Relativistic:      $(sum(batch.retmsg .== "Relativistic"))")
     println("=================================================================",
         "===============")
 end

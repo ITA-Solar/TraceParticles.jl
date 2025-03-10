@@ -87,7 +87,7 @@ Default fraction is 0.002, which is 1022 eV for an electron.
 struct RelativisticConditionGCA
     fractionofrestenergy::Real
 
-    function RelativisticConditionGCA(mass, fraction=0.002)
+    function RelativisticConditionGCA(mass, fraction=0.02)
         return new(fraction * mass * csqrd)
     end
 end
