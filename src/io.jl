@@ -23,12 +23,19 @@ test particles.
 """
 function save_gcastates(
     filename::String,
-    fields_itp::Vector{<:AbstractInterpolation}
+    fields_itp::Vector{<:AbstractInterpolation};
+    components="all",
+    dimensionality="2Dxz",
 )
     name, extension = splitext(filename)
     if extension == ".csv"
         df = DataFrame(CSV.File(filename))
-        dfgca0, dfgcaf = GCAState(df, fields_itp, components="all")
+        dfgca0, dfgcaf = GCAState(
+            df,
+            fields_itp;
+            components=components,
+            dimensionality=dimensionality
+        )
         CSV.write(filename * "_gcastate0.csv", dfgca0)
         CSV.write(filename * "_gcastatef.csv", dfgcaf)
     elseif extension == ".h5"
@@ -40,7 +47,12 @@ function save_gcastates(
             batchname = "batch_$i"
             batch = read(h5_sol[batchname])
             df = DataFrame(batch)
-            dfgca0, dfgcaf = GCAState(df, fields_itp, components="all")
+            dfgca0, dfgcaf = GCAState(
+                df,
+                fields_itp;
+                components=components,
+                dimensionality=dimensionality,
+            )
             group0 = create_group(h5_gcastates0, batchname)
             groupf = create_group(h5_gcastatesf, batchname)
             for key in names(dfgca0)
@@ -300,7 +312,10 @@ function create_bifrost_itps(
     brxp::BifrostExperiment,
     snap::Integer,
     itp_type::Interpolations.InterpolationType,
-    itp_bc::Interpolations.BoundaryCondition;
+    itp_bc::Union{
+        Interpolations.BoundaryCondition,
+        NTuple{N, Interpolations.BoundaryCondition} where N
+    };
     filename::String,
     units="si",
     auxvariables=[],
@@ -325,7 +340,7 @@ function create_bifrost_itps(
 
     # Create interpolators for the auxiliary variables
     for (var, norm, dstgr) in zip(auxvariables, normalise, destagger)
-        interpolator = get_br_var_interpolator(
+        interpolator, _ = get_br_var_interpolator(
             brxp,
             snap,
             var,
@@ -335,7 +350,7 @@ function create_bifrost_itps(
             normalise=norm,
             destagger=dstgr,
         )
-        @save string(filename, "_$(var)_norm=$(norm).jld2") interpolator
+        @save string(filename, "_$(var)_norm$(norm).jld2") interpolator
     end
 
 end

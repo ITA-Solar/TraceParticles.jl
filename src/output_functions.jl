@@ -87,11 +87,11 @@ radius. The solution is evaluated at `ntimes` points in time.
 and the initial and final times must be accessible with `first(sol.t)` and
 `last(sol.t)`, respectively.
 """
-function find_max_larmorradius(sol; ntimes=5length(sol.t))
-    f(t) = larmorradius(sol(first(t))[1:2:3], sol.prob.p)
+function find_max_larmorradius(sol; ntimes=5length(sol.t), posidxs=[1,2,3])
+    f(t) = larmorradius(sol(first(t))[posidxs], sol.prob.p)
     if ntimes == 1
         time = sol.t[1]
-        farray = larmorradius(sol[1][1:2:3], sol.prob.p)
+        farray = larmorradius(sol[1][posidxs], sol.prob.p)
         max = MaxValue(farray, sol[1], time)
         mean = sum(farray) / length(farray)
     else
@@ -115,15 +115,15 @@ length. The solution is evaluated at `ntimes` points in time.
 and the initial and final times must be accessible with `first(sol.t)` and
 `last(sol.t)`, respectively.
 """
-function find_min_fieldlength(sol; ntimes=5length(sol.t))
+function find_min_fieldlength(sol; ntimes=5length(sol.t), posidxs=[1,2,3])
     f(t) = characteristicfieldlength(
-        sol(first(t))[1:2:3],
+        sol(first(t))[posidxs],
         sol.prob.p.fields[1:3]
     )
     if ntimes == 1
         time = sol.t[1]
         farray = characteristicfieldlength(
-            sol[1][1:2:3], sol.prob.p.fields[1:3]
+            sol[1][posidxs], sol.prob.p.fields[1:3]
         )
         min = MinValue(farray, sol[1], time)
         mean = farray
@@ -148,17 +148,17 @@ ratio. The solution is evaluated at `ntimes` points in time.
 and the initial and final times must be accessible with `first(sol.t)` and
 `last(sol.t)`, respectively.
 """
-function find_max_scalesratio(sol; ntimes=5length(sol.t))
-    frl(t) = larmorradius(sol(first(t))[1:2:3], sol.prob.p)
+function find_max_scalesratio(sol; ntimes=5length(sol.t), posidxs=[1,2,3])
+    frl(t) = larmorradius(sol(first(t))[posidxs], sol.prob.p)
     flb(t) = characteristicfieldlength(
-        sol(first(t))[1:2:3],
+        sol(first(t))[posidxs],
         sol.prob.p.fields[1:3]
     )
     f(t) = frl(t) / flb(t)
     if ntimes == 1
         time = sol.t[1]
-        farray = larmorradius(sol[1][1:2:3], sol.prob.p) /
-                 characteristicfieldlength(sol[1][1:2:3], sol.prob.p.fields[1:3])
+        farray = larmorradius(sol[1][posidxs], sol.prob.p) /
+                 characteristicfieldlength(sol[1][posidxs], sol.prob.p.fields[1:3])
         max = MaxValue(farray, sol[1], time)
         mean = farray
     else

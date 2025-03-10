@@ -649,7 +649,8 @@ function ensembleofgcastates(
                 itpvec
                 ;
                 time=times[i],
-                dimensionality=dimensionality,)
+                dimensionality=dimensionality
+            )
         elseif components == "exb"
             if dimensionality == "2Dxz"
                 Rx = solution[i][1]
