@@ -11,38 +11,58 @@ experiment may be adjusted through keyword arguments. These are
 - `maxiters`
 - `alg`: solver algorithm
 - `gcatol`: Tolerance for the guiding centre approximation.
+
+# Example use
+```julia
+fname = "testparticles.h5"
+npart = 10
+sol = rerun(find_nonthermals(fname, npart)[1:2]..., npart, fname)
 """
 function rerun(
     u0::Vector{<:Vector{<:Real}},
     mu0::Vector{<:Real},
-    nparticles::Int,
     fname::String;
     reltol=nothing,
     abstol=nothing,
     maxiters=nothing,
-    alg=Tsit5(),
+    alg=Rosenbrock23(),
     gcatol=nothing,
+    relativistic_tol=nothing,
     onlymagneticfield=false,
     emfields=nothing,
-    EoM=nothing
+    EoM=nothing,
+    kwargs...
 )
-    include(fname * ".jl")
+    nparticles = length(u0)
+    expname, _ = splitext(fname)
+    include(expname * ".jl")
     tspans = [tspan for _ in 1:nparticles]
     if !isnothing(gcatol)
         solve_kwargs[:callback] = CallbackSet(
             solve_kwargs[:callback].discrete_callbacks[1],
+            solve_kwargs[:callback].discrete_callbacks[2],
             DiscreteCallback(
                 GCABreakDownCondition_2Dxz(gcatol),
                 gcabreakdownaffect!
             )
         )
     end
-    s_kwargs = (
-        reltol=isnothing(reltol) ? solve_kwargs[:reltol] : reltol,
-        abstol=isnothing(abstol) ? solve_kwargs[:abstol] : abstol,
-        maxiters=isnothing(maxiters) ? solve_kwargs[:maxiters] : maxiters,
-        trajectories=nparticles,
-        callback=solve_kwargs[:callback],
+    if !isnothing(relativistic_tol)
+        solve_kwargs[:callback] = CallbackSet(
+            solve_kwargs[:callback].discrete_callbacks[1],
+            DiscreteCallback(
+                RelativisticConditionGCA_2Dxz(relativistic_tol),
+                relativisticaffect!
+            ),
+            solve_kwargs[:callback].discrete_callbacks[3],
+        )
+    end
+    s_kwargs = Dict(
+        :reltol => isnothing(reltol) ? solve_kwargs[:reltol] : reltol,
+        :abstol => isnothing(abstol) ? solve_kwargs[:abstol] : abstol,
+        :maxiters => isnothing(maxiters) ? solve_kwargs[:maxiters] : maxiters,
+        :trajectories => nparticles,
+        :callback => solve_kwargs[:callback],
     )
 
     if isnothing(emfields)
@@ -65,8 +85,61 @@ function rerun(
     else
         eqs = EoM
     end
-    prob = ODEProblem(
+
+    return rerun(
+        u0,
+        mu0,
         eqs,
+        charge,
+        mass,
+        fields,
+        tspans,
+        merge(
+            Dict(:safetycopy => false),
+            Dict(k => v for (k, v) in kwargs)
+        ),
+        s_kwargs;
+        alg=alg,
+        parallelisation=EnsembleSerial(),
+    )
+end
+
+
+"""
+    rerun(
+        u0::Vector{<:Vector{<:Real}},
+        mu0::Vector{<:Real},
+        charge::Real,
+        mass::Real,
+        fields::Vector{Any},
+        tspans::Vector{<:Tuple{Real, Real}},
+        ensemble_prob_kwargs::Dict{Symbol, Any},
+        solve_kwargs::Dict{Symbol, Any};
+        alg=Rosenbrock23(),
+        parallelisation=EnsembleSerial(),
+    )
+Rerun GCA particles with initial condition `u0` and magnetic moments `mu0`,
+using the parameters `charge`, `mass`, `fields`, and `tspans`. The arguments
+`ensemble_prob_kwargs` and `solve_kwargs` are dictionaries containing keyword
+arguments for the `EnsembleProblem` and `DifferentialEquations.solve` function.
+"""
+function rerun(
+    u0::Vector{<:Vector{<:Real}},
+    mu0::Vector{<:Real},
+    eom::Function,
+    charge::Real,
+    mass::Real,
+    fields::Vector{<:Any},
+    tspans::Vector{<:Tuple{Real, Real}},
+    ensemble_prob_kwargs::Dict{<:Symbol, <:Any},
+    solve_kwargs::Dict{<:Symbol, <:Any};
+    alg=Rosenbrock23(),
+    parallelisation=EnsembleSerial(),
+)
+    nparticles = length(u0)
+
+    prob = ODEProblem(
+        eom,
         u0[1],
         tspans[1],
         (
@@ -80,17 +153,16 @@ function rerun(
         prob
         ;
         prob_func=PposPvel(u0, mu0, tspans),
-        # Use default output function. I.e. return the whole solution
-        safetycopy=false,
+        ensemble_prob_kwargs...
     )
 
-    solve_args = (alg, EnsembleSerial())
-    @info "Re-running $fname with $nparticles particles..."
+    @info "Re-running with $nparticles particles..."
     @time sol = DifferentialEquations.solve(
         ensemble_prob,
-        solve_args...
+        alg,
+        parallelisation
         ;
-        s_kwargs...
+        solve_kwargs...
     )
     return sol
 end
