@@ -58,6 +58,18 @@ function find_maxiters(
     return u0, mu0, idxs
 end
 
+function find_relativistic(
+    fname::String,
+)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
+    retmsg = h5_getdataset(fname, "retmsg")
+    idxs = findall(x -> x == "Relativistic", retmsg)
+    u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
+    mu0 = mu0[idxs]
+
+    return u0, mu0, idxs
+end
+
 
 """
     get_u0(
