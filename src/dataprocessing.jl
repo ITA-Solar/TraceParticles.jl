@@ -24,7 +24,7 @@ function find_nonthermals(
     relativegain::Bool=false,
 )
     expname, _ = splitext(fname)
-    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(expname)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
     e0, ef = h5_getenergies(expname)
 
     sortby = relativegain ? (ef .- e0) ./ e0 : ef
@@ -48,8 +48,7 @@ function find_maxiters(
     fname::String,
     nparticles::Int;
 )
-    expname, _ = splitext(fname)
-    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(expname)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
     nt = h5_getdataset(fname, "nt")
     sortby = nt
     idxs = sortperm(sortby)[end-nparticles+1:end]
