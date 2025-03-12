@@ -226,23 +226,29 @@ function h5_mergebatches!(filename)
             h5group = fid["batch_$b"]
             numparticles += length(h5group[fields[1]])
         end
-        return batches, fields, numparticles
+        return fields, numparticles
     end
     fid = h5open(filename, "cw")
     h5group = create_group(fid, "merged")
-    for f in fields[fields.!=="timestamp"]
-        if f == "timestamp"
-            data = Vector{String}(undef, nbatches)
-        else
-            data = Vector{eltype(read(fid["batch_1"][f]))}(undef, numparticles)
+    try
+        for f in fields
+            if f == "timestamp"
+                @info "In"
+                data = Vector{String}(undef, nbatches)
+            else
+                data = Vector{eltype(read(fid["batch_1"][f]))}(undef, numparticles)
+            end
+            i = 1
+            for b in batches
+                n = length(fid["batch_$b"][f])
+                data[i:i+n-1] .= read(fid["batch_$b"][f])
+                i += n
+            end
+            @info "Writing $f"
+            write(h5group, f, data)
         end
-        i = 1
-        for b in batches
-            n = length(fid["batch_$b"][f])
-            data[i:i+n-1] .= read(fid["batch_$b"][f])
-            i += n
-        end
-        write(h5group, f, data)
+    catch
+        delete_object(fid, "merged")
     end
     close(fid)
 end
