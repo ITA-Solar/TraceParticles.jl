@@ -71,6 +71,18 @@ function find_relativistic(
 end
 
 
+function find_idxs(
+    fname::String,
+    idxs::Vector{Int}
+)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
+    u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
+    mu0 = mu0[idxs]
+
+    return u0, mu0
+end
+
+
 """
     get_u0(
         fname::String;
