@@ -82,6 +82,7 @@ Reduction functor that saves the batch as an HDF5 file.
 The struct instance is callable and its fields are
 - `expdir::String`: The directory where the data is saved.
 - `expname::String`: The name of the experiment.
+- `suffix::String`: A suffix to the filename.
 - `batchnr::Int`: The current batch number.
 - `batchsize::Int`: The size of the batch.
 - `nbatches::Int`: The total number of batches.
@@ -89,7 +90,7 @@ The struct instance is callable and its fields are
 mutable struct SaveBatchAsHDF5
     expdir::String
     expname::String
-    postfix::String
+    suffix::String
     batchnr::Int
     batchsize::Int
     nbatches::Int
@@ -98,10 +99,9 @@ mutable struct SaveBatchAsHDF5
         expname::String,
         batchsize::Int,
         nbatches::Int;
-        postfix::String=""
+        suffix::String="",
     )
         batchnr = 0
-        new(expdir, expname, postfix, batchnr, batchsize, nbatches)
     end
 end
 function (self::SaveBatchAsHDF5)(u, batch, I)
@@ -144,5 +144,5 @@ function get_filename(reduction::SaveBatchAsHDF5)
         reduction.expdir,
         reduction.expname,
         reduction.expname
-    ) * reduction.postfix * ".h5"
+    ) * reduction.suffix * ".h5"
 end
