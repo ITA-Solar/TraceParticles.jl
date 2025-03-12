@@ -254,6 +254,50 @@ function h5_mergebatches!(filename)
 end
 
 
+"""
+    h5_replaceparticles!(fname_original, fname_replacement, rerun_idxs)
+Replaces the particles in the HDF5-file `fname_original` with the particles in
+`fname_replacement` at the indices `idxs`, which must either be a vector of
+integers or a string pointing to a dataset in the replacement file under the
+group "metadata".
+"""
+function h5_replaceparticles!(
+    fname_original::String,
+    fname_replacement::String;
+    rerun_idxs::String="rerun_idxs"
+)
+    idxs = h5open(fname_replacement) do fid
+        read(fid["metadata/$rerun_idxs"])
+    end
+    h5_replaceparticles!(fname_original, fname_replacement, idxs)
+end
+function h5_replaceparticles!(
+    fname_original::String,
+    fname_replacement::String,
+    rerun_idxs::Vector{<:Int}
+)
+    original = h5_getall(fname_original)
+    replacement = h5_getall(fname_replacement)
+
+    if length(rerun_idxs) != size(replacement, 1)
+        error("Length of idxs must be equal to the number of particles in
+        The replacement")
+    end
+
+    for i in eachindex(rerun_idxs)
+        for key in names(replacement)
+            original[rerun_idxs[i], key] = replacement[i, key]
+        end
+    end
+
+    h5open(fname_original, "cw") do fid
+        h5group = create_group(fid, "replaced")
+        for key in names(original)
+            write_dataset(h5group, key, original[!, key])
+        end
+    end
+end
+
 #____/\_____/\_________________________________________________________________
 #
 # CSV loading routines
