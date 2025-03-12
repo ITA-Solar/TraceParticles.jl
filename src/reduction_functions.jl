@@ -86,6 +86,7 @@ The struct instance is callable and its fields are
 - `batchnr::Int`: The current batch number.
 - `batchsize::Int`: The size of the batch.
 - `nbatches::Int`: The total number of batches.
+- `metadata::Dict{<:String, <:Any}`: A dictionary of user-specified metadata.
 """
 mutable struct SaveBatchAsHDF5
     expdir::String
@@ -94,14 +95,17 @@ mutable struct SaveBatchAsHDF5
     batchnr::Int
     batchsize::Int
     nbatches::Int
+    metadata::Dict{<:String, <:Any}
     function SaveBatchAsHDF5(
         expdir::String,
         expname::String,
         batchsize::Int,
         nbatches::Int;
         suffix::String="",
+        metadata::Dict{<:String, <:Any}=Dict{String, Any}()
     )
         batchnr = 0
+        new(expdir, expname, suffix, batchnr, batchsize, nbatches, metadata)
     end
 end
 function (self::SaveBatchAsHDF5)(u, batch, I)
@@ -119,12 +123,28 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
 
     df = DataFrame(batch)
 
+    batchname = "batch_$(self.batchnr)"
+    # Open data file
     h5open(filename, "cw") do fid
-        h5group = create_group(fid, "batch_$(self.batchnr)")
+        # Create group for the batch and write the particle data
+        h5group = create_group(fid, batchname)
         for key in names(df)
             write(h5group, key, df[!, key])
         end
-        write(h5group, "timestamp", string(now()))
+
+        # If it is the first batch, write metadata to the file, and create the
+        # group for batch specific metadata
+        if self.batchnr == 1
+            metagroup = create_group(fid, "metadata")
+            for (key, value) in self.metadata
+                write(metagroup, key, value)
+            end
+            batchmetagroup = create_group(fid, "batch specific metadata")
+        else
+            batchmetagroup = fid["Batch specific metadata"]
+        end
+        # Write batch specific metadata
+        write(metagroup, batchname, string(now()))
     end
     # Write batch statistics to file?
     println("success")
