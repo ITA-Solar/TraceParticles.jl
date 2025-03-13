@@ -209,6 +209,28 @@ function h5_getinitialstate(filename; batches=nothing)
 end
 
 
+"""
+    h5_getfinalstate(filename)
+Returns `xf`, `yf`, `zf`, `vparalf`, and `magneticmoment` from a test particle
+ensemble stored in a HDF5-file.
+"""
+function h5_getfinalstate(filename; batches=nothing)
+    _, ext = splitext(filename)
+    if ext != ".h5"
+        error("Filename must be a HDF5 file with extension .h5")
+    end
+    if isnothing(batches)
+        batches, _ = h5_nbatches(filename)
+    end
+    xf = h5_getdataset(filename, "xf"; batches=batches)
+    yf = h5_getdataset(filename, "yf"; batches=batches)
+    zf = h5_getdataset(filename, "zf"; batches=batches)
+    vparalf = h5_getdataset(filename, "vparalf"; batches=batches)
+    mu = h5_getdataset(filename, "magneticmoment"; batches=batches)
+    return xf, yf, zf, vparalf, mu
+end
+
+
 #____/\_____/\_________________________________________________________________
 #
 # Modifying data in HDF5-files
