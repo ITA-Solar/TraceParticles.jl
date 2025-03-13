@@ -51,7 +51,7 @@ function rerun(
         solve_kwargs[:callback] = CallbackSet(
             solve_kwargs[:callback].discrete_callbacks[1],
             DiscreteCallback(
-                RelativisticConditionGCA_2Dxz(relativistic_tol),
+                RelativisticConditionGCA_2Dxz(mass; fraction=relativistic_tol),
                 relativisticaffect!
             ),
             solve_kwargs[:callback].discrete_callbacks[3],
