@@ -171,11 +171,12 @@ Returns the initial and final energies of a set of batches in a HDF5-file.
 If `batches` is not specified, the data from all batches are returned.
 """
 function h5_getenergies(filename; batches=nothing, units="eV")
+    expname, _ = splitext(filename)
     if isnothing(batches)
-        batches, _ = h5_nbatches(filename * ".h5")
+        batches, _ = h5_nbatches(expname * ".h5")
     end
-    filename0 = filename * "_gcastates0.h5"
-    filenamef = filename * "_gcastatesf.h5"
+    filename0 = expname * "_gcastates0.h5"
+    filenamef = expname * "_gcastatesf.h5"
     e0 = h5_getdataset(filename0, "energy"; batches=batches)
     ef = h5_getdataset(filenamef, "energy"; batches=batches)
     if units == "eV"
