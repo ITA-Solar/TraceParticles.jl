@@ -115,7 +115,7 @@ energy. Perpendicular drifts other than E cross B drift are neglected.
 Default fraction is 0.002, which is 1022 eV for an electron.
 """
 struct RelativisticConditionGCA_2Dxz
-    fractionofrestenergy::Real
+    energylimit::Real
 
     function RelativisticConditionGCA_2Dxz(mass; fraction=0.02)
         return new(fraction * mass * csqrd)
@@ -132,7 +132,7 @@ function (self::RelativisticConditionGCA_2Dxz)(u, _, integrator)
     B = norm(B_vec)
     vperp = perpendicular_velocity(μ, mass, B)
     energy = kineticenergy(vparal, vperp, v_E, mass)
-    return energy > self.fractionofrestenergy
+    return energy > self.energylimit
 end
 
 
