@@ -141,7 +141,7 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
             end
             batchmetagroup = create_group(fid, "batch specific metadata")
         else
-            batchmetagroup = fid["Batch specific metadata"]
+            batchmetagroup = fid["batch specific metadata"]
         end
         # Write batch specific metadata
         write(metagroup, batchname, string(now()))
