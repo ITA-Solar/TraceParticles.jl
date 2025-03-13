@@ -1,24 +1,28 @@
 #-------------------------------------------------------------------------------
 # Created 29.01.24
 # Author: e.s.oyre@astro.uio.no
-#-------------------------------------------------------------------------------
 #
 #                 dataprocessing.jl
 #
-#-------------------------------------------------------------------------------
 # Contains functions for processing results.
 #-------------------------------------------------------------------------------
 
+
+#_______________________________________________________________________________
+#
+# Finding particular particles
+#
+
 """
-    find_nonthermals(
+    initialstate_nonthermals(
         fname::String,
         nparticles::Int;
         relativegain::Bool=false,
         )
-Find the `nparticles` most energetic particles from the test particle ensemble
-stored as HDF5 files with the filename `fname`.
+Find the initial state of the `nparticles` most energetic particles from the
+test particle ensemble stored as HDF5 files with the filename `fname`.
 """
-function find_nonthermals(
+function initialstate_nonthermals(
     fname::String,
     nparticles::Int;
     relativegain::Bool=false,
@@ -37,75 +41,160 @@ end
 
 
 """
-    find_maxiters(
-        fname::String,
-        nparticles::Int;
-    )
-Find the `nparticles` particles with most timesteps from the test particle
-ensemble stored as HDF5 files with the filename `fname`.
+    initialstate_maxiters(fname::String, nparticles::Int)
+Find the initial state of the `nparticles` particles with most timesteps from
+the test particle ensemble stored as HDF5 files with the filename `fname`.
 """
-function find_maxiters(
-    fname::String,
-    nparticles::Int;
-)
+function initialstate_maxiters(fname::String, nparticles::Int)
     x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
     nt = h5_getdataset(fname, "nt")
     sortby = nt
     idxs = sortperm(sortby)[end-nparticles+1:end]
     u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
     mu0 = mu0[idxs]
-
-    return u0, mu0, idxs
-end
-
-function find_relativistic(
-    fname::String,
-)
-    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
-    retmsg = h5_getdataset(fname, "retmsg")
-    idxs = findall(x -> x == "Relativistic", retmsg)
-    u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
-    mu0 = mu0[idxs]
-
     return u0, mu0, idxs
 end
 
 
-function find_idxs(
-    fname::String,
-    idxs::Vector{Int}
-)
+"""
+    initialstate_retmsg(fname, retmsg)
+Find the initial state of the particles with the return message `retmsg` from
+the test particle ensemble stored as HDF5 with the filename `fname`.
+"""
+function initialstate_retmsg(fname::String, retmsg::String)
+    x0, y0, z0, vparal0, mu = h5_getinitialstate(fname)
+    idxs = findall(x -> x == retmsg, h5_getdataset(fname, "retmsg"))
+    u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
+    mu = mu[idxs]
+    return u0, mu, idxs
+end
+
+
+"""
+    finalstate_retmsg(fname, retmsg)
+Find the final state of the particles with the return message `retmsg` from
+the test particle ensemble stored as HDF5 with the filename `fname`.
+"""
+function finalstate_retmsg(fname::String, retmsg::String)
+    xf, yf, zf, vparalf, mu = h5_getfinalstate(fname)
+    idxs = findall(x -> x == retmsg, h5_getdataset(fname, "retmsg"))
+    uf = [[xf[i], yf[i], zf[i], vparalf[i]] for i in idxs]
+    mu = mu[idxs]
+    return uf, mu, idxs
+end
+
+
+"""
+    initialstate_idxs(fname, idxs)
+Find the initial state of the particles with the indices `idxs` from the test
+particle ensemble stored as HDF5 with the filename `fname`.
+"""
+function initialstate_idxs(fname::String, idxs::Vector{Int})
     x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
     u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
     mu0 = mu0[idxs]
-
     return u0, mu0
 end
 
 
 """
-    get_u0(
-        fname::String;
-        mask=nothing
-    )
-Get the initial state of the test particles stored in the HDF5-file `fname`.
-Optionally filter out particles using a mask.
+    replace_finalstates(fname_original, fname_replacement, original_idxs)
+Replace the particles in `fname_original` with the particles in
+`fname_replacement`. The indices of the particles to be replaced in
+`fname_original` are given by `idxs`. The length of `idxs` must be the same as
+the number of particles in `fname_replacement`.
 """
-function get_u0(
-    fname::String;
-    mask=nothing
-)
-    expname, _ = splitext(fname)
-    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(expname)
-    u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in eachindex(x0)]
+function replaceparticles(fname_original, fname_replacement, original_idxs)
+    original = h5_getall(fname_original)
+    replacement = h5_getall(fname_replacement)
 
-    if isnothing(mask)
-        return u0, mu0
-    else
-        return u0[mask], mu0[mask]
+    if length(original_idxs) != size(replacement, 1)
+        error(
+            "Length of `original_idxs` must be equal to the number of
+            particles in the replacement"
+        )
+    end
+
+    for i in eachindex(original_idxs)
+        for key in names(replacement)
+            original[rerun_idxs[i], key] = replacement[i, key]
+        end
+    end
+    return original
+end
+
+
+#_______________________________________________________________________________
+#
+# Filtering/masking data
+#
+
+
+"""
+    particlemaskfunction(
+        ;
+        x0lim=nothing,
+        y0lim=nothing
+        z0lim=nothing,
+        xflim=nothing,
+        yflim=nothing
+        zflim=nothing,
+        timelim=nothing,
+        retmsg=nothing,
+)
+Create a function that filters out particles based on the specified limits.
+The function accepts a dictionary which it filters based on the key-limit pairs
+- `:x0` for `x0lim`
+- `:y0` for `y0lim`
+- `:z0` for `z0lim`
+- `:xf` for `xflim`
+- `:yf` for `yflim`
+- `:zf` for `zflim`
+- `:tf` for `timelim`
+- `:retmsg` for `retmsg`
+
+It assumes the dictionary has the key `:x0` to find out how many particles there
+are in the dataset.
+"""
+function particlemaskfunction(
+    ;
+    x0lim=nothing,
+    y0lim=nothing,
+    z0lim=nothing,
+    xflim=nothing,
+    yflim=nothing,
+    zflim=nothing,
+    timelim=nothing,
+    retmsg=nothing,
+)
+
+    conditions = Dict{Symbol,Function}()
+    if !isnothing(retmsg)
+        conditions[:retmsg] = x -> retmsg == x
+    end
+    for (sym, limit) in zip(
+        (:x0, :y0, :z0, :xf, :yf, :zf, :tf),
+        (x0lim, y0lim, z0lim, xflim, yflim, zflim, timelim)
+    )
+        if !isnothing(limit)
+            conditions[sym] = x -> limit[1] <= x <= limit[2]
+        end
+    end
+    return (data) -> begin
+        findall(
+            i -> begin
+                all([func(data[sym][i]) for (sym, func) in conditions])
+            end,
+            eachindex(data[:x0])
+        )
     end
 end
 
+
+#_______________________________________________________________________________
+#
+# Other
+#
 
 """
     generate_probdistr(
@@ -256,69 +345,3 @@ function energyfraction(
     return sum(nonthermalcounts .* nothermalbinwidhts)
 end
 
-
-#____/\_____/\_________________________________________________________________
-#
-# Filtering/masking data
-#
-
-
-"""
-    particlemaskfunction(
-        ;
-        x0lim=nothing,
-        y0lim=nothing
-        z0lim=nothing,
-        xflim=nothing,
-        yflim=nothing
-        zflim=nothing,
-        timelim=nothing,
-        retmsg=nothing,
-)
-Create a function that filters out particles based on the specified limits.
-The function accepts a dictionary which it filters based on the key-limit pairs
-- `:x0` for `x0lim`
-- `:y0` for `y0lim`
-- `:z0` for `z0lim`
-- `:xf` for `xflim`
-- `:yf` for `yflim`
-- `:zf` for `zflim`
-- `:tf` for `timelim`
-- `:retmsg` for `retmsg`
-
-It assumes the dictionary has the key `:x0` to find out how many particles there
-are in the dataset.
-"""
-function particlemaskfunction(
-    ;
-    x0lim=nothing,
-    y0lim=nothing,
-    z0lim=nothing,
-    xflim=nothing,
-    yflim=nothing,
-    zflim=nothing,
-    timelim=nothing,
-    retmsg=nothing,
-)
-
-    conditions = Dict{Symbol,Function}()
-    if !isnothing(retmsg)
-        conditions[:retmsg] = x -> retmsg == x
-    end
-    for (sym, limit) in zip(
-        (:x0, :y0, :z0, :xf, :yf, :zf, :tf),
-        (x0lim, y0lim, z0lim, xflim, yflim, zflim, timelim)
-    )
-        if !isnothing(limit)
-            conditions[sym] = x -> limit[1] <= x <= limit[2]
-        end
-    end
-    return (data) -> begin
-        findall(
-            i -> begin
-                all([func(data[sym][i]) for (sym, func) in conditions])
-            end,
-            eachindex(data[:x0])
-        )
-    end
-end
