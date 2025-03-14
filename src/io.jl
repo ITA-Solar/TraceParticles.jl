@@ -101,29 +101,29 @@ function h5_getbatch(filename, batchnr)
     end
 end
 
-"""
-    h5_getdataset(filename, dataset, batchnr)
-Returns dataset `dataset` from batch number `batchnr` in a HDF5-file.
 
 """
-function h5_getdataset(filename, dataset, batchnr)
+    h5_getdataset(filename, dataset)
+    h5_getdataset(filename, dataset, h5group::String)
+    h5_getdataset(filename, dataset, batchnr::Int)
+    h5_getdataset(filename, dataset, batches::AbstractVector)
+Returns dataset `dataset` from all batches, the HDF5-group `h5group`,
+`batchnr` or range of `batches`.
+"""
+function h5_getdataset(filename::String, dataset::String, h5_group::String)
     h5open(filename, "r") do h5_file
-        read(h5_file["batch_$batchnr/"*dataset])
+        read(h5_file[h5_group][dataset])
     end
 end
-
-
-"""
-    h5_getdataset(filename, dataset; batches=nothing)
-Returns the dataset `dataset` multiple batches in a HDF5-file. If `batches` is
-not specified, all batches are returned.
-"""
-function h5_getdataset(filename, dataset; batches=nothing)
-    if isnothing(batches)
-        batches, nbatches = h5_nbatches(filename)
-    else
-        nbatches = length(batches)
-    end
+function h5_getdataset(filename::String, dataset::String, batchnr::Int)
+    h5_getdataset(filename, dataset, "batch_$batchnr")
+end
+function h5_getdataset(filename::String, dataset::String)
+    batches, _ = h5_nbatches(filename)
+    h5_getdataset(filename, dataset, batches)
+end
+function h5_getdataset(filename, dataset, batches::AbstractVector)
+    nbatches = length(batches)
     groupnames = ["batch_$i/" for i in batches]
     data = reduce(vcat,
         h5open(filename, "r") do h5_file
@@ -141,18 +141,27 @@ end
 
 
 """
-    h5_getall(filename; batches=nothing)
-Returns all datasats from a set of batches in a HDF5-file as a `DataFrame`.
-If `batches` is not specified, the data from all batches are returned.
+    h5_getall(filename)
+    h5_getall(filename, group::String)
+    h5_getall(filename, batchnr::Int)
+    h5_getall(filename, batches::AbstractVector)
+Return all datasets in the HDF5-file `filename` as a `DataFrame`.
 """
-function h5_getall(filename; batches=nothing)
-    if isnothing(batches)
-        batches, nbatches = h5_nbatches(filename)
-    else
-        nbatches = length(batches)
+function h5_getall(filename::String, group::String)
+    h5open(filename, "r") do h5_file
+        DataFrame(read(h5_file[group]))
     end
+end
+function h5_getall(filename::String, batchnr::Int)
+    h5_getall(filename, "batch_$batchnr")
+end
+function h5_getall(filename)
+    batches, _ = h5_nbatches(filename)
+    h5_getall(filename, batches)
+end
+function h5_getall(filename, batches::AbstractVector)
+    nbatches = length(batches)
     groupnames = ["batch_$i" for i in batches]
-
     df = reduce(vcat,
         h5open(filename, "r") do h5_file
             dfvec = Vector{DataFrame}(undef, nbatches)
@@ -166,19 +175,16 @@ end
 
 
 """
-    h5_getenergies(filename; batches=nothing, units="eV")
+    h5_getenergies(filename, args...; units="eV")
 Returns the initial and final energies of a set of batches in a HDF5-file.
 If `batches` is not specified, the data from all batches are returned.
 """
-function h5_getenergies(filename; batches=nothing, units="eV")
+function h5_getenergies(filename, args...; units="eV")
     expname, _ = splitext(filename)
-    if isnothing(batches)
-        batches, _ = h5_nbatches(expname * ".h5")
-    end
     filename0 = expname * "_gcastates0.h5"
     filenamef = expname * "_gcastatesf.h5"
-    e0 = h5_getdataset(filename0, "energy"; batches=batches)
-    ef = h5_getdataset(filenamef, "energy"; batches=batches)
+    e0 = h5_getdataset(filename0, "energy", args...)
+    ef = h5_getdataset(filenamef, "energy", args...)
     if units == "eV"
         e0 *= J2eV
         ef *= J2eV
@@ -188,45 +194,31 @@ end
 
 
 """
-    h5_getinitialstate(filename)
+    h5_getinitialstate(filename, args...)
 Returns `x0`, `y0`, `z0`, `vparal0`, and `magneticmoment` from a test particle
 ensemble stored in a HDF5-file.
 """
-function h5_getinitialstate(filename; batches=nothing)
-    _, ext = splitext(filename)
-    if ext != ".h5"
-        error("Filename must be a HDF5 file with extension .h5")
-    end
-    if isnothing(batches)
-        batches, _ = h5_nbatches(filename)
-    end
-    x0 = h5_getdataset(filename, "x0"; batches=batches)
-    y0 = h5_getdataset(filename, "y0"; batches=batches)
-    z0 = h5_getdataset(filename, "z0"; batches=batches)
-    vparal0 = h5_getdataset(filename, "vparal0"; batches=batches)
-    mu0 = h5_getdataset(filename, "magneticmoment"; batches=batches)
+function h5_getinitialstate(filename, args...)
+    x0 = h5_getdataset(filename, "x0", args...)
+    y0 = h5_getdataset(filename, "y0", args...)
+    z0 = h5_getdataset(filename, "z0", args...)
+    vparal0 = h5_getdataset(filename, "vparal0", args...)
+    mu0 = h5_getdataset(filename, "magneticmoment", args...)
     return x0, y0, z0, vparal0, mu0
 end
 
 
 """
-    h5_getfinalstate(filename)
+    h5_getfinalstate(filename, args...)
 Returns `xf`, `yf`, `zf`, `vparalf`, and `magneticmoment` from a test particle
 ensemble stored in a HDF5-file.
 """
 function h5_getfinalstate(filename; batches=nothing)
-    _, ext = splitext(filename)
-    if ext != ".h5"
-        error("Filename must be a HDF5 file with extension .h5")
-    end
-    if isnothing(batches)
-        batches, _ = h5_nbatches(filename)
-    end
-    xf = h5_getdataset(filename, "xf"; batches=batches)
-    yf = h5_getdataset(filename, "yf"; batches=batches)
-    zf = h5_getdataset(filename, "zf"; batches=batches)
-    vparalf = h5_getdataset(filename, "vparalf"; batches=batches)
-    mu = h5_getdataset(filename, "magneticmoment"; batches=batches)
+    xf = h5_getdataset(filename, "xf", args...)
+    yf = h5_getdataset(filename, "yf", args...)
+    zf = h5_getdataset(filename, "zf", args...)
+    vparalf = h5_getdataset(filename, "vparalf", args...)
+    mu = h5_getdataset(filename, "magneticmoment", args...)
     return xf, yf, zf, vparalf, mu
 end
 
