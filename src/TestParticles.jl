@@ -73,7 +73,9 @@ export
     gca_2Dxz!,
     lorentzforce!
 # statistics.jl
-export maxwellianvelocitysample
+export
+    maxwellianvelocitysample,
+    binmap
 # callbacks.jl
 export
     OutOfDomainCondition_3D,
@@ -106,8 +108,16 @@ export
     h5_getdataset,
     h5_getenergies,
     h5_getinitialstate,
+    h5_getfinalstate,
     save_gcastates,
     create_bifrost_itps
+# dataprosessing.jl
+export
+    initialstate_retmsg,
+    finalstate_retmsg,
+    initialstate_nonthermal,
+    initialstate_maxiters,
+    initialstate_idxs
 # gcastate.jl
 export
     GCAState
@@ -122,9 +132,6 @@ export
     get_driftenergy,
     get_perpenergy,
     get_parallelenergy
-# statistics.jl
-export
-    binmap
 
 #-------------------------------------------------------------------------------
 end
