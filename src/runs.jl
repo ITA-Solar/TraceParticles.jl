@@ -31,6 +31,7 @@ function rerun(
     onlymagneticfield=false,
     emfields=nothing,
     EoM=nothing,
+    parallelisation=EnsembleSerial(),
     kwargs...
 )
     nparticles = length(u0)
@@ -100,7 +101,7 @@ function rerun(
         ),
         s_kwargs;
         alg=alg,
-        parallelisation=EnsembleSerial(),
+        parallelisation=parallelisation
     )
 end
 
