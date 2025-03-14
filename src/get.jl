@@ -129,6 +129,8 @@ function get_observable(
         return [sol(t)[3] for t in times]
     elseif sym == :vparal
         return [sol(t)[4] for t in times]
+    elseif sym == :t
+        return times
     elseif sym == :exbdrift
         return [get_exbdrift(sol, t) for t in times]
     elseif sym == :fermi
