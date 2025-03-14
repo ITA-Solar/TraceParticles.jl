@@ -162,5 +162,5 @@ function normfactor_2Duniformmesh(
         axes = (brxp.mesh.x, brxp.mesh.z)
     end
     var = var[:, 1, :]
-    return normfactor_2Duniformmesh(var, axes; xlim=xlim, zlim=zlim)
+    return normfactor_2Duniformmesh(var, axes; xlim=xlim, ylim=zlim)
 end

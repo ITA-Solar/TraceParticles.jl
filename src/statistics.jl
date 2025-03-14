@@ -582,19 +582,19 @@ normalisation factor is calculated over the entire grid.
 """
 function normfactor_2Duniformmesh(
     var::Matrix{<:Real},
-    axes::Tuple{AbstractVector,AbstractVector};
+    axes::Tuple{AbstractVector, AbstractVector};
     xlim=nothing,
-    zlim=nothing,
+    ylim=nothing,
 )
-    if !(isnothing(xlim) && isnothing(zlim))
-        slicex, slicez = findslice(
+    if !(isnothing(xlim) && isnothing(ylim))
+        slicex, slicey = findslice(
             axes[1],
             axes[2],
             xlim,
-            zlim,
+            ylim,
         )
-        var = var[slicex, slicez]
-        axes = (axes[1][slicex], axes[2][slicez])
+        var = var[slicex, slicey]
+        axes = (axes[1][slicex], axes[2][slicey])
     end
     dxvec = [diff(ax)[1] for ax in axes]
     dv = prod(dxvec)
