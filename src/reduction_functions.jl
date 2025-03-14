@@ -144,7 +144,7 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
             batchmetagroup = fid["batch specific metadata"]
         end
         # Write batch specific metadata
-        write(metagroup, batchname, string(now()))
+        write(batchmetagroup, batchname, string(now()))
     end
     # Write batch statistics to file?
     println("success")
