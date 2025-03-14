@@ -117,7 +117,7 @@ function replaceparticles(fname_original, fname_replacement, original_idxs)
 
     for i in eachindex(original_idxs)
         for key in names(replacement)
-            original[rerun_idxs[i], key] = replacement[i, key]
+            original[original_idxs[i], key] = replacement[i, key]
         end
     end
     return original
