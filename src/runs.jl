@@ -38,26 +38,18 @@ function rerun(
     expname, _ = splitext(fname)
     include(expname * ".jl")
     tspans = [tspan for _ in 1:nparticles]
-    if !isnothing(gcatol)
-        solve_kwargs[:callback] = CallbackSet(
-            solve_kwargs[:callback].discrete_callbacks[1],
-            solve_kwargs[:callback].discrete_callbacks[2],
-            DiscreteCallback(
-                GCABreakDownCondition_2Dxz(gcatol),
-                gcabreakdownaffect!
+
+    for cb in solve_kwargs[:callback].discrete_callbacks
+        if cb.condition isa GCABreakDownCondition_2Dxz && !isnothing(gcatol)
+            set_tol!(cb.condition, gcatol)
+        elseif (
+                (cb.condition isa RelativisticConditionGCA_2Dxz) &&
+                !isnothing(relativistic_tol)
             )
-        )
+            set_limit!(cb.condition, mass, relativistic_tol)
+        end
     end
-    if !isnothing(relativistic_tol)
-        solve_kwargs[:callback] = CallbackSet(
-            solve_kwargs[:callback].discrete_callbacks[1],
-            DiscreteCallback(
-                RelativisticConditionGCA_2Dxz(mass; fraction=relativistic_tol),
-                relativisticaffect!
-            ),
-            solve_kwargs[:callback].discrete_callbacks[3],
-        )
-    end
+
     s_kwargs = Dict(
         :reltol => isnothing(reltol) ? solve_kwargs[:reltol] : reltol,
         :abstol => isnothing(abstol) ? solve_kwargs[:abstol] : abstol,

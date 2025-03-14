@@ -16,7 +16,7 @@ DifferentialEquations.jl.
         zbounds::Tuple{<:Real, <:Real}
 Returns true if the particle is outside the bounds.
 """
-struct OutOfDomainCondition_3D
+mutable struct OutOfDomainCondition_3D
     xbounds::Tuple{<:Real,<:Real}
     ybounds::Tuple{<:Real,<:Real}
     zbounds::Tuple{<:Real,<:Real}
@@ -34,7 +34,7 @@ end
         zbounds::Tuple{<:Real, <:Real}
 Returns true if the particle is outside the 2D bounds in x and z.
 """
-struct OutOfDomainCondition_2Dxz
+mutable struct OutOfDomainCondition_2Dxz
     xbounds::Tuple{<:Real,<:Real}
     zbounds::Tuple{<:Real,<:Real}
 end
@@ -84,7 +84,7 @@ energy. Perpendicular drifts other than E cross B drift are neglected.
 
 Default fraction is 0.002, which is 1022 eV for an electron.
 """
-struct RelativisticConditionGCA
+mutable struct RelativisticConditionGCA
     fractionofrestenergy::Real
 
     function RelativisticConditionGCA(; mass, fraction)
@@ -114,7 +114,7 @@ energy. Perpendicular drifts other than E cross B drift are neglected.
 
 Default fraction is 0.002, which is 1022 eV for an electron.
 """
-struct RelativisticConditionGCA_2Dxz
+mutable struct RelativisticConditionGCA_2Dxz
     energylimit::Real
 
     function RelativisticConditionGCA_2Dxz(; mass, fraction)
@@ -133,6 +133,26 @@ function (self::RelativisticConditionGCA_2Dxz)(u, _, integrator)
     vperp = perpendicular_velocity(μ, mass, B)
     energy = kineticenergy(vparal, vperp, v_E, mass)
     return energy > self.energylimit
+end
+
+
+"""
+    set_limit!(
+        condition::Union{
+            RelativisticConditionGCA,
+            RelativisticConditionGCA_2Dxz
+        };
+        mass,
+        fraction,
+)
+Sets the energy limit for the the relativistic condition.
+"""
+function set_limit!(
+    condition::Union{RelativisticConditionGCA, RelativisticConditionGCA_2Dxz};
+    mass,
+    fraction,
+)
+    condition.energylimit = fraction * mass * csqrd
 end
 
 
@@ -254,7 +274,7 @@ Callback condition for checking GCA assumption. Returns `true` if the ratio
 between the particle Larmor radius and the characteristic length of the
 magnetic field is higher than a tolerance `switchtol`.
 """
-struct GCABreakDownCondition
+mutable struct GCABreakDownCondition
     tolerance::Real
 end
 function (self::GCABreakDownCondition)(u, t, integrator)
@@ -269,13 +289,29 @@ Callback condition for checking GCA assumption. Returns `true` if the ratio
 between the particle Larmor radius and the characteristic length of the
 magnetic field is higher than a tolerance `switchtol`.
 """
-struct GCABreakDownCondition_2Dxz
+mutable struct GCABreakDownCondition_2Dxz
     tolerance::Real
 end
 function (self::GCABreakDownCondition_2Dxz)(u, t, integrator)
     ratio = scalesratio([u[1], u[3]], t, integrator.p)
     return ratio > self.tolerance
 end
+
+
+"""
+    set_tol!(
+        condition::Union{GCABreakDownCondition, GCABreakDownCondition_2Dxz},
+        tol
+    )
+Sets the tolerance for the GCABreakDownCondition.
+"""
+function set_tol!(
+    condition::Union{GCABreakDownCondition, GCABreakDownCondition_2Dxz},
+    tol
+)
+    condition.tolerance = tol
+end
+
 
 """
     gcabreakdownaffect!(integrator)
