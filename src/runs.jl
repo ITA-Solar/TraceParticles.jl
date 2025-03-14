@@ -5,14 +5,14 @@ positions and velocities of the particles are arbitrary, defined in `u0`,
 and their magnetic moments are defined in `mu0`. Some parameters of the
 experiment may be adjusted through keyword arguments. These are
 
-# Keyword arguments
+#### Keyword arguments
 - `reltol`
 - `abstol`
 - `maxiters`
 - `alg`: solver algorithm
 - `gcatol`: Tolerance for the guiding centre approximation.
 
-# Example use
+#### Example use
 ```julia
 fname = "testparticles.h5"
 npart = 10
@@ -97,7 +97,7 @@ function rerun(
         tspans,
         merge(
             Dict(:safetycopy => false),
-            Dict(k => v for (k, v) in kwargs)
+            Dict{Symbol, Any}(k => v for (k, v) in kwargs)
         ),
         s_kwargs;
         alg=alg,
