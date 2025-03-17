@@ -213,7 +213,7 @@ end
 Returns `xf`, `yf`, `zf`, `vparalf`, and `magneticmoment` from a test particle
 ensemble stored in a HDF5-file.
 """
-function h5_getfinalstate(filename; batches=nothing)
+function h5_getfinalstate(filename, args...)
     xf = h5_getdataset(filename, "xf", args...)
     yf = h5_getdataset(filename, "yf", args...)
     zf = h5_getdataset(filename, "zf", args...)
