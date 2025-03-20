@@ -221,6 +221,13 @@ function get_observable(
     ]
     return obs
 end
+function get_observable(
+    sol::ODESolution,
+    observable::Symbol,
+    t::Real
+)
+    return get_observable(sol, observable; times=[t], nsteps=1)[1]
+end
 
 
 """
