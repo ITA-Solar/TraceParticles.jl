@@ -31,13 +31,19 @@ function rerun(
     onlymagneticfield=false,
     emfields=nothing,
     EoM=nothing,
+    timespan=nothing,
     parallelisation=EnsembleSerial(),
     kwargs...
 )
     nparticles = length(u0)
     expname, _ = splitext(fname)
     include(expname * ".jl")
-    tspans = [tspan for _ in 1:nparticles]
+
+    if !isnothing(timespan)
+        tspans = [timespan for _ in 1:nparticles]
+    else
+        tspans = [tspan for _ in 1:nparticles]
+    end
 
     for cb in solve_kwargs[:callback].discrete_callbacks
         if cb.condition isa GCABreakDownCondition_2Dxz && !isnothing(gcatol)
