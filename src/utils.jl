@@ -153,7 +153,13 @@ end
 Extract the coefficients of an interpolation object.
 """
 function get_itpcoefs(itp::Interpolations.Extrapolation)
-    return itp.itp.itp.coefs
+    if typeof(itp).parameters[3] <: Interpolations.GriddedInterpolation
+        return itp.itp.coefs
+    elseif typeof(itp).parameters[3] <: ScaledInterpolation
+        return itp.itp.itp.coefs
+    else
+        error("Unknown interpolation type.")
+    end
 end # function get_itpcoefs
 
 
