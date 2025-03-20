@@ -370,7 +370,6 @@ Returns the midpoints of the bins and the mapped values of the bins.
 """
 function binmap(
     data,
-    args...
     ;
     weights=ones(length(data)),
     mapfunc::Function=(x, w) -> sum(w),
@@ -436,7 +435,7 @@ function binmap(
         if !ismissing(k[i].binindex_x)
             groupdf = gdf[i]
             binvalues[k[i].binindex_x] = mapfunc(
-                groupdf.x, groupdf.weight, args...
+                groupdf.x, groupdf.weight
             )
         end
     end
