@@ -64,9 +64,7 @@ include("runs.jl")
 
 # runs.jl
 export
-    rerun_nonthermals,
-    rerun_maxiters,
-    rerun_idxs
+    rerun
 # equations_of_motion.jl
 export
     guidingcentreapproximation!,
