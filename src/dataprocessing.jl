@@ -104,7 +104,23 @@ Replace the particles in `fname_original` with the particles in
 `fname_original` are given by `idxs`. The length of `idxs` must be the same as
 the number of particles in `fname_replacement`.
 """
-function replaceparticles(fname_original, fname_replacement, original_idxs)
+function replaceparticles(
+    fname_original::String,
+    fname_replacement::String;
+    original_idxs::String="original_idxs",
+    replace_keys::Function=names
+)
+    idxs = h5open(fname_replacement) do fid
+        read(fid["metadata/$original_idxs"])
+    end
+    replaceparticles(fname_original, fname_replacement, idxs)
+end
+function replaceparticles(
+    fname_original::String,
+    fname_replacement::String,
+    original_idxs::Vector{<:Int};
+    replace_keys::Function=names
+)
     original = h5_getall(fname_original)
     replacement = h5_getall(fname_replacement)
 
@@ -116,13 +132,12 @@ function replaceparticles(fname_original, fname_replacement, original_idxs)
     end
 
     for i in eachindex(original_idxs)
-        for key in names(replacement)
+        for key in replace_keys(replacement)
             original[original_idxs[i], key] = replacement[i, key]
         end
     end
     return original
 end
-
 
 #_______________________________________________________________________________
 #
