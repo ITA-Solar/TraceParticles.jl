@@ -17,6 +17,16 @@
 #
 
 """
+    write_dataset(group, dict)
+Write a dictionary to a HDF5 group.
+"""
+function write_dict(h5group::HDF5.Group, dict::Dict{String,Any})
+    for (key, value) in dict
+        write_dataset(h5group, key, value)
+    end
+end
+
+"""
     save_gcastates(filename, fields_itp)
 Calculates the GCAStates of the initial and final states of an ensamble of
 test particles.
@@ -59,6 +69,16 @@ function save_gcastates(
                 write_dataset(group0, key, dfgca0[!, key])
                 write_dataset(groupf, key, dfgcaf[!, key])
             end
+        end
+        try
+            groupname = "metadata"
+            metadata = read(h5_sol[groupname])
+            metagroup0 = create_group(h5_gcastates0, groupname)
+            metagroupf = create_group(h5_gcastatesf, groupname)
+            write_dict(metagroup0, metadata)
+            write_dict(metagroupf, metadata)
+        catch e
+            @warn "While copying metadata: $e"
         end
         close(h5_sol)
         close(h5_gcastates0)
