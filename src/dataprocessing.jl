@@ -206,6 +206,56 @@ function particlemaskfunction(
 end
 
 
+"""
+    particlemask(df, outerbounds, ignorezones, patternmatches, premask)
+Create a mask for the DataFrame `df` based on the specified conditions.
+- `outerbounds` is a dictionary with the keys being the column names and the
+  values being the limits of the outer bounds of that column.
+- `ignorezones` is a vector of dictionaries with the keys being the column names
+  and the values being the limits of the "zone" to ignore particles from.
+- `patternmatches` is a dictionary with the keys being the column names and the
+  values being a pattern of the column values to match.
+"""
+function particlemask(
+    df::DataFrame;
+    outerbounds::Dict{Symbol,Any}=Dict{Symbol,Any}(),
+    ignorezones::Vector{<:Dict{Symbol,<:Any}}=[Dict{Symbol, Any}()],
+    patternmatches::Dict{Symbol,String}=Dict{Symbol,String}(),
+    premask=nothing
+)
+    numparticles = size(df, 1)
+    if isnothing(premask)
+        mask = fill(true, numparticles)
+    else
+        mask = premask
+    end
+
+    # Check whether the particle is within the outer bounds
+    for (sym, limit) in outerbounds
+        mask = mask .& (limit[1] .<= df[!, sym] .<= limit[2])
+    end
+
+    # Check whether the particle is within certain zone
+    for zone in ignorezones
+        insidezone = fill(true, numparticles)
+        for (sym, limit) in zone
+            insidezone = insidezone .& (limit[1] .<= df[!, sym] .<= limit[2])
+        end
+        # If the particle is inside the inner bounds, it should not be included
+        # in the mask.
+        mask = mask .& .!insidezone
+    end
+
+
+    # Check whether the particle matches any patterns.
+    for (sym, pattern) in patternmatches
+        mask = mask .& (df[!, sym] .== pattern)
+    end
+    return mask
+end
+
+
+
 #_______________________________________________________________________________
 #
 # Other
