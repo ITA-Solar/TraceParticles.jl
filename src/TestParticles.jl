@@ -116,7 +116,9 @@ export
     initialstate_nonthermal,
     initialstate_maxiters,
     initialstate_idxs,
-    particlemaskfunction
+    particlemaskfunction,
+    particlemask,
+    replaceparticles
 # gcastate.jl
 export
     GCAState
