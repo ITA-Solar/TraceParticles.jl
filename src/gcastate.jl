@@ -359,12 +359,12 @@ end
 
 ################################################################################
 """
-    DataFrame(gcastates::Vector{GCAState})
+    DataFrames.DataFrame(gcastates::Vector{GCAState})
 Constructs a DataFrame from a vector of `GCAState` objects. The DataFrame
 contains the fields of the `GCAState` objects as columns. Vector fields are
 collapsed into one column per component.
 """
-function DataFrame(gcastates::Vector{GCAState}; lowmem=false)
+function DataFrames.DataFrame(gcastates::Vector{GCAState}; lowmem=false)
     df = DataFrame(
         Dict(
             field => [getfield(state, field) for state in gcastates]

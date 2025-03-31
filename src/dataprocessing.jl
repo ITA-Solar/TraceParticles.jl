@@ -218,7 +218,7 @@ Create a mask for the DataFrame `df` based on the specified conditions.
 """
 function particlemask(
     df::DataFrame;
-    outerbounds::Dict{Symbol,Any}=Dict{Symbol,Any}(),
+    outerbounds::Dict{Symbol,<:Any}=Dict{Symbol,Any}(),
     ignorezones::Vector{<:Dict{Symbol,<:Any}}=[Dict{Symbol, Any}()],
     patternmatches::Dict{Symbol,String}=Dict{Symbol,String}(),
     premask=nothing
@@ -237,6 +237,9 @@ function particlemask(
 
     # Check whether the particle is within certain zone
     for zone in ignorezones
+        if isempty(zone)
+            continue
+        end
         insidezone = fill(true, numparticles)
         for (sym, limit) in zone
             insidezone = insidezone .& (limit[1] .<= df[!, sym] .<= limit[2])
