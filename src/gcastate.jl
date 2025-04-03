@@ -118,31 +118,25 @@ struct GCAState
         b̂ = B_vec * B⁻¹     # An unit vector pointing in the direction of the
         ExBdrift = (E_vec × b̂) / B # The E cross B-drift
 
-        if length(itpvec) == 27
-            ∇B = [itpvec[i](R...) for i in 7:9]
-            ∇b̂ = reshape([itpvec[i](R...) for i in 10:18], 3, 3)
-            ∇ExB = reshape([itpvec[i](R...) for i in 19:27], 3, 3)
-        elseif length(itpvec) == 6
-            jacobian_matrix = ForwardDiff.jacobian(R) do x
-                vec = [itp(x...) for itp in itpvec]
-                B_vec_fd = vec[1:3]
-                E_vec_fd = vec[4:6]
-                B_fd = norm(B_vec_fd)
-                b̂_fd = B_vec_fd / B_fd
-                return [b̂_fd; E_vec_fd × b̂_fd / B_fd; B_fd]
-            end
-            # Add zeros-column representing derivatives along the y-axis
-            if dimensionality == "2Dxz"
-                jacobian_matrix = [
-                    jacobian_matrix[:, 1];;
-                    zeros(eltype(R), 7);;
-                    jacobian_matrix[:, 2]
-                ]
-            end
-            ∇b̂ = jacobian_matrix[1:3, :]
-            ∇ExB = jacobian_matrix[4:6, :]
-            ∇B = jacobian_matrix[7, :]
+        jacobian_matrix = ForwardDiff.jacobian(R) do x
+            vec = [itp(x...) for itp in itpvec]
+            B_vec_fd = vec[1:3]
+            E_vec_fd = vec[4:6]
+            B_fd = norm(B_vec_fd)
+            b̂_fd = B_vec_fd / B_fd
+            return [b̂_fd; E_vec_fd × b̂_fd / B_fd; B_fd]
         end
+        # Add zeros-column representing derivatives along the y-axis
+        if dimensionality == "2Dxz"
+            jacobian_matrix = [
+                jacobian_matrix[:, 1];;
+                zeros(eltype(R), 7);;
+                jacobian_matrix[:, 2]
+            ]
+        end
+        ∇b̂ = jacobian_matrix[1:3, :]
+        ∇ExB = jacobian_matrix[4:6, :]
+        ∇B = jacobian_matrix[7, :]
 
         # Total time derivatives. Assumes ∂/∂t = 0,
         dbdt = vparal * (∇b̂ * b̂) + ∇b̂ * ExBdrift
