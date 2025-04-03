@@ -54,17 +54,13 @@ end
 
 
 """
-Get the observable `sym` from an `ODESolution` or a vector of `ODESolution`s.
+Get the observable `sym` from an `ODESolution` or a vector of `ODESolution`s at
+a single time or over a range of times.
 
 # Methods
-    get_observable(vectorofsolutions, symbol; t=nothing, kwargs...)
-    get_observable(
-        solution, symbol;
-        times=nothing, 
-        tspan=(first(sol.t), last(sol.t)), 
-        nsteps=1000, 
-        kwargs...
-)
+    get_observable(vectorofsolutions, symbol; t, kwargs...)
+    get_observable(solution, symbol, t; kwargs...)
+    get_observable(solution, symbol; tspan, times, nsteps, kwargs...)
 """
 function get_observable(
     sol::Union{EnsembleSolution,VectorOfArray},
@@ -111,6 +107,8 @@ function get_observable(
         error("Observable $sym is not implemented.")
     end
 end
+
+
 function get_observable(
     sol::ODESolution,
     sym::Symbol;
@@ -206,21 +204,8 @@ function get_observable(
         return r_L ./ L_B
     end
 end
-function get_observable(
-    sol::ODESolution,
-    observable::Function,
-    ;
-    tspan=(first(sol.t), last(sol.t)),
-    nsteps=1000,
-    times=range(tspan[1], tspan[2], length=nsteps),
-    kwargs...
-)
-    obs = [
-        observable(sol, t; kwargs...)
-        for t in times
-    ]
-    return obs
-end
+
+
 function get_observable(
     sol::ODESolution,
     observable::Symbol,
