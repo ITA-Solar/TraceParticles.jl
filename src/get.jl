@@ -225,8 +225,10 @@ function get_observable(
     sol::ODESolution,
     observable::Symbol,
     t::Real
+    ;
+    kwargs...
 )
-    return get_observable(sol, observable; times=[t], nsteps=1)[1]
+    return get_observable(sol, observable; times=[t], nsteps=1, kwargs...)[1]
 end
 
 
