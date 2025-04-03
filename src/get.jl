@@ -137,6 +137,8 @@ function get_observable(
         return [get_betatron(sol, t) for t in times]
     elseif sym == :polarisationacc
         return [get_polarisationacc(sol, t) for t in times]
+    elseif sym == :parallelpower
+        return [get_parallelpower(sol, t) for t in times]
     elseif sym == :energy
         return [get_energy(sol, t; kwargs...) for t in times]
     elseif sym == :driftenergy
@@ -310,6 +312,33 @@ function get_betatron(
     v_gradB = gcastate.∇Bdrift
     E = gcastate.efield
     return v_gradB ⋅ E * q * J2eV
+end
+
+
+"""
+    get_parallelpower(
+        sol::ODESolution,
+        t::Real;
+    )
+Calculate the energy change per time due to parallel electric fields_itp.
+"""
+function get_parallelpower(
+    sol::ODESolution,
+    t::Real;
+)
+    q = sol.prob.p.charge
+    gcastate = GCAState(
+        sol(t)[1:4],
+        q,
+        sol.prob.p.mass,
+        sol.prob.p.magneticmoment,
+        sol.prob.p.fields;
+        time=t,
+        dimensionality="2Dxz",
+    )
+    vparal = gcastate.vparal
+    paralacc = gcastate.paralacc
+    return vparal * paralacc * m * J2eV
 end
 
 
