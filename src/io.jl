@@ -53,22 +53,28 @@ function save_gcastates(
         h5_sol = h5open(filename, "r")
         h5_gcastates0 = h5open(name * "_gcastates0.h5", "w")
         h5_gcastatesf = h5open(name * "_gcastatesf.h5", "w")
-        for i in 1:nbatches
-            batchname = "batch_$i"
-            batch = read(h5_sol[batchname])
-            df = DataFrame(batch)
-            dfgca0, dfgcaf = GCAState(
-                df,
-                fields_itp;
-                components=components,
-                dimensionality=dimensionality,
-            )
-            group0 = create_group(h5_gcastates0, batchname)
-            groupf = create_group(h5_gcastatesf, batchname)
-            for key in names(dfgca0)
-                write_dataset(group0, key, dfgca0[!, key])
-                write_dataset(groupf, key, dfgcaf[!, key])
+        try
+            for i in 1:nbatches
+                batchname = "batch_$i"
+                batch = read(h5_sol[batchname])
+                df = DataFrame(batch)
+                dfgca0, dfgcaf = GCAState(
+                    df,
+                    fields_itp;
+                    components=components,
+                    dimensionality=dimensionality,
+                )
+                group0 = create_group(h5_gcastates0, batchname)
+                groupf = create_group(h5_gcastatesf, batchname)
+                for key in names(dfgca0)
+                    write_dataset(group0, key, dfgca0[!, key])
+                    write_dataset(groupf, key, dfgcaf[!, key])
+                end
             end
+        catch e
+            rm(filename * "_gcastates0.h5")
+            rm(filename * "_gcastatesf.h5")
+            @error "While saving GCA states: $e"
         end
         try
             groupname = "metadata"
