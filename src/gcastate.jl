@@ -32,7 +32,6 @@ electromagnetic field, relevant parameters, and auxiliary quantities.
         μ     ::Real,
         itpvec::Vector{<:AbstractInterpolation}; 
         time=nothing,
-        dimensionality="2Dxz"
         )
 Constructs a `GCAState` object from;
 * `state` - The guiding centre state; position and parallel velocity
@@ -43,7 +42,6 @@ Constructs a `GCAState` object from;
 * `itpvec` - A vector of interpolation objects for the electromagnetic fields
 **Keyword** arguments:
 * `time` - The time of the state
-* `dimensionality` - The dimensionality of the problem (default: "2Dxz")
 
     GCAState(
         state ::Vector{<:Real},
@@ -98,15 +96,8 @@ struct GCAState
         μ::Real,
         itpvec::Vector{<:Any};
         time=0.0,
-        dimensionality="2Dxz"
     )
-        if dimensionality == "2Dxz"
-            R = [state[1], state[3]]
-        elseif dimensionality == "3D"
-            R = state[1:3]
-        else
-            error("Dimensionality not implemented")
-        end
+        R = state[1:3]
         vparal = state[4]
         q⁻¹ = 1 / q # Inverse of q - to replace division with multiplication
         # Use the gyrocentre position interpolate the vectors
@@ -125,14 +116,6 @@ struct GCAState
             B_fd = norm(B_vec_fd)
             b̂_fd = B_vec_fd / B_fd
             return [b̂_fd; E_vec_fd × b̂_fd / B_fd; B_fd]
-        end
-        # Add zeros-column representing derivatives along the y-axis
-        if dimensionality == "2Dxz"
-            jacobian_matrix = [
-                jacobian_matrix[:, 1];;
-                zeros(eltype(R), 7);;
-                jacobian_matrix[:, 2]
-            ]
         end
         ∇b̂ = jacobian_matrix[1:3, :]
         ∇ExB = jacobian_matrix[4:6, :]
@@ -444,7 +427,6 @@ end
         times::AbstractVector=solution.t
         ;
         components="all",
-        dimensionality="2Dxz"
         )
 Constructs a vector of `GCAState` objects from an `ODESolution` object.
 Exploits the inherent solution interpolation in a `ODESolution` object to
@@ -453,16 +435,12 @@ construct `GCAState`s at arbitrary times.
 # Keyword arguments
 - `components`: The components of the guiding centre drift to include in the
   in the `GCAState` objects. Default: "all"
-- `dimensionality`: The dimensionality of the background fields. I.e. the
-dimension of the interpolation objects in the solution parameters.
-Default: "2Dxz".
 """
 function timeseriesofgcastates(
     solution::ODESolution,
     times::AbstractVector=solution.t
     ;
     components="all",
-    dimensionality="2Dxz"
 )
     timeseries = Vector{GCAState}(undef, length(times))
     Threads.@threads for i in eachindex(times)
@@ -476,18 +454,12 @@ function timeseriesofgcastates(
                 solution.prob.p.fields,
                 ;
                 time=times[i],
-                dimensionality=dimensionality
             )
         else
             itpvec = solution.prob.fields
-            if dimensionality == "2Dxz"
-                Rx = interpolated_solution[1]
-                Rz = interpolated_solution[3]
-                bfield = [itpvec[i](Rx, Rz) for i in 1:3]
-                efield = [itpvec[i](Rx, Rz) for i in 4:6]
-            else
-                error("Dimensionality not implemented")
-            end
+            R = interpolated_solution[1:3]
+            bfield = [itpvec[i](R...) for i in 1:3]
+            efield = [itpvec[i](R...) for i in 4:6]
             timeseries[i] = GCAState(
                 interpolated_solution,
                 solution.prob.p[1],
@@ -575,7 +547,6 @@ end
         components="exb",
         charge=tp.e,
         mass=tp.m_e,
-        dimensionality="2Dxz"
         )
 
 Construct a ensemble of `GCAState`s from a `solution` of a simulation using the
@@ -593,7 +564,6 @@ ________________________________________________________________________________
         components="exb",
         charge=tp.e,
         mass=tp.m_e,
-        dimensionality="2Dxz"
         )
 Harcoded for evaluating a particular deprecated output function which stored
 a vector of (u0, uf, mu, B0, E0, Bf, Ef, nt, time)
@@ -628,8 +598,6 @@ function ensembleofgcastates(
     components="all",
     charge=e,
     mass=m_e,
-    dimensionality="2Dxz",
-    lowmem=false,
 )
     nofparticles = length(solution)
     particlestates = Vector{GCAState}(undef, nofparticles)
@@ -643,17 +611,11 @@ function ensembleofgcastates(
                 itpvec
                 ;
                 time=times[i],
-                dimensionality=dimensionality
             )
         elseif components == "exb"
-            if dimensionality == "2Dxz"
-                Rx = solution[i][1]
-                Rz = solution[i][3]
-                bfield = [itpvec[i](Rx, Rz) for i in 1:3]
-                efield = [itpvec[i](Rx, Rz) for i in 4:6]
-            else
-                error("Dimensionality not implemented")
-            end
+            R = solution[i][1:3]
+            bfield = [itpvec[i](R...) for i in 1:3]
+            efield = [itpvec[i](R...) for i in 4:6]
             particlestates[i] = GCAState(
                 solution[i],
                 charge,
@@ -681,7 +643,6 @@ end
         m::Real, # Particle mass
         μ::Real, # Particle magnetic moment
         itpvec::Vector{<:AbstractInterpolation},
-        dimensionality="3D",
 )
 Kinetic energy of a charged particle based on its guiding centre, parallel
 velocity, magnetic moment, and the electromagnetic field in which it is
@@ -694,8 +655,6 @@ function kineticenergy(
     μ::Real, # Particle magnetic moment
     itpvec::Vector{<:Any}, # electromagnetic field interpolators
     time::Real
-    ;
-    dimensionality="2Dxz"
 )
     kineticenergy(GCAState(
         state,
@@ -704,7 +663,6 @@ function kineticenergy(
         μ,
         itpvec;
         time=time,
-        dimensionality=dimensionality,
     ))
 end
 """

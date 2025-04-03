@@ -161,7 +161,6 @@ function get_observable(
                     magneticmoment,
                     fields;
                     time=t,
-                    dimensionality="2Dxz",
                 ),
                 sym)
             for t in times
@@ -184,7 +183,6 @@ function get_observable(
                     sol.prob.p.magneticmoment,
                     sol.prob.p.fields;
                     time=t,
-                    dimensionality="2Dxz",
                 ),
                 :r_L)
             for t in times
@@ -198,7 +196,6 @@ function get_observable(
                     sol.prob.p.magneticmoment,
                     sol.prob.p.fields;
                     time=t,
-                    dimensionality="2Dxz",
                 ),
                 :L_B)
             for t in times
@@ -279,7 +276,6 @@ function get_fermi(
         sol.prob.p.magneticmoment,
         sol.prob.p.fields;
         time=t,
-        dimensionality="2Dxz",
     )
     v_C = gcastate.curvaturedrift
     E = gcastate.efield
@@ -307,7 +303,6 @@ function get_betatron(
         sol.prob.p.magneticmoment,
         sol.prob.p.fields;
         time=t,
-        dimensionality="2Dxz",
     )
     v_gradB = gcastate.∇Bdrift
     E = gcastate.efield
@@ -334,7 +329,6 @@ function get_parallelpower(
         sol.prob.p.magneticmoment,
         sol.prob.p.fields;
         time=t,
-        dimensionality="2Dxz",
     )
     vparal = gcastate.vparal
     paralacc = gcastate.paralacc
@@ -362,7 +356,6 @@ function get_polarisationacc(
         sol.prob.p.magneticmoment,
         sol.prob.p.fields;
         time=t,
-        dimensionality="2Dxz",
     )
     v_P = gcastate.polarisationdrift
     E = gcastate.efield
@@ -400,7 +393,6 @@ function get_energy(
             sol.prob.p.magneticmoment,
             sol.prob.p.fields,
             t;
-            dimensionality="2Dxz",
         )
     end
     if units == "eV"
@@ -431,7 +423,6 @@ function get_driftenergy(
         sol.prob.p.magneticmoment,
         sol.prob.p.fields;
         time=t,
-        dimensionality="2Dxz",
     )
     v_E = gcastate.exbdrift
     v_gradB = gcastate.∇Bdrift

@@ -35,7 +35,6 @@ function save_gcastates(
     filename::String,
     fields_itp::Vector{<:AbstractInterpolation};
     components="all",
-    dimensionality="2Dxz",
 )
     name, extension = splitext(filename)
     if extension == ".csv"
@@ -44,7 +43,6 @@ function save_gcastates(
             df,
             fields_itp;
             components=components,
-            dimensionality=dimensionality
         )
         CSV.write(filename * "_gcastate0.csv", dfgca0)
         CSV.write(filename * "_gcastatef.csv", dfgcaf)
@@ -62,7 +60,6 @@ function save_gcastates(
                     df,
                     fields_itp;
                     components=components,
-                    dimensionality=dimensionality,
                 )
                 group0 = create_group(h5_gcastates0, batchname)
                 groupf = create_group(h5_gcastatesf, batchname)
