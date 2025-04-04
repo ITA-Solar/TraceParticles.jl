@@ -148,29 +148,6 @@ function findslice(
 end
 
 
-"""
-    get_itpcoefs(itp)
-Extract the coefficients of an interpolation object.
-"""
-function get_itpcoefs(itp::Interpolations.Extrapolation)
-    if typeof(itp).parameters[3] <: Interpolations.GriddedInterpolation
-        return itp.itp.coefs
-    elseif typeof(itp).parameters[3] <: ScaledInterpolation
-        return itp.itp.itp.coefs
-    else
-        error("Unknown interpolation type.")
-    end
-end # function get_itpcoefs
-
-
-"""
-    get_itpaxes(itp)
-Extract the axes of an interpolation object.
-"""
-function get_itpaxes(itp::Interpolations.Extrapolation)
-    return itp.itp.ranges
-end # function get_itpaxes
-
 
 #----------------------------------------#
 # Vector potential generation            #
