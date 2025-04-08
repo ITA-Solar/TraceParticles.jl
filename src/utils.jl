@@ -104,9 +104,9 @@ function findslice(
     if isnothing(ylim)
         slicey = 1:length(y)
     else
-        slicey = findall(y -> y > ylim, y)[1]
-        if length(slicez) == 0
-            error("zlim did not match any points in the mesh. Wrong units?")
+        slicey = findall(y -> ylim[1] <= y <= ylim[2], y)
+        if length(slicey) == 0
+            error("ylim did not match any points in the mesh. Wrong units?")
         end
     end
     if verbose
