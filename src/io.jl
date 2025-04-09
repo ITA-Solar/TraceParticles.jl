@@ -33,7 +33,7 @@ test particles.
 """
 function save_gcastates(
     filename::String,
-    fields_itp::Vector{<:AbstractInterpolation};
+    fields_itp::Vector{<:Any};
     components="all",
 )
     name, extension = splitext(filename)
@@ -49,8 +49,10 @@ function save_gcastates(
     elseif extension == ".h5"
         _, nbatches = h5_nbatches(filename)
         h5_sol = h5open(filename, "r")
-        h5_gcastates0 = h5open(name * "_gcastates0.h5", "w")
-        h5_gcastatesf = h5open(name * "_gcastatesf.h5", "w")
+        name0 = name * "_gcastates0.h5"
+        namef = name * "_gcastatesf.h5"
+        h5_gcastates0 = h5open(name0, "w")
+        h5_gcastatesf = h5open(namef, "w")
         try
             for i in 1:nbatches
                 batchname = "batch_$i"
@@ -69,8 +71,8 @@ function save_gcastates(
                 end
             end
         catch e
-            rm(filename * "_gcastates0.h5")
-            rm(filename * "_gcastatesf.h5")
+            rm(name0)
+            rm(namef)
             @error "While saving GCA states: $e"
         end
         try
