@@ -203,6 +203,8 @@ function get_observable(
             for t in times
         ]
         return r_L ./ L_B
+    else
+        error("Observable $sym is not implemented.")
     end
 end
 
@@ -249,12 +251,11 @@ function get_exbdrift(
     sol::ODESolution,
     t::Real,
 )
-    x, z = sol(t)[1], sol(t)[3]
     B, E = emfieldatpos(
-        [x, z],
+        sol(t)[1:3],
         sol.prob.p.fields,
     )
-    norm(exbdrift(B, E))
+    exbdrift(B, E)
 end
 
 
@@ -324,6 +325,7 @@ function get_parallelpower(
     t::Real;
 )
     q = sol.prob.p.charge
+    m = sol.prob.p.mass
     gcastate = GCAState(
         sol(t)[1:4],
         q,
@@ -332,7 +334,7 @@ function get_parallelpower(
         sol.prob.p.fields;
         time=t,
     )
-    vparal = gcastate.vparal
+    vparal = gcastate.state[4]
     paralacc = gcastate.paralacc
     return vparal * paralacc * m * J2eV
 end
