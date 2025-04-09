@@ -147,6 +147,8 @@ function get_observable(
         return [get_parallelenergy(sol, t) for t in times]
     elseif sym == :perpenergy
         return [get_perpenergy(sol, t) for t in times]
+    elseif sym == :eparal
+        return [get_eparal(sol, t) for t in times]
     elseif sym in fieldnames(GCAState)
         charge = sol.prob.p.charge
         mass = sol.prob.p.mass
@@ -459,10 +461,35 @@ function get_perpenergy(
     sol::ODESolution,
     t::Real;
 )
-    x, z = sol(t)[1], sol(t)[3]
     B, _ = emfieldatpos(
-        [x, z],
+        sol(t)[1:3],
         sol.prob.p.fields,
     )
     return norm(B) * sol.prob.p.magneticmoment * J2eV
+end
+
+"""
+    get_eparal(
+        sol::ODESolution,
+        t::Real;
+    )
+Calculate the parallel velocity of the `ODESolution` `sol` at time `t`.
+"""
+function get_eparal(
+    sol::ODESolution,
+    t::Real;
+)
+    q = sol.prob.p.charge
+    m = sol.prob.p.mass
+    gcastate = GCAState(
+        sol(t)[1:4],
+        q,
+        m,
+        sol.prob.p.magneticmoment,
+        sol.prob.p.fields;
+        time=t,
+    )
+    B = norm(gcastate.bfield)
+    b = gcastate.bfield / B
+    return gcastate.efield ⋅ b
 end
