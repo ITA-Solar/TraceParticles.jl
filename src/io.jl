@@ -374,6 +374,33 @@ end
 #
 
 """
+    XZInterpolation
+An interpolator that calls `(x, z)` if called with `(x, y, z)`. Also calls
+`(x, z)` if called with `(x, z)`.
+
+## Fields
+- itp::AbstractInterpolation
+
+## Examples
+```Julia
+julia> xzitp = XZInterpolation(itp)
+
+julia> xzitp(.5, 1.0, .5) == xzitp(.5, .5) == xzitp(.5, .5, .5)
+true
+```
+"""
+struct XZInterpolation
+    itp::AbstractInterpolation
+end
+function (self::Both2DAnd3DInterpolator)(x::Real, z::Real)
+    self.itp(x, z)
+end
+function (self::Both2DAnd3DInterpolator)(x::Real, y::Real, z::Real)
+    self.itp(x, z)
+end
+
+
+"""
     create_bifrost_interpolators(
         brxp::BifrostExperiment,
         snap::Integer,
@@ -400,6 +427,7 @@ function create_bifrost_itps(
     auxvariables=[],
     normalise=fill(false, length(auxvariables)),
     destagger=fill(false, length(auxvariables)),
+    xzinterpolation=false,
 )
     if length(auxvariables) != length(normalise)
         throw(ArgumentError(
@@ -415,6 +443,9 @@ function create_bifrost_itps(
         units=units,
         destagger=true,
     )
+    if ndims(first(interpolator)) == 2 && xzinterpolation
+        interpolator = [XZInterpolation(itp) for itp in interpolator]
+    end
     @save string(filename, "_BE.jld2") interpolator
 
     # Create interpolators for the auxiliary variables
@@ -429,6 +460,9 @@ function create_bifrost_itps(
             normalise=norm,
             destagger=dstgr,
         )
+        if ndims(interpolator) == 2 && xzinterpolation
+            interpolator = XZInterpolation(interpolator)
+        end
         @save string(filename, "_$(var)_norm$(norm).jld2") interpolator
     end
 end
