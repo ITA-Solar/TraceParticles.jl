@@ -392,10 +392,10 @@ true
 struct XZInterpolation
     itp::AbstractInterpolation
 end
-function (self::Both2DAnd3DInterpolator)(x::Real, z::Real)
+function (self::XZInterpolation)(x::Real, z::Real)
     self.itp(x, z)
 end
-function (self::Both2DAnd3DInterpolator)(x::Real, y::Real, z::Real)
+function (self::XZInterpolation)(x::Real, y::Real, z::Real)
     self.itp(x, z)
 end
 

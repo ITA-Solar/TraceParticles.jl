@@ -183,7 +183,7 @@ struct GCAState
 
     function GCAState(
         solution::DataFrame,
-        fields::Vector{<:AbstractInterpolation}
+        fields::Vector{<:Any}
         ;
         lowmem=true,
         kwargs...
@@ -500,7 +500,7 @@ calculation. Otherwise, the function will only use the ExB-drift component.
 """
 function init_and_final_ensembleofgcastates(
     solution::Any,
-    itpvec::Vector{<:AbstractInterpolation},
+    itpvec::Vector{<:Any},
     ;
     kwargs...
 )
@@ -593,7 +593,7 @@ function ensembleofgcastates(
     solution::Vector{<:Vector{<:Real}},
     magneticmoments::Vector{<:Real},
     times::Vector{<:Real},
-    itpvec::Vector{<:AbstractInterpolation},
+    itpvec::Vector{<:Any},
     ;
     components="all",
     charge=e,
