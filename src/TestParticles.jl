@@ -118,7 +118,8 @@ export
     initialstate_idxs,
     particlemaskfunction,
     particlemask,
-    replaceparticles
+    replaceparticles,
+    generate_probdistr
 # gcastate.jl
 export
     GCAState
