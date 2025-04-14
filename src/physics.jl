@@ -24,7 +24,7 @@ function larmorradius(
     μ::Real,
     q::Real,
     m::Real,
-    itpvec::Vector{<:AbstractInterpolation}
+    itpvec::Vector{<:Any}
 )
     B = norm([itp(R...) for itp in itpvec])
     vperp = perpendicular_velocity(μ, m, B)
@@ -157,7 +157,7 @@ function characteristicfieldlength(
 end
 function characteristicfieldlength(
     position::Vector{<:Real},
-    itpvec::Vector{<:AbstractInterpolation}
+    itpvec::Vector{<:Any}
 )
     fieldstrength = norm([itpvec[i](position...) for i in 1:3])
     grad = ∇(position, itpvec)

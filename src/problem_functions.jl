@@ -132,7 +132,7 @@ struct DposMBvel_2Dxz
     target_distr::Any
     domain::Vector{Tuple{<:Real,<:Real}}
     max_value::Real
-    tg_itp::AbstractInterpolation
+    tg_itp::Any
 end
 function (self::DposMBvel_2Dxz)(prob, i, repeat)
     (Rx, Rz), nrejections = rejectionsample(

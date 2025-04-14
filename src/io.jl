@@ -398,6 +398,9 @@ end
 function (self::XZInterpolation)(x::Real, y::Real, z::Real)
     self.itp(x, z)
 end
+function Base.ndims(itp::XZInterpolation)
+    return ndims(itp.itp)
+end
 
 
 """
