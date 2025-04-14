@@ -96,16 +96,27 @@ mutable struct SaveBatchAsHDF5
     batchsize::Int
     nbatches::Int
     metadata::Dict{<:String, <:Any}
+    verbose::Bool
     function SaveBatchAsHDF5(
         expdir::String,
         expname::String,
         batchsize::Int,
         nbatches::Int;
         suffix::String="",
-        metadata::Dict{<:String, <:Any}=Dict{String, Any}()
+        metadata::Dict{<:String, <:Any}=Dict{String, Any}(),
+        verbose::Bool=true
     )
         batchnr = 0
-        new(expdir, expname, suffix, batchnr, batchsize, nbatches, metadata)
+        new(
+            expdir,
+            expname,
+            suffix,
+            batchnr,
+            batchsize,
+            nbatches,
+            metadata,
+            verbose
+        )
     end
 end
 function (self::SaveBatchAsHDF5)(u, batch, I)
@@ -113,13 +124,15 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
     self.batchnr += 1
     filename = get_filename(self)
 
-    print_reduction_overview(
-        self.batchnr,
-        self.nbatches,
-        self.expdir,
-        filename,
-        I
-    )
+    if self.verbose
+        print_reduction_overview(
+            self.batchnr,
+            self.nbatches,
+            self.expdir,
+            filename,
+            I
+        )
+    end
 
     df = DataFrame(batch)
 
@@ -147,9 +160,10 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
         write(batchmetagroup, batchname, string(now()))
     end
     # Write batch statistics to file?
-    println("success")
-
-    print_batch_statistics(df)
+    if self.verbose
+        println("success")
+        print_batch_statistics(df)
+    end
 
     return u, false
 end
