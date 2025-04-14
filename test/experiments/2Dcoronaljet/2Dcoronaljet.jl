@@ -137,8 +137,10 @@ save_gcastates(fname, fields_itp)
 
 # Test the results
 #==============================================================================#
+rtol = 1e-8
+atol = 1e-8
+
 answersol2 = load_object(expdir*"/testresults/answersol2.jld2")
-@test all([u.u for u in sol2.u] .≈ answersol2)
 
 df = h5_getall(fname)
 answersol1_df = load_object(expdir*"/testresults/answersol1_df.jld2")
@@ -149,20 +151,27 @@ for i in 1:nsyms
     if syms[i] ∈ ("retmsg", "retcode")
         testres[i] =  all(df[!, syms[i]] .== answersol1_df[!, syms[i]])
     else
-        testres[i] =  all(df[!, syms[i]] .≈ answersol1_df[!, syms[i]])
+        testres[i] =  all(isapprox.(
+            df[!, syms[i]],
+            answersol1_df[!, syms[i]],
+            rtol=rtol
+            )
+        )
     end
 end
-@test all(testres)
 
 e0, ef = h5_getenergies(fname)
 answersol2_e0, answersol2_ef = load_object(
     expdir*"/testresults/answersol1_energies.jld2"
 )
-@test all(e0 .≈ answersol2_e0)
-@test all(ef .≈ answersol2_ef)
 
 rm(expdir*"/cs_BE.jld2")
 rm(expdir*"/cs_tg_normfalse.jld2")
 rm(fname)
 rm(joinpath(expdir, expname, expname*"_gcastates0.h5"))
 rm(joinpath(expdir, expname, expname*"_gcastatesf.h5"))
+
+@test all([u.u for u in sol2.u] .≈ answersol2)
+@test all(testres)
+@test all(isapprox.(e0, answersol2_e0; rtol=rtol))
+@test all(isapprox.(ef, answersol2_ef; rtol=rtol))
