@@ -424,8 +424,8 @@ function create_bifrost_itps(
     itp_bc::Union{
         Interpolations.BoundaryCondition,
         NTuple{N, Interpolations.BoundaryCondition} where N
-    };
-    filename::String,
+    },
+    filename::String;
     units="si",
     auxvariables=[],
     normalise=fill(false, length(auxvariables)),
