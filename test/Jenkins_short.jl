@@ -8,18 +8,21 @@
 #
 
 using TestParticles
+using BifrostTools
 using Test
 using LinearAlgebra
 using DifferentialEquations
+using DataFrames
 using Interpolations
+using JLD2
+using Random
 
 include("testfields.jl")
 
 if !isdefined(Main, :verbose)
     verbose = 3
 end
-
-@testset verbose = verbose ≥ 1 "Quick tests" begin
+@testset verbose = verbose ≥ 1 "Fast tests" begin
 
     @testset verbose = verbose ≥ 3 "Unit tests" begin
         include("test_physics.jl")
@@ -38,6 +41,9 @@ end
         @testset verbose = verbose ≥ 4 "Speiser (1965)" begin
             include("experiments/speiser1965.jl")
         end # testset Speiser 1965
+        @testset verbose = verbose ≥ 4 "2D coronal jet" begin
+            include("experiments/2Dcoronaljet/2Dcoronaljet.jl")
+        end
     end # testset Experiments
 
 end # testset All test

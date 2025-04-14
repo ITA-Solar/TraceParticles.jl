@@ -14,8 +14,6 @@ using Interpolations
 
 verbose = 4
 
-include("testfields.jl")
-
 include("Jenkins_short.jl")
 @testset verbose = verbose ≥ 1 "Long tests" begin
     @testset verbose = verbose ≥ 3 "Experiments" begin
