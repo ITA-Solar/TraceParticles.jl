@@ -38,7 +38,7 @@ mass = TestParticles.m_e               # Mass of particles
 eom = gca_2Dxz!
 npart = Int(1e2)
 seed = 5
-rng = MersenneTwister(seed) # Random number generator
+rng = Xoshiro(seed) # Random number generator
 # Parameters for saving data
 expname = "testresults"
 fname = joinpath(expdir, expname, expname*".h5")
