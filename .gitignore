@@ -33,10 +33,3 @@ docs/Manifest.toml
 \#*\#
 # Vim backup-files?
 \.\#*
-#Data files
-data/
-**/data/
-# Trace particle data
-*.tp
-*.bg
-*.mesh
