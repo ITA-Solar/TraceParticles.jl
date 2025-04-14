@@ -108,7 +108,8 @@ export
     h5_getinitialstate,
     h5_getfinalstate,
     save_gcastates,
-    create_bifrost_itps
+    create_bifrost_itps,
+    XZInterpolation
 # dataprosessing.jl
 export
     initialstate_retmsg,
@@ -134,6 +135,9 @@ export
     get_driftenergy,
     get_perpenergy,
     get_parallelenergy
+# constants.jl
+export
+    J2eV
 
 #-------------------------------------------------------------------------------
 end
