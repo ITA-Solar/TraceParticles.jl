@@ -77,9 +77,9 @@ if analytical_field
         emfields_itp[i] = (x, y, z) -> emfields(x, y, z)[i]
     end
 else
-    xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
+    xx, yy, zz, dx, dy, dz = TestParticles.create3Daxes(xi0, xif, ni)
     Efield = zeros(Float64, numdims, ni...)
-    Bfield = stack(discretise(
+    Bfield = stack(TestParticles.discretise(
         (x, y, z) -> magneticdipolefield(x, y, z, M),
         xx,
         yy,
@@ -104,8 +104,8 @@ B⃗ = [itp(R0...) for itp in emfields_itp][1:3]
 E⃗ = [0.0, 0.0, 0.0]
 u0 = TestParticles.get_fullorbit(B⃗, E⃗, R0, vparal, μ, charge, mass, 0.0)
 
-fo_params = (charge, mass, emfields_itp)
-gca_params = (charge=charge, mass=mass, magneticmoment=μ, emfields_itp)
+fo_params = (charge=charge, mass=mass, fields=emfields_itp)
+gca_params = (charge=charge, mass=mass, magneticmoment=μ, fields=emfields_itp)
 
 #-------------------------------------------------------------------------------
 # CREATE PROBLEM
@@ -159,4 +159,3 @@ angle_fo = atan.(fo_sim(times)[2, :], fo_sim(times)[1, :])
 global ϕ = 2π * tf / T
 global ϕ_FO = angle_fo[end]
 global ϕ_gca = angle_gca[end]
-
