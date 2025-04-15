@@ -2,7 +2,6 @@
 # To create electron density interpolators demands EoS-tables so we avoid that.
 expdir = Base.source_dir()
 brxp = BifrostExperiment("testsnap", expdir)
-@info "Creating interpolation objects..."
 create_bifrost_itps(
     brxp,
     1,
@@ -17,7 +16,6 @@ create_bifrost_itps(
 # EXPEIRMENT PARAMETERS
 #===============================================================================#
 # Concerning field, duration and bounds
-@info "Loading interpolation objects..."
 fields_itp = load_object(expdir*"/cs_BE.jld2")
 tg_itp = load_object(expdir*"/cs_tg_normfalse.jld2")
 ne_itp = load_object(expdir*"/cs_ne_normfalse.jld2")

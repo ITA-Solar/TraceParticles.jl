@@ -118,13 +118,10 @@ gca_prob = ODEProblem(
 # RUN SIMULATION
 reltol_fo = 1e-4
 reltol_gca = 1e-4
-@time fo_sim = DifferentialEquations.solve(fo_prob, Tsit5();
+fo_sim = DifferentialEquations.solve(fo_prob, Tsit5();
     reltol=reltol_fo, abstol=1e-9)
-@time gca_sim = DifferentialEquations.solve(gca_prob, Tsit5();
+gca_sim = DifferentialEquations.solve(gca_prob, Tsit5();
     reltol=reltol_gca, abstol=1e-9)
-println("qMm = $qMm")
-println("nof. FO-timesteps = $(length(fo_sim.t))")
-println("nof. GCA-timesteps = $(length(gca_sim.t))")
 #...............................................................................
 
 

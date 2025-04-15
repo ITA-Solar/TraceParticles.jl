@@ -38,4 +38,4 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
         with:
           annotate: true
-          test_args: "fast_tests"
+          test_args: ""

@@ -1,0 +1,15 @@
+@testset verbose = verbose ≥ 2 "Long tests" begin
+
+    @testset verbose = verbose ≥ 3 "Experiments" begin
+
+        @testset verbose = verbose ≥ 4 "Dipole" begin
+            include("experiments/dipoleloop.jl")
+        end # testset dipole
+
+        @testset verbose = verbose ≥ 4 "2D coronal jet" begin
+            include("experiments/2Dcoronaljet/2Dcoronaljet.jl")
+        end # testset 2D coronal jet
+
+    end # testset Experiments
+
+end # testset long tests
