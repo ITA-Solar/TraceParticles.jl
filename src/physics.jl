@@ -661,51 +661,6 @@ end
 
 
 """
-    get_fullorbit(
-        magneticfield::Vector{<:Real},
-        electricfield::Vector{<:Real},
-        R            ::Vector{<:Real},
-        vparal       ::Real,
-        μ            ::Real,
-        mass         ::Real,
-        charge       ::Real,
-        phaseangle   ::Real,
-        )
-Get the position and velocity from the guiding centre position `R`, parallel
-velocity `vparal`, and magnetic moment `μ` of a charged particle with `mass`
-and `charge` in an electromagnetic field.
-
-Requires an arbitrary `phaseangle`
-of the gyromotion because we are going from 5 parameters to 6. The phase angle
-is with respect to vector perpendicular to the magnetic field and guiding
-centre position vector.
-"""
-function get_fullorbit(
-    magneticfield::Vector{<:Real},
-    electricfield::Vector{<:Real},
-    R::Vector{<:Real}, # Guiding centre position
-    vparal::Real,           # Velocity parallel to the magnetic field
-    μ::Real,           # Magnetic moment of particle
-    charge::Real,
-    mass::Real,
-    phaseangle::Real,           # Arbitrary phase angle of gyration.
-)
-    B = norm(magneticfield) # Magnetic field strength
-    b = magneticfield / B   # Magnetic field direction (unit vector)
-    v_exb = exbdrift(magneticfield, electricfield) # get E cross B drift,
-    # magnetic field strength and magnetic field direction
-    vperp = perpendicular_velocity(μ, mass, B)
-    r_L = larmorradius(mass, vperp, charge, B)
-    e₁ = (R × b) / norm(R)
-    e₂ = e₁ × b
-    sθ, cθ = sincos(phaseangle)
-    position = R + r_L * (cθ * e₁ + sθ * e₂)
-    velocity = vparal * b + v_exb + vperp * (cθ * e₂ - sθ * e₁)
-    return [position; velocity]
-end
-
-
-"""
     get_fullorbit!(
         u            ::Vector{<:Real},
         magneticfield::Vector{<:Real},
@@ -740,7 +695,14 @@ function get_fullorbit!(
 )
     B = norm(magneticfield) # Magnetic field strength
     b = magneticfield / B   # Magnetic field direction (unit vector)
+
+    # Calculate the guiding centre drift
     v_exb = exbdrift(magneticfield, electricfield) # get E cross B drift,
+    # Alternatively using all drifts
+    #v_exb = sum(
+    #    drifts(R, vparal, charge, mass, μ, itpvec)
+    #)
+
     # magnetic field strength and magnetic field direction
     vperp = perpendicular_velocity(μ, mass, B)
     r_L = larmorradius(mass, vperp, charge, B)
@@ -749,11 +711,17 @@ function get_fullorbit!(
     #e₂ = b × e₁
     sθ, cθ = sincos(phaseangle)
     position = R + r_L * (cθ * e₁ + sθ * e₂)
-    #velocity = vparal*b + v_exb + vperp*(cθ*e₂ - sθ*e₁) !OLD!
-    velocity = vparal*b + v_exb + sign(charge)*vperp*(cθ*e₂ + sθ*e₁)
+
+    # Calculate the velocity vector
+    velocity = vparal * b + v_exb + vperp * (cθ * e₂ - sθ * e₁)
+    # Alternatively
+    #velocity = vparal * b + v_exb + sign(charge) * vperp * (cθ * e₂ + sθ * e₁)
+    #velocity = vparal * b + v_exb + charge * vperp * (cθ * e₂ + sθ * e₁)
+
     # In-place return
     u[:] = [position; velocity]
 end
+
 
 """
     cosineof_pitchangle(

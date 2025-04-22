@@ -177,9 +177,8 @@ the parameter `switch` to `1` and transforming `u` to the guiding centre state.
 """
 function switch2gca_affect!(integrator)
     B, E = emfieldatpos(integrator.u[1:3], integrator.p.fields)
-    get_guidingcentre!(
+    integrator.p.magneticmoment = get_guidingcentre!(
         integrator.u, # In-place (will be changed)
-        integrator.p.magneticmoment,# In-place
         integrator.u[1:3],
         integrator.u[4:6],
         B, E,
