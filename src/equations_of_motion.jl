@@ -16,14 +16,21 @@ contains the position in 3D, and `p` contains an interpolation functor giving
 the field at the position.
 using Base: Forward
 """
-function fieldlinetracing_forward(u, p, _)
-    field_itp = p
-    x, y, z = u
-    field = field_itp(x, y, z)
+function fieldlinetracing_forward!(du, u, p, _)
+    x, y, z, _ = u
+    field = [itp(x,y,z) for itp in p.fields[1:3]]
     fieldstrength = norm(field)
     fielddirection = field ./ fieldstrength
     dsdt = fielddirection
-    return dsdt
+    du[:] = [dsdt; 0]
+end
+function fieldlinetracing_backward!(du, u, p, _)
+    x, y, z, _ = u
+    field = [itp(x,y,z) for itp in p.fields[1:3]]
+    fieldstrength = norm(field)
+    fielddirection = field ./ fieldstrength
+    dsdt = -fielddirection
+    du[:] = [dsdt; 0]
 end
 
 
