@@ -220,18 +220,11 @@ from full orbit integration to the guiding centre approximation or the
 opposite.
 """
 function switch_affect!(integrator)
-    println("Switch_affect!")
-    println("Switch value before: $(integrator.p.switch)")
-#    println("mu before:           $(integrator.p.magneticmoment)")
-    println("u before: $(integrator.u)")
     if integrator.p.switch == 1
         switch2fo_affect!(integrator)
     else
         switch2gca_affect!(integrator)
     end
-    println("Switch value after:  $(integrator.p.switch)")
-#    println("mu after:            $(integrator.p.magneticmoment)")
-    println("u after:  $(integrator.u)")
 end
 
 
@@ -242,14 +235,14 @@ end
     GCAValidCondition
 Callback condition for checking GCA assumption. Returns `true` if the ratio
 between the particle Larmor radius and the characteristic length of the
-magnetic field is lower than a tolerance `switchtol`.
+magnetic field is lower than a `tolerance`.
 """
 struct GCAValidCondition
     tolerance::Real
 end
-function (functor::GCAValidCondition)(u, t, integrator)
-    ratio = scalesratio(u, t, integrator.p)
-    return ratio < functor.tolerance
+function (self::GCAValidCondition)(u, t, integrator)
+    integrator.p.switch == 2 &&
+        scalesratio(u, t, integrator.p, integrator.p.switch) < self.tolerance
 end
 
 
