@@ -239,7 +239,7 @@ function maxwellianvelocitysample(
 )
     T = temperature_itp.(args...)
     μ = 0.0
-    σ = sqrt.(TestParticles.k_B * T / mass) # Standard deviation of the Maxwell
+    σ = sqrt.(TraceParticles.k_B * T / mass) # Standard deviation of the Maxwell
     # distribution at this temperature
     return randn.(rng, precision, μ, σ, 3)
 end

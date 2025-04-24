@@ -77,9 +77,9 @@ if analytical_field
         emfields_itp[i] = (x, y, z) -> emfields(x, y, z)[i]
     end
 else
-    xx, yy, zz, dx, dy, dz = TestParticles.create3Daxes(xi0, xif, ni)
+    xx, yy, zz, dx, dy, dz = TraceParticles.create3Daxes(xi0, xif, ni)
     Efield = zeros(Float64, numdims, ni...)
-    Bfield = stack(TestParticles.discretise(
+    Bfield = stack(TraceParticles.discretise(
         (x, y, z) -> magneticdipolefield(x, y, z, M),
         xx,
         yy,
@@ -100,9 +100,9 @@ end
 # PARTICLE CREATION
 # Set initial position and velocities
 B⃗ = [itp(R0...) for itp in emfields_itp][1:3]
-μ = TestParticles.magneticmoment(vperp, mass, norm(B⃗))
+μ = TraceParticles.magneticmoment(vperp, mass, norm(B⃗))
 E⃗ = [0.0, 0.0, 0.0]
-u0 = TestParticles.get_fullorbit(B⃗, E⃗, R0, vparal, μ, charge, mass, 0.0)
+u0 = TraceParticles.get_fullorbit(B⃗, E⃗, R0, vparal, μ, charge, mass, 0.0)
 
 fo_params = (charge=charge, mass=mass, fields=emfields_itp)
 gca_params = (charge=charge, mass=mass, magneticmoment=μ, fields=emfields_itp)

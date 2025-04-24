@@ -1,14 +1,14 @@
 # Examples
 
 ## Basic use of with analytical fields 
-This example demonstrates the most basic use of `TestParticles`. The
+This example demonstrates the most basic use of `TraceParticles`. The
 electromagnetic fields are analytically prescribed, and the initial conditions
 of the particle ensemble are pre-determined. In this case, the only tool that
-is needed from `TestParticles` are the equations of motion for the particles.
+is needed from `TraceParticles` are the equations of motion for the particles.
 The rest is setup for solving an `EnsembleProblem` from `DifferentialEquations`.
 
 ```julia
-using TestParticles: lorentzforce!
+using TraceParticles: lorentzforce!
 using DifferentialEquations
 
 """
@@ -94,7 +94,7 @@ This script assumes you have the external electromangetic field and temperature 
 n 
 
 ```julia
-using TestParticles
+using TraceParticles
 using DifferentialEquations
 using Interpolations
 using JLD2
@@ -109,9 +109,9 @@ xbounds = (0.0, 31.958047e6)   # Spatial bounds [m]
 zbounds = (-32e6, 0.00)        # This is a 2.5D simulation
 
 # Particle parameters
-charge = -TestParticles.e      # Charge of particles
-mass = TestParticles.m_e       # Mass of particles
-eom = TestParticles.gca_2Dxz!  # Equation of motion
+charge = -TraceParticles.e      # Charge of particles
+mass = TraceParticles.m_e       # Mass of particles
+eom = TraceParticles.gca_2Dxz!  # Equation of motion
 npart = 10_000_000
 rng = MersenneTwister()        # Random number generator
 alg = Rosenbrock23()           # Numerical integration algorithm

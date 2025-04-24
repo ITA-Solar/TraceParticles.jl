@@ -89,8 +89,15 @@ end
 Find the initial state of the particles with the indices `idxs` from the test
 particle ensemble stored as HDF5 with the filename `fname`.
 """
-function initialstate_idxs(fname::String, idxs::AbstractVector)
+function initialstate_idxs(fname::String, idxs::AbstractVector; mask=nothing)
     x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
+    if !isnothing(mask)
+        x0 = x0[mask]
+        y0 = y0[mask]
+        z0 = z0[mask]
+        vparal0 = vparal0[mask]
+        mu0 = mu0[mask]
+    end
     u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
     mu0 = mu0[idxs]
     return u0, mu0
@@ -108,12 +115,12 @@ function replaceparticles(
     fname_original::String,
     fname_replacement::String;
     original_idxs::String="original_idxs",
-    replace_keys::Function=names
+    kwargs...
 )
     idxs = h5open(fname_replacement) do fid
         read(fid["metadata/$original_idxs"])
     end
-    replaceparticles(fname_original, fname_replacement, idxs)
+    replaceparticles(fname_original, fname_replacement, idxs; kwargs...)
 end
 function replaceparticles(
     fname_original::String,
@@ -256,7 +263,6 @@ function particlemask(
     end
     return mask
 end
-
 
 
 #_______________________________________________________________________________

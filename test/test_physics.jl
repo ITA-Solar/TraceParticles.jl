@@ -1,5 +1,5 @@
 using Test
-using TestParticles: 
+using TraceParticles: 
     guidingcentre, 
     vparal_and_magneticmoment,
     get_guidingcentre!,
@@ -49,8 +49,8 @@ end
     gyrationvelocity = [1.0e5, 2.0e5, 3.0e5]
     b_vec = [0.0, 1.0, 1.0]
     B = 5.0e-5
-    mass = TestParticles.m_e
-    charge = -TestParticles.e
+    mass = TraceParticles.m_e
+    charge = -TraceParticles.e
     result = guidingcentre(pos, gyrationvelocity, b_vec, B, mass, charge)
     @test isapprox(
         result,
@@ -378,7 +378,7 @@ end
 @testset "lorentzfactor" begin
     speed = 1.0e5
     result = lorentzfactor(speed)
-    @test isapprox(result, 1 / sqrt(1 - speed^2 * TestParticles.csqrdinv), rtol=1e-6)
+    @test isapprox(result, 1 / sqrt(1 - speed^2 * TraceParticles.csqrdinv), rtol=1e-6)
 end
 
 @testset "kineticspeed" begin

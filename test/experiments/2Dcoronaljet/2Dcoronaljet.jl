@@ -31,8 +31,8 @@ zbounds = (-6.598462104797363e6, -6.102306842803955e6)
 
 #==============================================================================#
 # Particle parameters
-charge = -TestParticles.e              # Charge of particles
-mass = TestParticles.m_e               # Mass of particles
+charge = -TraceParticles.e              # Charge of particles
+mass = TraceParticles.m_e               # Mass of particles
 eom = gca_2Dxz!
 npart = Int(1e2)
 seed = 5
@@ -96,8 +96,6 @@ solve_kwargs = Dict(
     # Each batch has its datafile.
     :batch_size => batchsize,
 )
-
-println("Parameters set...")
 
 # Run the simulation
 #==============================================================================#

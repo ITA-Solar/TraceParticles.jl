@@ -1,8 +1,8 @@
 using Documenter, TestParticles
 
 makedocs(
-    sitename="TestParticles.jl",
-    modules=[TestParticles],
+    sitename="TraceParticles.jl",
+    modules=[TraceParticles],
     checkdocs = :exports,
     authors="eilifso <eilif.oyre@gmail.com>",
     pages=[
@@ -14,5 +14,5 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/ITA-Solar/TestParticles.jl.git",
+    repo = "github.com/ITA-Solar/TraceParticles.jl.git",
 )

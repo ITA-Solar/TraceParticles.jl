@@ -1,4 +1,4 @@
-name = "TestParticles"
+name = "TraceParticles"
 uuid = "391c92f7-b09d-4c05-9261-2c00f62b9ca4"
 authors = ["eilifso <e.s.oyre@astro.uio.no>"]
 version = "0.1.0"

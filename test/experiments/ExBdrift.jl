@@ -45,10 +45,10 @@ Ey = 0.02Bz / tf  # Electric field component only in the positive y-direction
 Ez = 0.0
 
 # Particle conditions
-qe = -TestParticles.e  # Electron charge
-qp = TestParticles.e   # Proton charge
-me = TestParticles.m_e # Electron mass
-mp = TestParticles.m_p # Proton mass
+qe = -TraceParticles.e  # Electron charge
+qp = TraceParticles.e   # Proton charge
+me = TraceParticles.m_e # Electron mass
+mp = TraceParticles.m_p # Proton mass
 # Set initial position and velocities
 vdriftx = Ey / Bz
 # Electron initial velocity
@@ -147,8 +147,8 @@ vel = zeros(Float64, numDims, numParticles) # Velocity
 #  Create DifferentialEquations.jl particle type
 ic_FO = [[x0e, y0e, z0e, vxe, vye, vze], [x0p, y0p, z0p, vxp, vyp, vzp]]
 params_FO = (
-    [-TestParticles.e, TestParticles.e],
-    [TestParticles.m_e, TestParticles.m_p],
+    [-TraceParticles.e, TraceParticles.e],
+    [TraceParticles.m_e, TraceParticles.m_p],
     emfields_itp
 )
 
@@ -165,8 +165,8 @@ vperpp = √(vxp^2 + vyp^2)
 #  Create initial condition vector  and params
 ic_GCA = [[x0e, y0e, z0e, vze], [x0p, y0p, z0p, vzp]]
 params_GCA = (
-    [-TestParticles.e, TestParticles.e],
-    [TestParticles.m_e, TestParticles.m_p],
+    [-TraceParticles.e, TraceParticles.e],
+    [TraceParticles.m_e, TraceParticles.m_p],
     [μₑ, μₚ],
     emfields_itp
 )

@@ -21,7 +21,8 @@ sol = rerun(find_nonthermals(fname, npart)[1:2]..., npart, fname)
 function rerun(
     u0::Vector{<:Vector{<:Real}},
     mu0::Vector{<:Real},
-    fname::String;
+    fname::String
+    ;
     reltol=nothing,
     abstol=nothing,
     maxiters=nothing,
