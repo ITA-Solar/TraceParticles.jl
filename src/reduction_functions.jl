@@ -138,31 +138,43 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
 
     batchname = "batch_$(self.batchnr)"
     # Open data file
-    h5open(filename, "cw") do fid
-        # Create group for the batch and write the particle data
-        h5group = create_group(fid, batchname)
-        for key in names(df)
-            write(h5group, key, df[!, key])
-        end
-
-        # If it is the first batch, write metadata to the file, and create the
-        # group for batch specific metadata
-        if self.batchnr == 1
-            metagroup = create_group(fid, "metadata")
-            for (key, value) in self.metadata
-                write(metagroup, key, value)
+    try
+        h5open(filename, "cw") do fid
+            # Create group for the batch and write the particle data
+            h5group = create_group(fid, batchname)
+            for key in names(df)
+                write(h5group, key, df[!, key])
             end
-            batchmetagroup = create_group(fid, "batch specific metadata")
-        else
-            batchmetagroup = fid["batch specific metadata"]
+
+            # If it is the first batch, write metadata to the file, and create the
+            # group for batch specific metadata
+            if self.batchnr == 1
+                metagroup = create_group(fid, "metadata")
+                for (key, value) in self.metadata
+                    write(metagroup, key, value)
+                end
+                batchmetagroup = create_group(fid, "batch specific metadata")
+            else
+                batchmetagroup = fid["batch specific metadata"]
+            end
+            # Write batch specific metadata
+            write(batchmetagroup, batchname, string(now()))
         end
-        # Write batch specific metadata
-        write(batchmetagroup, batchname, string(now()))
-    end
-    # Write batch statistics to file?
-    if self.verbose
-        println("success")
-        print_batch_statistics(df)
+        # Write batch statistics to file?
+        if self.verbose
+            println("success")
+            print_batch_statistics(df)
+        end
+    catch e
+        try
+            CSV.write("./tp_panic.csv", df)
+            @info "Error writing batch to HDF5-file. The batch has been written " *
+                "as a `DataFrame` in 'tp_panic.csv'."
+        catch e2
+            @warn "Writing panic-file failed: $e2"
+        finally
+            error(e)
+        end
     end
 
     return u, false
