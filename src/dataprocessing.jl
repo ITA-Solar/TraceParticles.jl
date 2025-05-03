@@ -106,6 +106,9 @@ end
 
 """
     replace_finalstates(fname_original, fname_replacement, original_idxs)
+    replace_finalstates(fname_original, fname_replacement, original_idxs;
+        replace_keys=names)
+    replace_finalstates(original_df, replacement_df, original_idxs)
 Replace the particles in `fname_original` with the particles in
 `fname_replacement`. The indices of the particles to be replaced in
 `fname_original` are given by `idxs`. The length of `idxs` must be the same as
@@ -131,6 +134,19 @@ function replaceparticles(
     original = h5_getall(fname_original)
     replacement = h5_getall(fname_replacement)
 
+    replaceparticles(
+        original,
+        replacement,
+        original_idxs;
+        replace_keys=replace_keys
+    )
+end
+function replaceparticles(
+    original::DataFrame,
+    replacement::DataFrame,
+    original_idxs::Vector{<:Int};
+    replace_keys::Function=names
+)
     if length(original_idxs) != size(replacement, 1)
         error(
             "Length of `original_idxs` must be equal to the number of
