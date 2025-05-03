@@ -103,12 +103,17 @@ function (self::DposMBvel)(prob, i, repeat)
     vel = maxwellianvelocitysample(self.rng, self.tg_itp, mass, pos...)
     bfield_at_pos = [prob.p.fields[i](pos...) for i in 1:3]
     efield_at_pos = [prob.p.fields[i](pos...) for i in 4:6]
-    vparal, magneticmoment = vparal_and_magneticmoment(
+    u = zeros(Float64, 4)
+    magneticmoment = get_guidingcentre!(
+        u,
+        pos,
         vel,
         bfield_at_pos,
         efield_at_pos,
+        charge,
         mass
     )
+    vparal = u[4]
     remake(prob, u0=[pos; vparal],
         p=(
             charge=charge,
@@ -151,12 +156,18 @@ function (self::DposMBvel_2Dxz)(prob, i, repeat)
     vel = maxwellianvelocitysample(self.rng, self.tg_itp, mass, Rx, Rz)
     bfield_at_pos = [prob.p.fields[i](Rx, Rz) for i in 1:3]
     efield_at_pos = [prob.p.fields[i](Rx, Rz) for i in 4:6]
-    vparal, magneticmoment = vparal_and_magneticmoment(
+    u = zeros(Float64, 4)
+    magneticmoment = get_guidingcentre!(
+        u,
+        R,
         vel,
         bfield_at_pos,
         efield_at_pos,
+        charge,
         mass
     )
+    vparal = u[4]
+
     remake(prob, u0=[R; vparal],
         p=(
             charge=charge,
