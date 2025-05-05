@@ -357,8 +357,6 @@ end
         xedges=nothing,
         nbins= 100,
         logx=false,
-        logf=false,
-        normalise=false,
         )
 Maps a binning of the `data` to the function `mapfunc`. The default mapping
 is the sum of the weights of the data in each bin. The defualt weighing is 1.
@@ -377,8 +375,6 @@ function binmap(
     xedges=nothing,
     nbins=100,
     logx=false,
-    logf=false,
-    normalise=false,
 )
     if isnothing(xedges) && isnothing(xvalues)
         # If no edges or data-corresponding x-values are given, we bin the
@@ -445,20 +441,6 @@ function binmap(
         @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbins) * 100)
     end
 
-    # Some post-processing. Normalise the binvalues if requested.
-    if normalise
-        if logx
-            error("Normalisation for non-uniform binning has a bug.")
-        end
-        mask = ismissing.(binvalues)
-        bm = binvalues[.!mask]
-        dx = diff(xedges)[.!mask]
-        normfactor = sum(dx .* bm)
-        binvalues = binvalues ./ normfactor
-    end
-    if logf
-        binvalues = log10.(binvalues)
-    end
     return xedges, binvalues
 end
 
@@ -467,45 +449,31 @@ end
     binmap(
         xvalues,
         yvalues,
-        zvalues,
-        mapfunc::Function = x -> length(x),
-        args...
         ;
+        data=ones(length(xvalues)),
+        mapfunc::Function = x -> length(x),
         nbinsx=100,
         nbinsy=100,
-        logaxes=false,
         logx=false,
         logy=false,
-        logz=false,
-        normalise=false,
         )
-Maps a 2D binning of the `zvalues` to the function `mapfunc`. Does not support
-weighing of the `zvalues`.
+Maps a 2D binning of the `data` to the function `mapfunc`. Does not support
+weighing of the `data`.
 
-Returns the 2D midpoints of the bins and their mapped values.
+Returns the edges of the bins and their mapped values.
 """
 function binmap(
     xvalues,
     yvalues,
-    zvalues,
     ;
-    mapfunc::Function=(z, w) -> sum(w),
+    data=ones(length(xvalues)),
+    mapfunc::Function=(d, w) -> sum(w),
     weights=ones(length(xvalues)),
     nbinsx=100,
     nbinsy=100,
     logx=false,
     logy=false,
-    logz=false,
-    normalise=false,
 )
-    #if logaxes
-    #    xvalues = log10.(xvalues)
-    #    yvalues = log10.(yvalues)
-    #elseif logx
-    #    xvalues = log10.(xvalues)
-    #elseif logy
-    #    yvalues = log10.(yvalues)
-    #end
     if logx
         log10data = log10.(xvalues)
         minx = minimum(log10data)
@@ -527,14 +495,12 @@ function binmap(
         yedges = LinRange(miny, maxy, nbinsy + 1)
     end
 
-    #xedges = LinRange(minimum(xvalues), maximum(xvalues), nbinsx+1)
-    #yedges = LinRange(minimum(yvalues), maximum(yvalues), nbinsy+1)
     binindex_x = binindex(xvalues, xedges)
     binindex_y = binindex(yvalues, yedges)
     df = DataFrame(
         x=xvalues,
         y=yvalues,
-        z=zvalues,
+        d=data,
         binindex_x=binindex_x,
         binindex_y=binindex_y,
         weight=weights,
@@ -542,13 +508,13 @@ function binmap(
     gdf = groupby(df, [:binindex_x, :binindex_y])
     #giddf = select(gdf, groupindices => :gid)
 
-    binvalues = missings(eltype(zvalues), nbinsx, nbinsy)
+    binvalues = missings(eltype(data), nbinsx, nbinsy)
     k = keys(gdf)
     Threads.@threads for i in eachindex(k)
         if !ismissing(k[i].binindex_x) && !ismissing(k[i].binindex_y)
             groupdf = gdf[i]
             binvalues[k[i].binindex_x, k[i].binindex_y] = mapfunc(
-                groupdf.z,
+                groupdf.d,
                 groupdf.weight,
             )
         end
@@ -557,21 +523,108 @@ function binmap(
     if emptybins != 0
         @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy) * 100)
     end
-    if normalise
-        if logx || logy
-            error("Normalisation for non-uniform binning is not implemented.")
-        end
-        dx = diff(xedges)[1]
-        dy = diff(yedges)[1]
-        dA = dx * dy
-        binvalues = binvalues ./ (dA * sum(binvalues))
-    end
-    if logz
-        binvalues = log10.(binvalues)
-    end
-    return midpoints(xedges), midpoints(yedges), binvalues
+    return binvalues, (xedges, yedges)
 end
 
+
+"""
+    binmap(
+        xvalues,
+        yvalues,
+        zvalues,
+        ;
+        data=ones(length(xvalues)),
+        mapfunc::Function = x -> length(x),
+        nbins=100
+        logx=false,
+        logy=false,
+        )
+Maps a 2D binning of the `data` to the function `mapfunc`. Does not support
+weighing of the `data`.
+
+Returns the edges of the bins and their mapped values.
+"""
+function binmap(
+    xvalues,
+    yvalues,
+    zvalues
+    ;
+    data=ones(length(xvalues)),
+    mapfunc::Function=(d, w) -> sum(w),
+    weights=ones(length(xvalues)),
+    nbinsx=100,
+    nbinsy=100,
+    nbinsz=100,
+    logx=false,
+    logy=false,
+    logz=false,
+)
+    if logx
+        log10data = log10.(xvalues)
+        minx = minimum(log10data)
+        maxx = maximum(log10data)
+        xedges = 10 .^ LinRange(minx, maxx, nbinsx + 1)
+    else
+        minx = minimum(xvalues)
+        maxx = maximum(xvalues)
+        xedges = LinRange(minx, maxx, nbinsx + 1)
+    end
+    if logy
+        log10data = log10.(yvalues)
+        miny = minimum(log10data)
+        maxy = maximum(log10data)
+        yedges = 10 .^ LinRange(miny, maxy, nbinsy + 1)
+    else
+        miny = minimum(yvalues)
+        maxy = maximum(yvalues)
+        yedges = LinRange(miny, maxy, nbinsy + 1)
+    end
+    if logz
+        log10data = log10.(zvalues)
+        minz = minimum(log10data)
+        maxz = maximum(log10data)
+        zedges = 10 .^ LinRange(minz, maxz, nbinsz + 1)
+    else
+        minz = minimum(zvalues)
+        maxz = maximum(zvalues)
+        zedges = LinRange(minz, maxz, nbinsz + 1)
+    end
+
+    binindex_x = binindex(xvalues, xedges)
+    binindex_y = binindex(yvalues, yedges)
+    binindex_z = binindex(zvalues, zedges)
+    df = DataFrame(
+        x=xvalues,
+        y=yvalues,
+        z=zvalues,
+        d=data,
+        binindex_x=binindex_x,
+        binindex_y=binindex_y,
+        binindex_z=binindex_z,
+        weight=weights,
+    )
+    gdf = groupby(df, [:binindex_x, :binindex_y, :binindex_z])
+    #giddf = select(gdf, groupindices => :gid)
+
+    binvalues = missings(eltype(data), nbinsx, nbinsy, nbinsz)
+    k = keys(gdf)
+    Threads.@threads for i in eachindex(k)
+        if !ismissing(k[i].binindex_x) &&
+            !ismissing(k[i].binindex_y) &&
+            !ismissing(k[i].binindex_z)
+            groupdf = gdf[i]
+            binvalues[k[i].binindex_x, k[i].binindex_y, k[i].binindex_z] = mapfunc(
+                groupdf.d,
+                groupdf.weight,
+            )
+        end
+    end
+    emptybins = sum(ismissing.(binvalues))
+    if emptybins != 0
+        @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy * nbinsz) * 100)
+    end
+    return binvalues, (xedges, yedges, zedges)
+end
 
 """
     normfactor_2Duniformmesh(var, axes; xlim=nothing, zlim=nothing)

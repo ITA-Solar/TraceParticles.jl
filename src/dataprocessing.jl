@@ -304,14 +304,12 @@ interpolation object from the discrete probability distribution.
 Returns the interpolation object, and the bin edges in x and y.
 """
 function generate_probdistr(
-    xvalues,
-    yvalues,
-    zvalues,
     args...
     ;
     kwargs...
 )
-    xx, yy, bm = binmap(xvalues, yvalues, zvalues, args...; kwargs...)
+    bm, edges = binmap(args...; kwargs...)
+    edges = midpoints.(edges)
     normbm = copy(bm)
     # Empty bins have NaN-values. Set them to zero to reflect their values in
     # the probability distribution. Interpolations.jl doesn't like NaN values
@@ -320,12 +318,12 @@ function generate_probdistr(
     if minimum(normbm) < 0
         normbm .+= abs(minimum(normbm))
     end
-    dxs = [diff(xx)[1], diff(yy)[1]]
+    dxs = [diff(edge)[1] for edge in edges]
     proddxs = abs(prod(dxs))
     normfactor = sum(normbm) * proddxs
     normbm /= normfactor
-    itp = linear_interpolation((xx, yy), normbm, extrapolation_bc=Flat())
-    return itp, xx, yy, normbm, bm
+    itp = linear_interpolation(edges, normbm, extrapolation_bc=Flat())
+    return itp, normbm, bm, edges
 end
 
 
