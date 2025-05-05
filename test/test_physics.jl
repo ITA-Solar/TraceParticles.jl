@@ -1,6 +1,5 @@
 using Test
 using TraceParticles:
-    guidingcentre,
     get_guidingcentre!,
     get_fullorbit!,
     larmorradius,
