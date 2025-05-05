@@ -8,8 +8,10 @@ create_bifrost_itps(
     BSpline(Cubic()),
     Flat(),
     expdir*"/cs",
-    auxvariables= ["tg"],
-    normalise=[false],
+    "si";
+    variables= ["BE", "tg"],
+    normalise=[false, false],
+    destagger=[true, false],
     xzinterpolation=true,
 )
 

@@ -425,34 +425,40 @@ function create_bifrost_itps(
         Interpolations.BoundaryCondition,
         NTuple{N, Interpolations.BoundaryCondition} where N
     },
-    filename::String;
-    units="si",
-    auxvariables=[],
+    filename::String,
+    units;
+    variables=[],
     normalise=fill(false, length(auxvariables)),
     destagger=fill(false, length(auxvariables)),
     xzinterpolation=false,
 )
-    if length(auxvariables) != length(normalise)
+    if length(variables) != length(normalise) != length(destagger)
         throw(ArgumentError(
-            "Length of `auxvariables` and `normalise` must be equal."
+            "Length of `variables` and `normalise` and `destagger` must be equal."
         ))
     end
     # Create interpolator for the electromagnetic field
-    interpolator = get_br_emfield_vecof_interpolators(
-        brxp,
-        snap,
-        itp_type=itp_type,
-        itp_bc=itp_bc,
-        units=units,
-        destagger=true,
-    )
-    if ndims(first(interpolator)) == 2 && xzinterpolation
-        interpolator = [XZInterpolation(itp) for itp in interpolator]
+    if "BE" ∈ variables
+        interpolator = get_br_emfield_vecof_interpolators(
+            brxp,
+            snap,
+            itp_type=itp_type,
+            itp_bc=itp_bc,
+            units=units,
+            destagger=true,
+        )
+        if ndims(first(interpolator)) == 2 && xzinterpolation
+            interpolator = [XZInterpolation(itp) for itp in interpolator]
+        end
+        @save string(filename, "_BE.jld2") interpolator
     end
-    @save string(filename, "_BE.jld2") interpolator
 
     # Create interpolators for the auxiliary variables
-    for (var, norm, dstgr) in zip(auxvariables, normalise, destagger)
+    mask = variables .!= "BE"
+    variables = variables[mask]
+    normalise = normalise[mask]
+    destagger = destagger[mask]
+    for (var, norm, dstgr) in zip(variables, normalise, destagger)
         interpolator, _ = get_br_var_interpolator(
             brxp,
             snap,
