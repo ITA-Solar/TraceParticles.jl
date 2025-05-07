@@ -154,12 +154,13 @@ function replaceparticles(
         )
     end
 
+    out = copy(original)
     for i in eachindex(original_idxs)
         for key in replace_keys(replacement)
-            original[original_idxs[i], key] = replacement[i, key]
+            out[original_idxs[i], key] = replacement[i, key]
         end
     end
-    return original
+    return out
 end
 
 #_______________________________________________________________________________
