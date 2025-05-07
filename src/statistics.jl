@@ -621,7 +621,7 @@ function binmap(
     end
     emptybins = sum(ismissing.(binvalues))
     if emptybins != 0
-        @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy * nbinsz) * 100)
+        @info @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy * nbinsz) * 100)
     end
     return binvalues, (xedges, yedges, zedges)
 end
