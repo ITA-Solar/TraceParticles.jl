@@ -409,13 +409,19 @@ end
         snap::Integer,
         itp_type::Interpolations.InterpolationType,
         itp_bc::Interpolations.BoundaryCondition;
-        filename::String
-        ;
-        units="si",
-        auxvariables=["tg", "ne"],
+        filename::String,
+        units::String,
+        variables::Vector{String}
     )
-Create interpolation objects from the MHD fields in a Bifrost snapshot and save
-them as JLD2-files.
+Create interpolation objects from the MHD variables in a Bifrost snapshot
+and save them as JLD2-files.
+
+### Keyword arguments
+- `normalise::Vector{Bool}`
+- `destagger::Vector{Bool}`
+- `xzinterpolation::Bool`: If true, wrap 2D interpolators in a struct that
+    allows it to be called with three coordinates, using only the first and
+    third coordinate. That is; itp(x,y,z) = itp(x,z).
 """
 function create_bifrost_itps(
     brxp::BifrostExperiment,
@@ -426,10 +432,10 @@ function create_bifrost_itps(
         NTuple{N, Interpolations.BoundaryCondition} where N
     },
     filename::String,
-    units;
-    variables=[],
-    normalise=fill(false, length(auxvariables)),
-    destagger=fill(false, length(auxvariables)),
+    units,
+    variables;
+    normalise=fill(false, length(variables)),
+    destagger=fill(false, length(variables)),
     xzinterpolation=false,
 )
     if length(variables) != length(normalise) != length(destagger)
