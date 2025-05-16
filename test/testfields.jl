@@ -138,4 +138,24 @@ function magneticfieldstrengthgradient_2Dplasmoid(
     return 1 / (2γ) * [∇B_x, ∇B_y, 0]
 end
 
+# Structs for making a callable electromagnetic field from interolation objects.
+struct EMField1
+    itp::AbstractInterpolation
+end
+function (self::EMField1)(x, y, z)
+    fields = self.itp(x, y, z)
+    return fields[4:6], fields[1:3]
+end
 
+
+struct EMField2
+    itp::Vector{<:Any}
+end
+function (self::EMField2)(x, y, z)
+    fields = [itp(x, y, z) for itp in self.itp]
+    return fields[4:6], fields[1:3]
+end
+function (self::EMField2)(x, z)
+    fields = [itp(x, z) for itp in self.itp]
+    return fields[4:6], fields[1:3]
+end

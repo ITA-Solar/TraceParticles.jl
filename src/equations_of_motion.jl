@@ -98,7 +98,7 @@ function lorentzforce!(du, u, p, _)
     q, m = p.charge, p.mass
     x = u[1:3] # The position vector
     v = u[4:6] # The velocity vector
-    B, E = emfieldatpos(x, p.fields)
+    E, B = p.electromagneticfield(x...)
     dvdt = q / m * (E + v × B)
     dxdt = v
     du[:] = [dxdt; dvdt]
@@ -136,9 +136,9 @@ function guidingcentreapproximation!(du, u, p, _)
     R = u[1:3]
     vparal = u[4] # Particle velocity parallel to the magnetic field
     # Extract parameters
-    q, m, μ, itpvec = p.charge, p.mass, p.magneticmoment, p.fields
+    q, m, μ = p.charge, p.mass, p.magneticmoment
     # Calculate the field gradients.
-    ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, itpvec)
+    ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, p.electromagneticfield)
 
     # We index `du` with 1:4 to allow aribitrary size of u.
     # (This is necessary when doing hybrid swtich method).
@@ -186,17 +186,15 @@ function gca_2Dxz!(du, u, p, _)
     Rx, Rz = u[1], u[3]
     vparal = u[4] # Particle velocity parallel to the magnetic field
     # Extract parameters
-    q, m, μ, itpvec = p.charge, p.mass, p.magneticmoment, p.fields
+    q, m, μ = p.charge, p.mass, p.magneticmoment
+    emfield = p.electromagneticfield
     # Use the gyrocentre position interpolate the vectors
     # scalars from the interpolation objects.
-    B_vec = [itpvec[i](Rx, Rz) for i in 1:3]
-    E_vec = [itpvec[i](Rx, Rz) for i in 4:6]
+    E_vec, B_vec = emfield(Rx, Rz)
 
     # Calculate the field gradients.
     jacobian_matrix = ForwardDiff.jacobian([Rx, Rz]) do x
-        vec = [itp(x...) for itp in itpvec]
-        B_vec_fd = vec[1:3]
-        E_vec_fd = vec[4:6]
+        E_vec_fd, B_vec_fd = emfield(x...)
         B_fd = norm(B_vec_fd)
         b_fd = B_vec_fd / B_fd
         return [b_fd; E_vec_fd × b_fd / B_fd; B_fd]

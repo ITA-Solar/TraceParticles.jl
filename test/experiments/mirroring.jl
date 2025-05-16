@@ -68,7 +68,7 @@ ni = (100, 100, 100)
 
 analytical_field = false
 if analytical_field
-    emfields_itp(x, y, z) = [magneticmirrorfield(x, y, z, B0, L); zeros(3)]
+    emfields_itp(x, y, z) = (zeros(3), magneticmirrorfield(x, y, z, B0, L))
 else
     xx, yy, zz, dx, dy, dz = TraceParticles.create3Daxes(xi0, xif, ni)
     Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
@@ -84,10 +84,12 @@ else
     fields = [Bfield; Efield]
     emfields_itp = Vector{AbstractInterpolation}(undef, 6)
     for i = 1:6
-        emfields_itp[i] = cubic_spline_interpolation((xx, yy, zz), fields[i, :, :, :],
+        emfields_itp[i] = cubic_spline_interpolation(
+            (xx, yy, zz), fields[i, :, :, :],
             extrapolation_bc=Flat()
         )
     end
+    emfields_itp = EMField2(emfields_itp)
 end
 #-------------------------------------------------------------------------------
 # SIMULATION DURATION
@@ -98,10 +100,17 @@ numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
 # Set initial position and velocities
-B⃗ = [itp(pos0...) for itp in emfields_itp][1:3]
-E⃗ = zeros(3)
+E, B = emfields_itp(pos0...)
 statevector = zeros(4)
-μ = TraceParticles.get_guidingcentre!(statevector, pos0, vel0, B⃗, E⃗, charge, mass)
+μ = TraceParticles.get_guidingcentre!(
+    statevector,
+    pos0,
+    vel0,
+    B,
+    E,
+    charge,
+    mass
+)
 R0 = statevector[1:3]
 vparal = statevector[4]
 #-------------------------------------------------------------------------------
@@ -110,13 +119,18 @@ prob_FO = ODEProblem(
     lorentzforce!,
     [pos0; vel0],
     tspan,
-    (charge=charge, mass=mass, fields=emfields_itp),
+    (charge=charge, mass=mass, electromagneticfield=emfields_itp),
 )
 prob_GCA = ODEProblem(
     guidingcentreapproximation!,
     [R0; vparal],
     tspan,
-    (charge=charge, mass=mass, magneticmoment=μ, fields=emfields_itp)
+    (
+        charge=charge,
+        mass=mass,
+        magneticmoment=μ,
+        electromagneticfield=emfields_itp
+    )
 )
 
 #...............................................................................
@@ -157,4 +171,3 @@ end # testset GCA: Euler
 @testset verbose = true "Full orbit: Default alg." begin
     @test isapprox(rmse_FO, 0.0, atol=0.001)
 end # testset GCA: Euler
-

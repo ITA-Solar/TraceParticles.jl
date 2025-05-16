@@ -34,11 +34,12 @@ function larmorradius(
     R::Vector{<:Real},
     params::NamedTuple
 )
-    itpvec = params.fields[1:3]
+    B = norm(params.electromagneticfield(R...)[2])
     μ = params.magneticmoment
     q = params.charge
     m = params.mass
-    r_L = larmorradius(R, μ, q, m, itpvec)
+    vperp = perpendicular_velocity(μ, m, B)
+    return larmorradius(m, vperp, q, B)
 end
 
 """
@@ -118,6 +119,14 @@ function characteristicfieldlength(
     grad = ∇(position, itpvec)
     return characteristicfieldlength(fieldstrength, grad)
 end
+function characteristicfieldlength(
+    position::Vector{<:Real},
+    field::Function,
+)
+    fieldstrength = norm(field(position...))
+    grad = ∇(position, field)
+    return characteristicfieldlength(fieldstrength, grad)
+end
 
 
 """
@@ -127,7 +136,9 @@ length of the magnetic field.
 # Methods
     scalesratio(R, itpvec, ∇B, params)
     scalesratio(pos, vel, itpvec, ∇B, params)
+    scalesratio(B, ∇B, vperp, q, m)
     scalesratio(statevector, time, params, switch)
+    scalesratio(R, _, params)
 
 # Arguments
 - `R`, the guiding centre location.
@@ -197,9 +208,11 @@ function scalesratio(
     end
 end
 function scalesratio(R, _, params)
-    itpvec = params.fields[1:3]
-    ∇B = ∇(R, itpvec)
-    scalesratio(R, itpvec, ∇B, params)
+    emfields = params.electromagneticfield
+    B = norm(emfields(R...)[2])
+    vperp = perpendicular_velocity(params.magneticmoment, params.mass, B)
+    ∇B = ∇(R, (R...) -> emfields(R...)[2])
+    scalesratio(B, ∇B, vperp, params.charge, params.mass)
 end
 
 
@@ -441,33 +454,27 @@ end
 """
     fieldgradients(
         R::Vector{<:Real},
-        itpvec
+        electromagneticfield::Any
     )
-Calculate gradients of the electromagnetic field given by the function `itpvec`.
-The gradient that are calculated are
+Calculate gradients of the electromagnetic field given by the function/functor
+`electromagneticfield`. The gradient that are calculated are
 - ∇b, ∇ExB and ∇B
 
 The magnetic and electric field vectors are created by the call
 ```
-B_vec, E_vec = emfieldatpos(R, itpvec)
+E, B = electromagneticfield(R...)
 ```
 """
 function fieldgradients(
     R::Vector{<:Real},
-    itpvec
+    electromagneticfield::Any
 )
     # Interpolate the electromagnetic field to the guiding centre position.
-    B_vec, E_vec = emfieldatpos(R, itpvec)
+    E_vec, B_vec = electromagneticfield(R...)
 
     # Calculate the field gradients.
     jacobian_matrix = ForwardDiff.jacobian(R) do x
-        if typeof(itpvec) <: Vector
-            vec = [itp(x...) for itp in itpvec]
-        else
-            vec = itpvec(x...)
-        end
-        B_vec_fd = vec[1:3]
-        E_vec_fd = vec[4:6]
+        E_vec_fd, B_vec_fd = electromagneticfield(x...)
         B_fd = norm(B_vec_fd)
         b_fd = B_vec_fd / B_fd
         return [b_fd; E_vec_fd × b_fd / B_fd; B_fd]
@@ -481,7 +488,7 @@ end
 
 
 """
-    drifts(R, vparal, q, m, μ, itpvec)
+    drifts(R, vparal, q, m, μ, electromagneticfield)
 Calculates and returns the perpendicular drifts in the guiding centre
 approximation
 """
@@ -491,9 +498,9 @@ function drifts(
     q::Real,
     m::Real,
     μ::Real,
-    itpvec
+    electromagneticfield::Any,
 )
-    ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, itpvec)
+    ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, electromagneticfield)
 
     B = norm(B_vec)
     B_inv = 1 / B
@@ -693,7 +700,6 @@ function get_fullorbit!(
     charge::Real,
     mass::Real,
     phaseangle::Real,           # Arbitrary phase angle of gyration.
-    itpvec
 )
     B = norm(magneticfield) # Magnetic field strength
     b = magneticfield / B   # Magnetic field direction (unit vector)

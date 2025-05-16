@@ -96,16 +96,22 @@ else
         )
     end
 end
+emfields_itp = EMField2(emfields_itp)
+
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
 # Set initial position and velocities
-B⃗ = [itp(R0...) for itp in emfields_itp][1:3]
-μ = TraceParticles.magneticmoment(vperp, mass, norm(B⃗))
-E⃗ = [0.0, 0.0, 0.0]
-u0 = TraceParticles.get_fullorbit(B⃗, E⃗, R0, vparal, μ, charge, mass, 0.0)
+E, B = emfields_itp(R0...)
+μ = TraceParticles.magneticmoment(vperp, mass, norm(B))
+u0 = TraceParticles.get_fullorbit(B, E, R0, vparal, μ, charge, mass, 0.0)
 
-fo_params = (charge=charge, mass=mass, fields=emfields_itp)
-gca_params = (charge=charge, mass=mass, magneticmoment=μ, fields=emfields_itp)
+fo_params = (charge=charge, mass=mass, electromagneticfield=emfields_itp)
+gca_params = (
+    charge=charge,
+    mass=mass,
+    magneticmoment=μ,
+    electromagneticfield=emfields_itp
+)
 
 #-------------------------------------------------------------------------------
 # CREATE PROBLEM
@@ -114,6 +120,7 @@ fo_prob = ODEProblem(lorentzforce!, u0, tspan, fo_params)
 gca_prob = ODEProblem(
     guidingcentreapproximation!, [R0; vparal], tspan, gca_params
 )
+
 #...............................................................................
 # RUN SIMULATION
 reltol_fo = 1e-4

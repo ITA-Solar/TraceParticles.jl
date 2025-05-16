@@ -33,8 +33,9 @@ test particles.
 """
 function save_gcastates(
     filename::String,
-    fields_itp::Vector{<:Any};
+    electromagneticfield::Any;
     components="all",
+    verbose=false,
 )
     name, extension = splitext(filename)
     if extension == ".csv"
@@ -58,9 +59,12 @@ function save_gcastates(
                 batchname = "batch_$i"
                 batch = read(h5_sol[batchname])
                 df = DataFrame(batch)
+                if verbose
+                    @info "Calculating GCA states for batch $i"
+                end
                 dfgca0, dfgcaf = GCAState(
                     df,
-                    fields_itp;
+                    electromagneticfield;
                     components=components,
                 )
                 group0 = create_group(h5_gcastates0, batchname)
@@ -73,7 +77,7 @@ function save_gcastates(
         catch e
             rm(name0)
             rm(namef)
-            @error "While saving GCA states: $e"
+            @error "While saving GCA states:" exeption=(e, catch_backtrace())
         end
         try
             groupname = "metadata"
@@ -83,7 +87,7 @@ function save_gcastates(
             write_dict(metagroup0, metadata)
             write_dict(metagroupf, metadata)
         catch e
-            @warn "While copying metadata: $e"
+            @warn "While copying metadata:" exeption=(e, catch_backtrace())
         end
         close(h5_sol)
         close(h5_gcastates0)

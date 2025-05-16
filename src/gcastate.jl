@@ -30,7 +30,7 @@ electromagnetic field, relevant parameters, and auxiliary quantities.
         q     ::Real,
         m     ::Real,
         μ     ::Real,
-        itpvec::Vector{<:AbstractInterpolation}; 
+        electromagneticfield::Any;
         time=nothing,
         )
 Constructs a `GCAState` object from;
@@ -39,7 +39,8 @@ Constructs a `GCAState` object from;
 * `q` - The charge of the particle
 * `m` - The mass of the particle
 * `μ` - The magnetic moment of the particle
-* `itpvec` - A vector of interpolation objects for the electromagnetic fields
+* `electromagneticfield` - A function or functor that returns the
+  electric and magnetic field vectors at an arbitrary position in space.
 **Keyword** arguments:
 * `time` - The time of the state
 
@@ -94,7 +95,7 @@ struct GCAState
         q::Real,
         m::Real,
         μ::Real,
-        itpvec::Vector{<:Any};
+        electromagneticfield::Any;
         time=0.0,
     )
         R = state[1:3]
@@ -102,17 +103,14 @@ struct GCAState
         q⁻¹ = 1 / q # Inverse of q - to replace division with multiplication
         # Use the gyrocentre position interpolate the vectors
         # scalars from the interpolation objects.
-        B_vec = [itpvec[i](R...) for i in 1:3]
-        E_vec = [itpvec[i](R...) for i in 4:6]
+        E_vec, B_vec = electromagneticfield(R...)
         B = norm(B_vec)   # The magnetic field strength
         B⁻¹ = 1 / B         # Inverse of B - to replace divition with multipl.
         b̂ = B_vec * B⁻¹     # An unit vector pointing in the direction of the
         ExBdrift = (E_vec × b̂) / B # The E cross B-drift
 
         jacobian_matrix = ForwardDiff.jacobian(R) do x
-            vec = [itp(x...) for itp in itpvec]
-            B_vec_fd = vec[1:3]
-            E_vec_fd = vec[4:6]
+            E_vec_fd, B_vec_fd = electromagneticfield(x...)
             B_fd = norm(B_vec_fd)
             b̂_fd = B_vec_fd / B_fd
             return [b̂_fd; E_vec_fd × b̂_fd / B_fd; B_fd]
@@ -183,13 +181,13 @@ struct GCAState
 
     function GCAState(
         solution::DataFrame,
-        fields::Vector{<:Any}
+        electromagneticfield::Any
         ;
         lowmem=true,
         kwargs...
     )
         return init_and_final_ensembleofgcastates(
-            solution, fields; lowmem=lowmem, kwargs...
+            solution, electromagneticfield; lowmem=lowmem, kwargs...
         )
     end
 end
@@ -479,15 +477,15 @@ end
 """
     init_and_final_ensembleofgcastates(
         solution::Vector{Tuple{Vararg{Any}}},
-        itpvec::Vector{<:AbstractInterpolation},
+        electromagneticfield::Any,
         ;
         components="all",
         charge=tp.e,
         mass=tp.m_e,
         )
 Caclulate ensembles of `GCAState` objects from the initial and final states of
-an ensemble solution, using the electromangetic field interpolation objects
-`itpvec`.
+an ensemble solution, using the electromangetic field function/functor
+`electromagneticfield`.
 
 The solution is assumed to be a vector of a tuple of any type
 (e.g. an output function). The function needs to be able to extract the initial
@@ -500,7 +498,7 @@ calculation. Otherwise, the function will only use the ExB-drift component.
 """
 function init_and_final_ensembleofgcastates(
     solution::Any,
-    itpvec::Vector{<:Any},
+    electromagneticfield::Any
     ;
     kwargs...
 )
@@ -513,7 +511,7 @@ function init_and_final_ensembleofgcastates(
         initialstates,
         magneticmoments,
         initialtimes,
-        itpvec
+        electromagneticfield
         ;
         kwargs...
     )
@@ -521,7 +519,7 @@ function init_and_final_ensembleofgcastates(
         finalstates,
         magneticmoments,
         finaltimes,
-        itpvec
+        electromagneticfield
         ;
         kwargs...
     )
@@ -542,7 +540,7 @@ end
         solution::Vector{<:Vector{<:Real}},
         magneticmoments::Vector{<:Real},
         times::Vector{<:Real},
-        itpvec::Vector{<:AbstractInterpolation},
+        electromagneticfield::Any
         ;
         components="exb",
         charge=tp.e,
@@ -553,8 +551,8 @@ Construct a ensemble of `GCAState`s from a `solution` of a simulation using the
 GCA. The `solution` contains multiple GCA state-vectors. `magneticmoments` and
 `times` contain their respective magnetic moments and times.
 
-Require the electromagnetic field interpolation object vector as a additional
-argument.
+Require an callable object that returns the electromagnetic field at a given
+position in 3D space.
 
 ________________________________________________________________________________
 
@@ -593,7 +591,7 @@ function ensembleofgcastates(
     solution::Vector{<:Vector{<:Real}},
     magneticmoments::Vector{<:Real},
     times::Vector{<:Real},
-    itpvec::Vector{<:Any},
+    electromagneticfield::Any
     ;
     components="all",
     charge=e,
@@ -601,21 +599,20 @@ function ensembleofgcastates(
 )
     nofparticles = length(solution)
     particlestates = Vector{GCAState}(undef, nofparticles)
-    Threads.@threads for i in 1:nofparticles
+    for i in 1:nofparticles
         if components == "all"
             particlestates[i] = GCAState(
                 solution[i],
                 charge,
                 mass,
                 magneticmoments[i],
-                itpvec
+                electromagneticfield
                 ;
                 time=times[i],
             )
         elseif components == "exb"
             R = solution[i][1:3]
-            bfield = [itpvec[i](R...) for i in 1:3]
-            efield = [itpvec[i](R...) for i in 4:6]
+            efield, bfield = electromagneticfield(R...)
             particlestates[i] = GCAState(
                 solution[i],
                 charge,
@@ -642,7 +639,7 @@ end
         q::Real, # Particle charge
         m::Real, # Particle mass
         μ::Real, # Particle magnetic moment
-        itpvec::Vector{<:AbstractInterpolation},
+        electromagneticfield::Any,
 )
 Kinetic energy of a charged particle based on its guiding centre, parallel
 velocity, magnetic moment, and the electromagnetic field in which it is
@@ -653,7 +650,7 @@ function kineticenergy(
     q::Real, # Particle charge
     m::Real, # Particle mass
     μ::Real, # Particle magnetic moment
-    itpvec::Vector{<:Any}, # electromagnetic field interpolators
+    electromagneticfield::Any,
     time::Real
 )
     kineticenergy(GCAState(
@@ -661,7 +658,7 @@ function kineticenergy(
         q,
         m,
         μ,
-        itpvec;
+        electromagneticfield;
         time=time,
     ))
 end

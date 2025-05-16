@@ -320,6 +320,3 @@ function initparticlesmaxwellian(
     #
     return positions, velocities
 end # function initparticlesmaxwellian
-
-
-

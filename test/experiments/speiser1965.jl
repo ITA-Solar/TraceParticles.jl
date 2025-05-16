@@ -92,6 +92,7 @@ emfields = eachslice(vcat(Bfield, Efield), dims=(2, 3, 4))
 emfields_itp = linear_interpolation((xx, yy, zz), emfields,
     extrapolation_bc=Flat()
 )
+emfields_itp = EMField1(emfields_itp)
 
 #-------------------------------------------------------------------------------
 # SIMULATION DURATION
@@ -105,7 +106,7 @@ prob = ODEProblem(
     lorentzforce!,
     [pos0; vel0],
     tspan,
-    (charge=charge, mass=mass, fields=emfields_itp)
+    (charge=charge, mass=mass, electromagneticfield=emfields_itp)
 )
 
 #...............................................................................
@@ -124,4 +125,3 @@ velyτ = -0.5 * 3.0 * a / (η * b)
 @testset verbose = true "Full orbit: Default alg." begin
     @test isapprox(velysimτ, velyτ, atol=abs(5 * velyτ))
 end # testset Full orbit: RK4
-

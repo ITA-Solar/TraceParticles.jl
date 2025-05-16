@@ -137,6 +137,7 @@ emfields = eachslice(vcat(B, E), dims=(2, 3, 4))
 emfields_itp = linear_interpolation((xx, yy, zz), emfields,
     extrapolation_bc=Flat()
 )
+emfields_itp = EMField1(emfields_itp)
 
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
@@ -185,13 +186,13 @@ params_GCA = (
 prob_func_FO(prob, i, _) = remake(prob, u0=ic_FO[i], p=(
     charge=params_FO[1][i],
     mass=params_FO[2][i],
-    fields=params_FO[3],
+    electromagneticfield=params_FO[3],
 ))
 prob_func_GCA(prob, i, _) = remake(prob, u0=ic_GCA[i], p=(
     charge=params_GCA[1][i],
     mass=params_GCA[2][i],
     magneticmoment=params_GCA[3][i],
-    fields=params_GCA[4],
+    electromagneticfield=params_GCA[4],
 ))
 
 # ODEProblems

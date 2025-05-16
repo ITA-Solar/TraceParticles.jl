@@ -89,8 +89,7 @@ emfields = eachslice(vcat(Bfield, Efield), dims=(2, 3, 4))
 emfields_itp = linear_interpolation((xx, yy, zz), emfields,
     extrapolation_bc=Flat()
 )
-
-#-------------------------------------------------------------------------------
+emfields_itp = EMField1(emfields_itp)
 
 #-------------------------------------------------------------------------------
 # SIMULATION DURATION
@@ -102,10 +101,9 @@ numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
 # PARTICLE CREATION
 # Set initial position and velocities
 #
-B⃗ = emfields_itp(pos0...)[1:3]
-E⃗ = zeros(3)
-B = norm(B⃗)
-b̂ = B⃗ / B
+B_vec = emfields_itp(pos0...)[2]
+B = norm(B_vec)
+b̂ = B_vec / B
 v = norm(vel0)
 vparal = vel0 ⋅ b̂
 vperp = √(v^2 - vparal^2)
@@ -118,13 +116,13 @@ prob_FO = ODEProblem(
     lorentzforce!,
     [pos0; vel0],
     tspan,
-    (charge=charge, mass=mass, fields=emfields_itp),
+    (charge=charge, mass=mass, electromagneticfield=emfields_itp),
 )
 prob_GCA = ODEProblem(
     guidingcentreapproximation!,
     [pos0; vparal],
     tspan,
-    (charge=charge, mass=mass, magneticmoment=μ, fields=emfields_itp)
+    (charge=charge, mass=mass, magneticmoment=μ, electromagneticfield=emfields_itp)
 )
 
 #...............................................................................
@@ -152,4 +150,3 @@ end # testset GCA: Euler
 @testset verbose = true "Full orbit: Defualt alg." begin
     @test isapprox(posf_anal, sol_FO.u[end][1:3], rtol=0.001)
 end # testset GCA: Euler
-

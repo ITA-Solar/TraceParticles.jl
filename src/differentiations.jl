@@ -42,21 +42,11 @@ function ∇(
         norm(itp(x...)[1:3])
     end
 end
-
-
-"""
-    jacobian(
-        coords::Vector{<:Real},
-        itpvec::Vector{AbstractInterpolation},
-        )
-Compute the local Jacobian of a vector field given by an vector
-of interpolation objects.
-"""
-function jacobian(
+function ∇(
     coords::Vector{<:Real},
-    itpvec::Vector{<:AbstractInterpolation},
+    field::Function
 )
-    res = ForwardDiff.jacobian(coords) do x
-        [itp(x...) for itp in itpvec]
+    res = ForwardDiff.gradient(coords) do x
+        norm(field(x...))
     end
 end

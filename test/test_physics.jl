@@ -240,15 +240,10 @@ end
 
     @testset "fieldgradients" begin
         R = [1, 2, 3]
-        itpvec = [
-            (x, y, z) -> 0,
-            (x, y, z) -> 0,
-            (x, y, z) -> 2y,
-            (x, y, z) -> x / 2,
-            (x, y, z) -> 0,
-            (x, y, z) -> 0,
-        ]
-        ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, itpvec)
+        ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(
+            R,
+            (x, y, z) -> ([x/2, 0, 0], [0, 0, 2y])
+        )
         @test isapprox(B_vec, [0.0, 0.0, 4.0], atol=1e-6)
         @test isapprox(E_vec, [0.5, 0.0, 0.0], atol=1e-6)
         @test isapprox(∇B, [0.0, 2.0, 0.0], atol=1e-6)
@@ -258,20 +253,13 @@ end
 
     @testset "drifts" begin
         R = [1, 2, 3]
-        itpvec = [
-            (x, y, z) -> 0,
-            (x, y, z) -> 0,
-            (x, y, z) -> 2y,
-            (x, y, z) -> x / 2,
-            (x, y, z) -> 0,
-            (x, y, z) -> 0,
-        ]
         vparal = 1
         q = 1
         m = 1
         μ = 1
-        ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, itpvec)
-        ExBdrift, ∇Bdrift, Rdrift, Pdrift = drifts(R, vparal, q, m, μ, itpvec)
+        emfield(x, y, z) = ([x/2, 0, 0], [0, 0, 2y])
+        ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, emfield)
+        ExBdrift, ∇Bdrift, Rdrift, Pdrift = drifts(R, vparal, q, m, μ, emfield)
 
         v_E = [0, -1 / 8, 0]
         v_∇B = [-μ / 2q, 0, 0]
@@ -285,19 +273,14 @@ end
 
     @testset "gca_drift_and_acceleration" begin
         R = [1, 2, 3]
-        itpvec = [
-            (x, y, z) -> 0,
-            (x, y, z) -> 0,
-            (x, y, z) -> 2y,
-            (x, y, z) -> x / 2,
-            (x, y, z) -> 0,
-            (x, y, z) -> 0,
-        ]
         vparal = 1
         q = 1
         m = 1
         μ = 1
-        ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, itpvec)
+        ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(
+            R,
+            (x, y, z) -> ([x/2, 0, 0], [0, 0, 2y]),
+        )
         result = gca_drift_and_acceleration(∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ)
 
         v_E = [0, -1 / 8, 0]

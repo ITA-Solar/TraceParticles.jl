@@ -129,7 +129,7 @@ function rerun(
     eom::Function,
     charge::Real,
     mass::Real,
-    fields::Vector{<:Any},
+    electromagneticfield::Any,
     tspans::Vector{<:Tuple{Real, Real}},
     ensemble_prob_kwargs::Dict{<:Symbol, <:Any},
     solve_kwargs::Dict{<:Symbol, <:Any};
@@ -145,7 +145,7 @@ function rerun(
         (
             charge=charge,
             mass=mass,
-            fields=fields,
+            electromagneticfield=electromagneticfield,
             magneticmoment=mu0[1],
         )
     )

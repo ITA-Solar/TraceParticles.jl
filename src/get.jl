@@ -153,7 +153,7 @@ function get_observable(
         charge = sol.prob.p.charge
         mass = sol.prob.p.mass
         magneticmoment = sol.prob.p.magneticmoment
-        fields = sol.prob.p.fields
+        emfield = sol.prob.p.electromagneticfield
         obs = [
             getfield(
                 GCAState(
@@ -161,7 +161,7 @@ function get_observable(
                     charge,
                     mass,
                     magneticmoment,
-                    fields;
+                    emfield;
                     time=t,
                 ),
                 sym)
@@ -183,7 +183,7 @@ function get_observable(
                     sol.prob.p.charge,
                     sol.prob.p.mass,
                     sol.prob.p.magneticmoment,
-                    sol.prob.p.fields;
+                    sol.prob.p.electromagneticfield;
                     time=t,
                 ),
                 :r_L)
@@ -196,7 +196,7 @@ function get_observable(
                     sol.prob.p.charge,
                     sol.prob.p.mass,
                     sol.prob.p.magneticmoment,
-                    sol.prob.p.fields;
+                    sol.prob.p.electromagneticfield;
                     time=t,
                 ),
                 :L_B)
@@ -251,10 +251,7 @@ function get_exbdrift(
     sol::ODESolution,
     t::Real,
 )
-    B, E = emfieldatpos(
-        sol(t)[1:3],
-        sol.prob.p.fields,
-    )
+    E, B = sol.prob.p.electromagneticfield(sol(t)[1:3]...)
     exbdrift(B, E)
 end
 
@@ -277,7 +274,7 @@ function get_fermi(
         q,
         sol.prob.p.mass,
         sol.prob.p.magneticmoment,
-        sol.prob.p.fields;
+        sol.prob.p.electromagneticfield;
         time=t,
     )
     v_C = gcastate.curvaturedrift
@@ -304,7 +301,7 @@ function get_betatron(
         q,
         sol.prob.p.mass,
         sol.prob.p.magneticmoment,
-        sol.prob.p.fields;
+        sol.prob.p.electromagneticfield;
         time=t,
     )
     v_gradB = gcastate.∇Bdrift
@@ -331,7 +328,7 @@ function get_parallelpower(
         q,
         sol.prob.p.mass,
         sol.prob.p.magneticmoment,
-        sol.prob.p.fields;
+        sol.prob.p.electromagneticfield;
         time=t,
     )
     vparal = gcastate.state[4]
@@ -358,7 +355,7 @@ function get_polarisationacc(
         q,
         sol.prob.p.mass,
         sol.prob.p.magneticmoment,
-        sol.prob.p.fields;
+        sol.prob.p.electromagneticfield;
         time=t,
     )
     v_P = gcastate.polarisationdrift
@@ -395,7 +392,7 @@ function get_energy(
             sol.prob.p.charge,
             sol.prob.p.mass,
             sol.prob.p.magneticmoment,
-            sol.prob.p.fields,
+            sol.prob.p.electromagneticfield,
             t;
         )
     end
@@ -425,7 +422,7 @@ function get_driftenergy(
         q,
         m,
         sol.prob.p.magneticmoment,
-        sol.prob.p.fields;
+        sol.prob.p.electromagneticfield;
         time=t,
     )
     v_E = gcastate.exbdrift
@@ -463,10 +460,7 @@ function get_perpenergy(
     sol::ODESolution,
     t::Real;
 )
-    B, _ = emfieldatpos(
-        sol(t)[1:3],
-        sol.prob.p.fields,
-    )
+    _, B = sol.prob.p.electromagneticfield(sol(t)[1:3]...)
     return norm(B) * sol.prob.p.magneticmoment * J2eV
 end
 
@@ -488,7 +482,7 @@ function get_eparal(
         q,
         m,
         sol.prob.p.magneticmoment,
-        sol.prob.p.fields;
+        sol.prob.p.electromagneticfield;
         time=t,
     )
     B = norm(gcastate.bfield)

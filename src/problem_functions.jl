@@ -25,7 +25,7 @@ function (self::PposPvel)(prob, i, repeat)
             charge=prob.p.charge,
             mass=prob.p.mass,
             magneticmoment=self.mu0[i],
-            fields=prob.p.fields,
+            electromagneticfield=prob.p.electromagneticfield,
             weight=1.0,
             userdata=UserData("None")
         )
@@ -85,7 +85,7 @@ struct DposMBvel
     target_distr::Any
     domain::Vector{Tuple{<:Real,<:Real}}
     max_value::Real
-    tg_itp::AbstractInterpolation
+    tg_itp::Any
 end
 function (self::DposMBvel)(prob, i, repeat)
     pos, nrejections = rejectionsample(
@@ -94,6 +94,9 @@ function (self::DposMBvel)(prob, i, repeat)
         self.domain,
         self.rng
     )
+    if length(pos) == 2
+        pos = [pos[1], 1e6, pos[2]] # !!! Hardcoded y-value
+    end
     acceptanceratio = 1 / (nrejections + 1)
     weight = self.target_distr(pos...) / self.proposal_distr(pos...)
 
@@ -101,8 +104,7 @@ function (self::DposMBvel)(prob, i, repeat)
     charge = prob.p.charge
     mass = prob.p.mass
     vel = maxwellianvelocitysample(self.rng, self.tg_itp, mass, pos...)
-    bfield_at_pos = [prob.p.fields[i](pos...) for i in 1:3]
-    efield_at_pos = [prob.p.fields[i](pos...) for i in 4:6]
+    efield_at_pos, bfield_at_pos = prob.p.electromagneticfield(pos...)
     u = zeros(Float64, 4)
     magneticmoment = get_guidingcentre!(
         u,
@@ -119,7 +121,7 @@ function (self::DposMBvel)(prob, i, repeat)
             charge=charge,
             mass=mass,
             magneticmoment=magneticmoment,
-            fields=prob.p.fields,
+            electromagneticfield=prob.p.electromagneticfield,
             weight=weight,
             acceptanceratio=acceptanceratio,
             userdata=UserData("None")
@@ -154,8 +156,7 @@ function (self::DposMBvel_2Dxz)(prob, i, repeat)
     charge = prob.p.charge
     mass = prob.p.mass
     vel = maxwellianvelocitysample(self.rng, self.tg_itp, mass, Rx, Rz)
-    bfield_at_pos = [prob.p.fields[i](Rx, Rz) for i in 1:3]
-    efield_at_pos = [prob.p.fields[i](Rx, Rz) for i in 4:6]
+    efield_at_pos, bfield_at_pos = prob.p.electromagneticfield(Rx, Rz)
     u = zeros(Float64, 4)
     magneticmoment = get_guidingcentre!(
         u,
@@ -173,7 +174,7 @@ function (self::DposMBvel_2Dxz)(prob, i, repeat)
             charge=charge,
             mass=mass,
             magneticmoment=magneticmoment,
-            fields=prob.p.fields,
+            electromagneticfield=prob.p.electromagneticfield,
             weight=weight,
             acceptanceratio=acceptanceratio,
             userdata=UserData("None")

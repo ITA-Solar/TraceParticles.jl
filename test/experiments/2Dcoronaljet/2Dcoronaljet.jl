@@ -8,8 +8,8 @@ create_bifrost_itps(
     BSpline(Cubic()),
     Flat(),
     expdir*"/cs",
-    "si";
-    variables= ["BE", "tg"],
+    "si",
+    ["BE", "tg"];
     normalise=[false, false],
     destagger=[true, false],
     xzinterpolation=true,
@@ -22,6 +22,9 @@ fields_itp = load_object(expdir*"/cs_BE.jld2")
 tg_itp = load_object(expdir*"/cs_tg_normfalse.jld2")
 ne_itp = load_object(expdir*"/cs_ne_normfalse.jld2")
 ne_norm_itp = load_object(expdir*"/cs_ne_normtrue.jld2")
+
+fields_itp = EMField2(fields_itp)
+
 dtsnap = 1e-2 # in code units (hs)
 tspan = (0.0, dtsnap * 100)   # Simulation time-span
 #xbounds = (14.527344e6, 18.824219e6) # Bounds of of initial position in x
@@ -35,7 +38,7 @@ zbounds = (-6.598462104797363e6, -6.102306842803955e6)
 # Particle parameters
 charge = -TraceParticles.e              # Charge of particles
 mass = TraceParticles.m_e               # Mass of particles
-eom = gca_2Dxz!
+eom = guidingcentreapproximation! # Equation of motion
 npart = Int(1e2)
 seed = 5
 rng = Xoshiro(seed) # Random number generator
@@ -50,11 +53,11 @@ out_cb = DiscreteCallback(
     outofdomainaffect!
 )
 rel_cb = DiscreteCallback(
-    RelativisticConditionGCA_2Dxz(;mass=mass, fraction=0.02),
+    RelativisticConditionGCA(;mass=mass, fraction=0.02),
     relativisticaffect!
 )
 gca_cb = DiscreteCallback(
-    GCABreakDownCondition_2Dxz(0.001),
+    GCABreakDownCondition(0.001),
     gcabreakdownaffect!,
 )
 # Size of the batch of particles to be saved in a single file
@@ -79,8 +82,8 @@ ensembleprob_kwargs = Dict(
     ),
     :safetycopy => false,
     # How to choose initial condition of the particle
-    :prob_func => DposMBvel_2Dxz(
-        rng, ne_itp, ne_itp, domain, maxval, tg_itp
+    :prob_func => DposMBvel(
+        rng, ne_itp, ne_itp, [xbounds, zbounds], maxval, tg_itp
     )
 )
 
@@ -108,7 +111,7 @@ odeprob = ODEProblem(
     (
         charge=charge,
         mass=mass,
-        fields=fields_itp,
+        electromagneticfield=fields_itp,
         magneticmoment=0.0,
     )
 )
@@ -198,7 +201,7 @@ totest = BitVector(undef, 100)
 totest .= [i ∉ errorprone for i in 1:100]
 
 # Get the column names
-syms = names(answersol1_df)
+syms = [exactsyms..., minrtolsyms...]
 nsyms = length(syms)
 
 # Compare the results of the particles that are not errorprone.
@@ -219,10 +222,13 @@ for i in 1:nsyms
 end
 
 # Compare the results of the particles that are errorprone
-testres_errorprone = BitVector(undef, nsyms)
+#syms_errorpron = names(answersol1_df)
+syms_errorprone = unique([exactsyms..., minrtolsyms..., keys(rtols_errorprone)...])
+nsyms_errorprone = length(syms)
+testres_errorprone = BitVector(undef, nsyms_errorprone)
 testres_errorprone .= 1
-for i in 1:nsyms
-    sym = syms[i]
+for i in 1:nsyms_errorprone
+    sym = syms_errorprone[i]
     if sym ∈ keys(rtols_errorprone)
         testres_errorprone[i] =  all(isapprox.(
             df[errorprone, sym],

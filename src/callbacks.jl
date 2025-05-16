@@ -96,8 +96,7 @@ function (self::RelativisticConditionGCA)(u, _, integrator)
     μ = integrator.p.magneticmoment
     mass = integrator.p.mass
 
-    B_vec = [itp(Rx, Ry, Rz) for itp in integrator.p.fields[1:3]]
-    E_vec = [itp(Rx, Ry, Rz) for itp in integrator.p.fields[4:6]]
+    E_vec, B_vec = integrator.p.electromagneticfield(Rx, Ry, Rz)
     v_E = exbdrift(B_vec, E_vec)
     B = norm(B_vec)
     vperp = perpendicular_velocity(μ, mass, B)
