@@ -20,13 +20,14 @@ function run_suite(
 end
 
 function judge_suite(
-    results::BenchmarkTools.Trial,
-    baseline::BenchmarkTools.Trial;
+    results::BenchmarkTools.BenchmarkGroup,
+    baselinefile::String;
     metric::Function=minimum,
     fname=joinpath(Base.source_dir(), "judgement.json"),
     time_tolerance=0.05
 )
-    judgement = judge(minimum(results), minimum(baseline); time_tolerance=time_tolerance)
+    baseline = BenchmarkTools.load(baselinefile)[1]
+    judgement = judge(metric(results), metric(baseline); time_tolerance=time_tolerance)
     BenchmarkTools.save(fname, judgement)
     return judgement
 end
