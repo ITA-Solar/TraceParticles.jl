@@ -1,13 +1,23 @@
+using BifrostTools
+using DifferentialEquations
+using Interpolations
+using JLD2
+using Random
+using Test
+using TraceParticles
+
+expdir = Base.source_dir()
+include(expdir * "/../../testfields.jl")
+
 # Create interpolation objects
 # To create electron density interpolators demands EoS-tables so we avoid that.
-expdir = Base.source_dir()
 brxp = BifrostExperiment("testsnap", expdir)
 create_bifrost_itps(
     brxp,
     1,
     BSpline(Cubic()),
     Flat(),
-    expdir*"/cs",
+    expdir * "/cs",
     "si",
     ["BE", "tg"];
     normalise=[false, false],
@@ -18,10 +28,10 @@ create_bifrost_itps(
 # EXPEIRMENT PARAMETERS
 #===============================================================================#
 # Concerning field, duration and bounds
-fields_itp = load_object(expdir*"/cs_BE.jld2")
-tg_itp = load_object(expdir*"/cs_tg_normfalse.jld2")
-ne_itp = load_object(expdir*"/cs_ne_normfalse.jld2")
-ne_norm_itp = load_object(expdir*"/cs_ne_normtrue.jld2")
+fields_itp = load_object(expdir * "/cs_BE.jld2")
+tg_itp = load_object(expdir * "/cs_tg_normfalse.jld2")
+ne_itp = load_object(expdir * "/cs_ne_normfalse.jld2")
+ne_norm_itp = load_object(expdir * "/cs_ne_normtrue.jld2")
 
 fields_itp = EMField2(fields_itp)
 
@@ -44,7 +54,7 @@ seed = 5
 rng = Xoshiro(seed) # Random number generator
 # Parameters for saving data
 expname = "testresults"
-fname = joinpath(expdir, expname, expname*".h5")
+fname = joinpath(expdir, expname, expname * ".h5")
 # Where to save the results
 datadir = expdir
 # Define Callbacks
@@ -53,7 +63,7 @@ out_cb = DiscreteCallback(
     outofdomainaffect!
 )
 rel_cb = DiscreteCallback(
-    RelativisticConditionGCA(;mass=mass, fraction=0.02),
+    RelativisticConditionGCA(; mass=mass, fraction=0.02),
     relativisticaffect!
 )
 gca_cb = DiscreteCallback(
@@ -115,14 +125,14 @@ odeprob = ODEProblem(
         magneticmoment=0.0,
     )
 )
- 
+
 prob = EnsembleProblem(odeprob; ensembleprob_kwargs...)
 sol = solve(prob, alg, EnsembleSerial(); solve_kwargs...)
 
 # For testing PposPvel and Relativistic callback
 u0 = [
-        [1.63e7, 1e6, -6.3e6, 1e6],
-        [1.63e7, 1e6, -6.3e6, -1e6],
+    [1.63e7, 1e6, -6.3e6, 1e6],
+    [1.63e7, 1e6, -6.3e6, -1e6],
 ]
 mu = [4.1e-11, 4.1e-11]
 ensembleprob_kwargs = Dict(
@@ -139,7 +149,7 @@ save_gcastates(fname, fields_itp)
 # Test the results
 #==============================================================================#
 # Default rtol for isapprox is sqrt(eps()) which is a bit more than 1e-8
-minrtol=1e-8
+minrtol = 1e-8
 
 # These are the columns of the results that should be exactly equal to the
 # answers, independent of machine.
@@ -184,10 +194,10 @@ rtols_errorprone = Dict(
 )
 
 # Retrieve the solutions for which to test the results against.
-answersol2 = load_object(expdir*"/testresults/answersol2.jld2")
-answersol1_df = load_object(expdir*"/testresults/answersol1_df.jld2")
+answersol2 = load_object(expdir * "/testresults/answersol2.jld2")
+answersol1_df = load_object(expdir * "/testresults/answersol1_df.jld2")
 answersol1_e0, answersol1_ef = load_object(
-    expdir*"/testresults/answersol1_energies.jld2"
+    expdir * "/testresults/answersol1_energies.jld2"
 )
 
 # Get the results
@@ -210,13 +220,13 @@ testres .= 1
 for i in 1:nsyms
     sym = syms[i]
     if sym ∈ exactsyms
-        testres[i] =  all(df[totest, sym] .== answersol1_df[totest, sym])
+        testres[i] = all(df[totest, sym] .== answersol1_df[totest, sym])
     elseif sym ∈ minrtolsyms
-        testres[i] =  all(isapprox.(
+        testres[i] = all(isapprox.(
             df[totest, sym],
             answersol1_df[totest, sym],
             rtol=minrtol
-            )
+        )
         )
     end
 end
@@ -230,31 +240,31 @@ testres_errorprone .= 1
 for i in 1:nsyms_errorprone
     sym = syms_errorprone[i]
     if sym ∈ keys(rtols_errorprone)
-        testres_errorprone[i] =  all(isapprox.(
+        testres_errorprone[i] = all(isapprox.(
             df[errorprone, sym],
             answersol1_df[errorprone, sym],
             rtol=rtols_errorprone[sym]
-            )
+        )
         )
     elseif sym ∈ exactsyms
-        testres_errorprone[i] =  all(df[errorprone, sym] .== answersol1_df[errorprone, sym])
+        testres_errorprone[i] = all(df[errorprone, sym] .== answersol1_df[errorprone, sym])
     elseif sym ∈ minrtolsyms
-        testres_errorprone[i] =  all(isapprox.(
+        testres_errorprone[i] = all(isapprox.(
             df[errorprone, sym],
             answersol1_df[errorprone, sym],
             rtol=minrtol
-            )
+        )
         )
 
     end
 end
 
 # Remove gnerated files before testing.
-rm(expdir*"/cs_BE.jld2")
-rm(expdir*"/cs_tg_normfalse.jld2")
+rm(expdir * "/cs_BE.jld2")
+rm(expdir * "/cs_tg_normfalse.jld2")
 rm(fname)
-rm(joinpath(expdir, expname, expname*"_gcastates0.h5"))
-rm(joinpath(expdir, expname, expname*"_gcastatesf.h5"))
+rm(joinpath(expdir, expname, expname * "_gcastates0.h5"))
+rm(joinpath(expdir, expname, expname * "_gcastatesf.h5"))
 
 # Test the results form the relativistic particles in sol2
 @test all([u.u for u in sol2.u] .≈ answersol2)

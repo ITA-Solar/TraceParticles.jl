@@ -24,6 +24,13 @@ methods, such as:
 and the chosen numerical solver, scheme and interpolation chosen.
 """
 
+using DifferentialEquations
+using Interpolations
+using Test
+
+expdir = Base.source_dir()
+include(expdir * "/../testfields.jl")
+
 #-------------------------------------------------------------------------------
 # EXPERIMENT PARAMTERS
 #

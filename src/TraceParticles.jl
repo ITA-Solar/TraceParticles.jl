@@ -11,26 +11,20 @@ module TraceParticles
 #
 #____/\______/\_________________________________________________________________
 
-# Mathematics
-using LinearAlgebra
+using BifrostTools
+using CSV
+using DataFrames
+using Dates
 using DifferentialEquations
+using Distributed
 using ForwardDiff
+using HDF5
 using Interpolations
-# Statistics
+using JLD2
+using LinearAlgebra
+using Printf
 using Random
 using StatsBase
-# Data representation
-using DataFrames
-# I/O
-using CSV
-using HDF5
-using Printf
-using JLD2
-using BifrostTools
-# Parallel computing
-using Distributed
-# Logging
-using Dates
 
 
 #_______________________________________________________________________________
