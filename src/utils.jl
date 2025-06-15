@@ -68,7 +68,20 @@ mutable struct MinValue{T1,T2,T3}
     min_t::T3
 end
 
-
+function findslice(axis, lim)
+    if lim[1] > axis[end] || lim[2] < axis[1]
+        error("Limit did not match any points in the mesh. Wrong units?")
+    end
+    i = findlast(axis -> axis < lim[1], axis)
+    j = findfirst(axis -> axis > lim[2], axis)
+    if isnothing(j)
+        j = length(axis)
+    end
+    if isnothing(i)
+        i = 1
+    end
+    return range(i,j)
+end
 """
     findslice(x, y, z, xlim, ylim, zlim)
     findslice(x, z, xlim, zlim)
@@ -88,26 +101,17 @@ function findslice(
     if isnothing(xlim)
         slicex = 1:length(x)
     else
-        slicex = findall(x -> xlim[1] <= x <= xlim[2], x)
-        if length(slicex) == 0
-            error("xlim did not match any points in the mesh. Wrong units?")
-        end
+        slicex = findslice(x, xlim)
     end
     if isnothing(zlim)
         slicez = 1:length(z)
     else
-        slicez = findall(z -> zlim[1] <= z <= zlim[2], z)
-        if length(slicez) == 0
-            error("zlim did not match any points in the mesh. Wrong units?")
-        end
+        slicez = findslice(z, zlim)
     end
     if isnothing(ylim)
         slicey = 1:length(y)
     else
-        slicey = findall(y -> ylim[1] <= y <= ylim[2], y)
-        if length(slicey) == 0
-            error("ylim did not match any points in the mesh. Wrong units?")
-        end
+        slicey = findslice(y, ylim)
     end
     if verbose
         @info "Range of x-axis: $(slicex[1]:slicex[end])"
@@ -127,18 +131,12 @@ function findslice(
     if isnothing(xlim)
         slicex = 1:length(x)
     else
-        slicex = findall(x -> xlim[1] <= x <= xlim[2], x)
-        if length(slicex) == 0
-            error("xlim did not match any points in the mesh. Wrong units?")
-        end
+        slicex = findslice(x, xlim)
     end
     if isnothing(zlim)
         slicez = 1:length(z)
     else
-        slicez = findall(z -> zlim[1] <= z <= zlim[2], z)
-        if length(slicez) == 0
-            error("zlim did not match any points in the mesh. Wrong units?")
-        end
+        slicez = findslice(z, zlim)
     end
     if verbose
         @info "Range of x-axis: $(slicex[1]:slicex[end])"
