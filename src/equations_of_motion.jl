@@ -103,17 +103,6 @@ function lorentzforce!(du, u, p, _)
     dxdt = v
     du[:] = [dxdt; dvdt]
 end
-function lorentzforce(u, p, _)
-    q, m, field_itp = p
-    x = u[1:3] # The position vector
-    v = u[4:6] # The velocity vector
-    fields = field_itp(x...)
-    B = fields[1:3]
-    E = fields[4:6]
-    dvdt = q / m * (E + v × B)
-    dxdt = v
-    return [dxdt; dvdt]
-end
 
 
 """
