@@ -747,10 +747,23 @@ function lorentzfactor(speed::Real)
     return 1 / √(1 - speed^2 * csqrdinv)
 end
 
+
 """
     kineticspeed(kineticenergy::Real, mass::Real)
 Calculate the speed of a particle from its `kineticenergy` and `mass`.
 """
 function kineticspeed(kineticenergy::Real, mass::Real)
     return √(2kineticenergy / mass)
+end
+
+
+"""
+    mfp_ei_largeangle_thermalions(v_e, n_i, m_i, T_i)
+Calculate the mean free path of electrons colliding with thermal ions
+in a large angle Coulomb collision approximation.
+"""
+function mfp_ei_largeangle_thermalions(v_e, n_i, m_i, T_i)
+    σ2 = TraceParticles.k_B * T_i / m_i # square of hermal speed of ions
+    α = 16π * TraceParticles.ϵ_0^2 * TraceParticles.m_e^2 / (n_i * TraceParticles.e^4)
+    return @. α * (v_e^4 + 6v_e^2 * σ2 + 3σ2^2)
 end
