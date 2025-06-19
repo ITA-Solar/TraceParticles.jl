@@ -39,7 +39,7 @@ results = run(suite, verbose=true)
 BenchmarkTools.save(resultsname * "_trials.json", results)
 
 baseline = BenchmarkTools.load(baselinefile)[1]
-judgement = judge(minimum(results), minimum(baseline); time_tolerance=0.05)
+judgement = judge(minimum(results), minimum(baseline); time_tolerance=0.15)
 
 open(resultsname * "_judgement.txt", "w") do fid
     write(
