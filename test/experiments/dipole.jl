@@ -44,7 +44,7 @@ itp_bc = Flat()
 # at x⃗ = [1, 0, 0]. It is also assumed that the GCA is valid such that B is equal
 # to B(x⃗) = 2M, directed in -ẑ. We may then compare with the Walt (1994)
 # approximation of the azimuthal drift-period.
-R0 = [1, 0, 0]
+R0 = SA[1, 0, 0]
 vparal = 0.5
 vperp = 1.0
 
@@ -104,6 +104,7 @@ emfields_itp = EMField2(emfields_itp)
 E, B = emfields_itp(R0...)
 μ = TraceParticles.magneticmoment(vperp, mass, norm(B))
 u0 = TraceParticles.get_fullorbit(B, E, R0, vparal, μ, charge, mass, 0.0)
+u0 = [u0[1], u0[2], u0[3], u0[4], u0[5], u0[6]]  # Make not static
 
 fo_params = (charge=charge, mass=mass, electromagneticfield=emfields_itp)
 gca_params = (
@@ -118,7 +119,7 @@ gca_params = (
 #fo_prob = ODEProblem(lorentzforce!, [pos0; vel0], tspan, fo_params)
 fo_prob = ODEProblem(lorentzforce!, u0, tspan, fo_params)
 gca_prob = ODEProblem(
-    guidingcentreapproximation!, [R0; vparal], tspan, gca_params
+    guidingcentreapproximation!, [R0...; vparal], tspan, gca_params
 )
 
 #...............................................................................

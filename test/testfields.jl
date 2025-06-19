@@ -144,7 +144,7 @@ struct EMField1
 end
 function (self::EMField1)(x, y, z)
     fields = self.itp(x, y, z)
-    return fields[4:6], fields[1:3]
+    return SVector{3}(fields[4:6]), SVector{3}(fields[1:3])
 end
 
 
@@ -153,9 +153,11 @@ struct EMField2
 end
 function (self::EMField2)(x, y, z)
     fields = [itp(x, y, z) for itp in self.itp]
-    return fields[4:6], fields[1:3]
+    #return fields[4:6], fields[1:3]
+    return SVector{3}(fields[4:6]), SVector{3}(fields[1:3])
 end
 function (self::EMField2)(x, z)
     fields = [itp(x, z) for itp in self.itp]
-    return fields[4:6], fields[1:3]
+    #return fields[4:6], fields[1:3]
+    return SVector{3}(fields[4:6]), SVector{3}(fields[1:3])
 end

@@ -29,9 +29,9 @@ end
     strength_direction_invers(vec::Vector{<:Real})
 Returns the strength, inverse, and direction of a vector.
 """
-function strength_direction_invers(vec::Vector{<:Real})
+function strength_direction_invers(vec::SVector{3})
     strength = norm(vec)
-    invers = 1/strength
+    invers = 1 / strength
     direction = vec * invers
-        return strength, direction, invers
+    return strength, direction, invers
 end

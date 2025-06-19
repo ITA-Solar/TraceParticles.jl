@@ -24,6 +24,7 @@ using JLD2
 using LinearAlgebra
 using Printf
 using Random
+using StaticArrays
 using StatsBase
 
 

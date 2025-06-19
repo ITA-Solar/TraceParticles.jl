@@ -7,6 +7,7 @@ using DataFrames
 using Interpolations
 using Random
 using JLD2
+using StaticArrays
 
 if !isdefined(Main, :verbose)
     verbose = 3
@@ -20,5 +21,5 @@ else
     @testset verbose = verbose ≥ 1 "All tests" begin
         include("fast_tests.jl")
         include("slow_tests.jl")
-   end # testset all test
+    end # testset all test
 end

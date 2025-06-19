@@ -33,8 +33,8 @@ end
         u = zeros(4)
         pos = [1.0, 0.0, 0.0]
         vel = [0.0, 1.0, 1.0]
-        magneticfield = [0.0, 0.0, 1.0]
-        electricfield = [1.0, 0.0, 0.0]
+        magneticfield = SA[0.0, 0.0, 1.0]
+        electricfield = SA[1.0, 0.0, 0.0]
         charge = 1.0
         mass = 0.5
         mu = get_guidingcentre!(u, pos, vel, magneticfield, electricfield, charge, mass)
@@ -52,8 +52,8 @@ end
         u = zeros(4)
         pos = [1.0e6, 2.0e6, 3.0e6]
         vel = [1.0e5, 2.0e5, 3.0e5]
-        magneticfield = [0.0, 0.0, 5.0e-5]
-        electricfield = [0.0, 1.0e-3, 0.0]
+        magneticfield = SA[0.0, 0.0, 5.0e-5]
+        electricfield = SA[0.0, 1.0e-3, 0.0]
         charge = 1.6e-19  # proton charge
         mass = 1.67e-27  # proton mass
         mu = get_guidingcentre!(u, pos, vel, magneticfield, electricfield, charge, mass)
@@ -116,13 +116,13 @@ end
         result = perpendicular_velocity(magnetic_moment, mass, B)
         @test isapprox(result, sqrt(2 * magnetic_moment * B / mass), atol=1e-6)
         # method 2
-        E = [1, 0, 0]
-        B = [0, 0, 1]
-        vel = [0, 0, 0]
+        E = SA[1, 0, 0]
+        B = SA[0, 0, 1]
+        vel = SA[0, 0, 0]
         @test isapprox(perpendicular_velocity(vel, B, E), [0, 1, 0], atol=1e-6)
         # method 3
-        vel = [0, 2, 1]
-        b_vec = [0, 0, 1]
+        vel = SA[0, 2, 1]
+        b_vec = SA[0, 0, 1]
         vparal = 1
         result2 = perpendicular_velocity(vel, b_vec, vparal)
         @test isapprox(result2, [0, 2, 0], atol=1e-6)
@@ -170,8 +170,8 @@ end
     end
 
     @testset "exbdrift" begin
-        magneticfield = [0.0, 0.0, 5.0e-5]
-        electricfield = [1.0e-3, 0.0, 0.0]
+        magneticfield = SA[0.0, 0.0, 5.0e-5]
+        electricfield = SA[1.0e-3, 0.0, 0.0]
         result = exbdrift(magneticfield, electricfield)
         @test isapprox(
             result,
@@ -182,8 +182,8 @@ end
     end
 
     @testset "gradbdrift" begin
-        b̂ = [0.0, 0.0, 1.0]
-        ∇B = [1.0e-6, 2.0e-6, 3.0e-6]
+        b̂ = SA[0.0, 0.0, 1.0]
+        ∇B = SA[1.0e-6, 2.0e-6, 3.0e-6]
         μ = 1.0e-23
         B_inv = 1 / 5.0e-5
         q_inv = 1 / 1.6e-19
@@ -192,8 +192,8 @@ end
     end
 
     @testset "curvaturedrift" begin
-        b̂ = [0.0, 0.0, 1.0]
-        db̂dt = [1.0e-6, 2.0e-6, 3.0e-6]
+        b̂ = SA[0.0, 0.0, 1.0]
+        db̂dt = SA[1.0e-6, 2.0e-6, 3.0e-6]
         vparal = 1.0e5
         B_inv = 1 / 5.0e-5
         q_inv = 1 / 1.6e-19
@@ -203,8 +203,8 @@ end
     end
 
     @testset "polarisationdrift" begin
-        b̂ = [0.0, 0.0, 1.0]
-        dExBdt = [1.0e-6, 2.0e-6, 3.0e-6]
+        b̂ = SA[0.0, 0.0, 1.0]
+        dExBdt = SA[1.0e-6, 2.0e-6, 3.0e-6]
         B_inv = 1 / 5.0e-5
         q_inv = 1 / 1.6e-19
         mass = 9.11e-31  # electron mass
@@ -239,10 +239,10 @@ end
     end
 
     @testset "fieldgradients" begin
-        R = [1, 2, 3]
+        R = SA[1, 2, 3]
         ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(
             R,
-            (x, y, z) -> ([x/2, 0, 0], [0, 0, 2y])
+            (x, y, z) -> ([x / 2, 0, 0], [0, 0, 2y])
         )
         @test isapprox(B_vec, [0.0, 0.0, 4.0], atol=1e-6)
         @test isapprox(E_vec, [0.5, 0.0, 0.0], atol=1e-6)
@@ -252,13 +252,12 @@ end
     end
 
     @testset "drifts" begin
-        R = [1, 2, 3]
+        R = SA[1, 2, 3]
         vparal = 1
         q = 1
         m = 1
         μ = 1
-        emfield(x, y, z) = ([x/2, 0, 0], [0, 0, 2y])
-        ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, emfield)
+        emfield(x, y, z) = (SA[x/2, 0, 0], SA[0, 0, 2y])
         ExBdrift, ∇Bdrift, Rdrift, Pdrift = drifts(R, vparal, q, m, μ, emfield)
 
         v_E = [0, -1 / 8, 0]
@@ -272,14 +271,14 @@ end
     end
 
     @testset "gca_drift_and_acceleration" begin
-        R = [1, 2, 3]
+        R = SA[1, 2, 3]
         vparal = 1
         q = 1
         m = 1
         μ = 1
         ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(
             R,
-            (x, y, z) -> ([x/2, 0, 0], [0, 0, 2y]),
+            (x, y, z) -> (SA[x/2, 0, 0], SA[0, 0, 2y]),
         )
         result = gca_drift_and_acceleration(∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ)
 

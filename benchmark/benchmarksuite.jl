@@ -5,6 +5,7 @@ using JLD2
 using LinearAlgebra
 using Random
 using TraceParticles
+using StaticArrays
 
 suite = BenchmarkGroup()
 
@@ -13,11 +14,11 @@ suite["physics.jl"] = BenchmarkGroup()
 
 # gradBdrift and gca_drift_and_acceleration
 rng = Xoshiro(1)
-gradb = rand(rng, 3, 3)
-gradexb = rand(rng, 3, 3)
-gradB = rand(rng, 3)
-B = rand(rng, 3)
-E = rand(rng, 3)
+gradb = SMatrix{3,3,Float64}(rand(rng, 3, 3))
+gradexb = SMatrix{3,3,Float64}(rand(rng, 3, 3))
+gradB = SVector{3,Float64}(rand(rng, 3))
+B = SVector{3,Float64}(rand(rng, 3))
+E = SVector{3,Float64}(rand(rng, 3))
 vparal = rand(rng)
 q = rand(rng)
 m = rand(rng)
@@ -41,28 +42,41 @@ struct EMField1
     d::Float64
 end
 function (self::EMField1)(x, y, _)
-    return [0, 0, self.E0], self.B0 / self.d * [y, x, 0]
+    return SVector(0, 0, self.E0), self.B0 / self.d * SVector(y, x, 0)
 end
 struct EMField2
     itp::Vector{<:Any}
 end
 function (self::EMField2)(x, y, z)
-    fields = [itp(x, y, z) for itp in self.itp]
-    return fields[4:6], fields[1:3]
+    #domm
+    ex = self.itp[1](x, y, z)
+    ey = self.itp[2](x, y, z)
+    ez = self.itp[3](x, y, z)
+    bx = self.itp[4](x, y, z)
+    by = self.itp[5](x, y, z)
+    bz = self.itp[6](x, y, z)
+    #efield = SVector{3,Float64}([self.itp[i](x, y, z) for i in 1:3])
+    #bfield = SVector{3,Float64}([self.itp[i](x, y, z) for i in 4:6])
+    return SVector(ex, ey, ez), SVector(bx, by, bz)
+    #efield = [self.itp[i](x, y, z) for i in 1:3]
+    #bfield = [self.itp[i](x, y, z) for i in 4:6]
+    #return efield, bfield
 end
-R_analytical = [1, 0, 0]
+R_analytical = [1.0, 0.0, 0.0]
+SR_analytical = SVector{3,Float64}(R_analytical)
 emfield_analytical = EMField1(0, 20, 0.02)
 R_numerical = [1.6070314f7, 1e6, -6.3503845f6]
-emfield_numerical = load_object(joinpath(Base.source_dir(), "cs_BE.jld2"))
-emfield_numerical = EMField2(emfield_numerical)
+SR_numerical = SVector{3,Float64}(R_numerical)
+emfield_itp = load_object(joinpath(Base.source_dir(), "cs_BE.jld2"))
+emfield_numerical = EMField2(emfield_itp)
 suite["physics.jl"]["fieldgradients_analytical"] =
     @benchmarkable TraceParticles.fieldgradients(
-        $R_analytical,
+        $SR_analytical,
         $emfield_analytical,
     )
 suite["physics.jl"]["fieldgradients_numerical"] =
     @benchmarkable TraceParticles.fieldgradients(
-        $R_numerical,
+        $SR_numerical,
         $emfield_numerical,
     )
 

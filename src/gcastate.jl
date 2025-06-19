@@ -78,16 +78,16 @@ struct GCAState
     r_L::Real
     ω_c::Real
     β::Real
-    exbdrift::Vector{<:Real}
-    ∇Bdrift::Vector{<:Real}
-    curvaturedrift::Vector{<:Real}
-    polarisationdrift::Vector{<:Real}
+    exbdrift::SVector{3}
+    ∇Bdrift::SVector{3}
+    curvaturedrift::SVector{3}
+    polarisationdrift::SVector{3}
     mirroracc::Real
     paralacc::Real
     dbdtacc::Real
-    bfield::Vector{<:Real}
-    efield::Vector{<:Real}
-    dbdt::Vector{<:Real}
+    bfield::SVector{3}
+    efield::SVector{3}
+    dbdt::SVector{3}
     L_B::Real
 
     function GCAState(
@@ -106,30 +106,34 @@ struct GCAState
         E_vec, B_vec = electromagneticfield(R...)
         B = norm(B_vec)   # The magnetic field strength
         B⁻¹ = 1 / B         # Inverse of B - to replace divition with multipl.
-        b̂ = B_vec * B⁻¹     # An unit vector pointing in the direction of the
-        ExBdrift = (E_vec × b̂) / B # The E cross B-drift
+        b = B_vec * B⁻¹     # An unit vector pointing in the direction of the
+        ExBdrift = (E_vec × b) / B # The E cross B-drift
 
-        jacobian_matrix = ForwardDiff.jacobian(R) do x
+        J = ForwardDiff.jacobian(R) do x
             E_vec_fd, B_vec_fd = electromagneticfield(x...)
             B_fd = norm(B_vec_fd)
             b̂_fd = B_vec_fd / B_fd
             return [b̂_fd; E_vec_fd × b̂_fd / B_fd; B_fd]
         end
-        ∇b̂ = jacobian_matrix[1:3, :]
-        ∇ExB = jacobian_matrix[4:6, :]
-        ∇B = jacobian_matrix[7, :]
+        ∇b = SMatrix{3,3}(
+            J[1], J[2], J[3], J[8], J[9], J[10], J[15], J[16], J[17]
+        )
+        ∇ExB = SMatrix{3,3}(
+            J[4], J[5], J[6], J[11], J[12], J[13], J[18], J[19], J[20]
+        )
+        ∇B = SVector{3}(J[7], J[14], J[21])
 
         # Total time derivatives. Assumes ∂/∂t = 0,
-        dbdt = vparal * (∇b̂ * b̂) + ∇b̂ * ExBdrift
-        dExBdt = vparal * (∇ExB * b̂) + ∇ExB * ExBdrift
+        dbdt = vparal * (∇b * b) + ∇b * ExBdrift
+        dExBdt = vparal * (∇ExB * b) + ∇ExB * ExBdrift
 
         # Calculate other drifts
-        ∇Bdrift = gradbdrift(b̂, ∇B, μ, B⁻¹, q⁻¹)
-        Rdrift = curvaturedrift(b̂, dbdt, vparal, B⁻¹, q⁻¹, m)
-        Pdrift = polarisationdrift(b̂, dExBdt, B⁻¹, q⁻¹, m)
+        ∇Bdrift = gradbdrift(b, ∇B, μ, B⁻¹, q⁻¹)
+        Rdrift = curvaturedrift(b, dbdt, vparal, B⁻¹, q⁻¹, m)
+        Pdrift = polarisationdrift(b, dExBdt, B⁻¹, q⁻¹, m)
         # Compute parallel acceleration
-        mirroracc = magneticmirror_acceleration(b̂, ∇B, μ, m)
-        paralacc = parallel_acceleration(b̂, E_vec, q, m)
+        mirroracc = magneticmirror_acceleration(b, ∇B, μ, m)
+        paralacc = parallel_acceleration(b, E_vec, q, m)
         dbdtacc = fermi_acceleration(ExBdrift, ∇Bdrift, dbdt)
         # Compute the perpendicular velocity
         # Other auxiliary quantities

@@ -5,6 +5,7 @@ using JLD2
 using Random
 using Test
 using TraceParticles
+using StaticArrays
 
 expdir = Base.source_dir()
 include(expdir * "/../../testfields.jl")

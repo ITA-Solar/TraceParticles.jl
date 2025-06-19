@@ -18,7 +18,7 @@ using Base: Forward
 """
 function fieldlinetracing_forward!(du, u, p, _)
     x, y, z, _ = u
-    field = [itp(x,y,z) for itp in p.fields[1:3]]
+    field = [itp(x, y, z) for itp in p.fields[1:3]]
     fieldstrength = norm(field)
     fielddirection = field ./ fieldstrength
     dsdt = fielddirection
@@ -26,7 +26,7 @@ function fieldlinetracing_forward!(du, u, p, _)
 end
 function fieldlinetracing_backward!(du, u, p, _)
     x, y, z, _ = u
-    field = [itp(x,y,z) for itp in p.fields[1:3]]
+    field = [itp(x, y, z) for itp in p.fields[1:3]]
     fieldstrength = norm(field)
     fielddirection = field ./ fieldstrength
     dsdt = -fielddirection
@@ -96,9 +96,8 @@ position coordinates.
 """
 function lorentzforce!(du, u, p, _)
     q, m = p.charge, p.mass
-    x = u[1:3] # The position vector
-    v = u[4:6] # The velocity vector
-    E, B = p.electromagneticfield(x...)
+    v = SVector(u[4], u[5], u[6]) # The velocity vector
+    E, B = p.electromagneticfield(u[1], u[2], u[3])
     dvdt = q / m * (E + v × B)
     dxdt = v
     du[:] = [dxdt; dvdt]
@@ -122,7 +121,7 @@ components represents the magnetic field and the last 3 the electric field.
 The function uses ForwardDiff and Interpolations to calculate gradients.
 """
 function guidingcentreapproximation!(du, u, p, _)
-    R = u[1:3]
+    R = SVector(u[1], u[2], u[3]) # The gyrocentre position vector
     vparal = u[4] # Particle velocity parallel to the magnetic field
     # Extract parameters
     q, m, μ = p.charge, p.mass, p.magneticmoment
