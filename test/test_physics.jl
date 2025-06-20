@@ -1,4 +1,7 @@
+using LinearAlgebra
 using Test
+using StaticArrays
+
 using TraceParticles:
     get_guidingcentre!,
     get_fullorbit!,
@@ -21,7 +24,8 @@ using TraceParticles:
     gca_drift_and_acceleration,
     cosineof_pitchangle,
     lorentzfactor,
-    kineticspeed
+    kineticspeed,
+    csqrdinv
 
 if !isdefined(Main, :verbose)
     verbose = 4
@@ -213,8 +217,8 @@ end
     end
 
     @testset "magneticmirror_acceleration" begin
-        b̂ = [0.0, 0.0, 1.0]
-        ∇B = [1.0e-6, 2.0e-6, 3.0e-6]
+        b̂ = SA[0.0, 0.0, 1.0]
+        ∇B = SA[1.0e-6, 2.0e-6, 3.0e-6]
         μ = 1.0e-23
         mass = 9.11e-31  # electron mass
         result = magneticmirror_acceleration(b̂, ∇B, μ, mass)
@@ -222,8 +226,8 @@ end
     end
 
     @testset "parallel_acceleration" begin
-        b̂ = [0.0, 0.0, 1.0]
-        E_vec = [1.0e-3, 0.0, 0.0]
+        b̂ = SA[0.0, 0.0, 1.0]
+        E_vec = SA[1.0e-3, 0.0, 0.0]
         q = 1.6e-19  # proton charge
         mass = 1.67e-27  # proton mass
         result = parallel_acceleration(b̂, E_vec, q, mass)
@@ -231,9 +235,9 @@ end
     end
 
     @testset "fermi_acceleration" begin
-        ExBdrift = [1.0e-3, 0.0, 0.0]
-        ∇Bdrift = [0.0, 1.0e-3, 0.0]
-        dbdt = [1.0e-6, 2.0e-6, 3.0e-6]
+        ExBdrift = SA[1.0e-3, 0.0, 0.0]
+        ∇Bdrift = SA[0.0, 1.0e-3, 0.0]
+        dbdt = SA[1.0e-6, 2.0e-6, 3.0e-6]
         result = fermi_acceleration(ExBdrift, ∇Bdrift, dbdt)
         @test isapprox(result, (ExBdrift + ∇Bdrift) ⋅ dbdt, atol=1e-6)
     end
@@ -296,7 +300,7 @@ end
     end
 
     @testset "cosineof_pitchangle" begin
-        magneticfield = [0.0, 0.0, 5.0e-5]
+        magneticfield = SA[0.0, 0.0, 5.0e-5]
         parallel_velocity = 1.0e5
         mass = 9.11e-31  # electron mass
         magneticmoment = 1.0e-23
@@ -307,7 +311,7 @@ end
     @testset "lorentzfactor" begin
         speed = 1.0e5
         result = lorentzfactor(speed)
-        @test isapprox(result, 1 / sqrt(1 - speed^2 * TraceParticles.csqrdinv), rtol=1e-6)
+        @test isapprox(result, 1 / sqrt(1 - speed^2 * csqrdinv), rtol=1e-6)
     end
 
     @testset "kineticspeed" begin
