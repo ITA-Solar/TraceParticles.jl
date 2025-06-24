@@ -29,6 +29,8 @@ function get_br_var_interpolator(
         else
             var = get_electron_density(brxp, snap; units=units, kwargs...)
         end
+    elseif variable == "eparal"
+        var = get_eparal(brxp, snap; units=units, destagger=destagger, kwargs...)
     else
         var = get_var(
             brxp,
@@ -92,6 +94,24 @@ function get_br_emfield_vecof_interpolators(args...; kwargs...)
     return [get_br_var_interpolator(args..., var; kwargs...)[1] for var in vars]
 end
 
+function get_eparal(
+    brxp::BifrostExperiment,
+    snap::Integer,
+    ;
+    units=units,
+    destagger=true,
+    kwargs...
+)
+    bx = get_var(brxp, snap, "bx"; units=units, destagger=destagger, kwargs...)
+    by = get_var(brxp, snap, "by"; units=units, destagger=destagger, kwargs...)
+    bz = get_var(brxp, snap, "bz"; units=units, destagger=destagger, kwargs...)
+    ex = get_var(brxp, snap, "ex"; units=units, destagger=destagger, kwargs...)
+    ey = get_var(brxp, snap, "ey"; units=units, destagger=destagger, kwargs...)
+    ez = get_var(brxp, snap, "ez"; units=units, destagger=destagger, kwargs...)
+    B = @. sqrt(bx^2 + by^2 + bz^2)
+    eparal = @. (ex * bx + ey * by + ez * bz) / B
+    return eparal
+end
 
 function get_br_emfield_numdensity_gastemp_interpolator(
     expname::String,
