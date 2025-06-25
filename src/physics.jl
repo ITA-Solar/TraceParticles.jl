@@ -487,10 +487,10 @@ function fieldgradients(
         return [out; B_fd]
     end
 
-    ∇b = SMatrix{3, 3}(
+    ∇b = SMatrix{3,3}(
         J[1], J[2], J[3], J[8], J[9], J[10], J[15], J[16], J[17]
     )
-    ∇ExB = SMatrix{3, 3}(
+    ∇ExB = SMatrix{3,3}(
         J[4], J[5], J[6], J[11], J[12], J[13], J[18], J[19], J[20]
     )
     ∇B = SVector{3}(J[7], J[14], J[21])
@@ -552,8 +552,8 @@ electromagnetic field. The function returns the total time derivative
 of the guiding centre position and parallel velocity.
 """
 function gca_drift_and_acceleration(
-    ∇b::SMatrix{3, 3},
-    ∇ExBdrift::SMatrix{3, 3},
+    ∇b::SMatrix{3,3},
+    ∇ExBdrift::SMatrix{3,3},
     ∇B::SVector{3},
     B_vec::SVector{3},
     E_vec::SVector{3},
@@ -773,12 +773,156 @@ end
 
 
 """
-    mfp_ei_largeangle_thermalions(v_e, n_i, m_i, T_i)
-Calculate the mean free path of electrons colliding with thermal ions
-in a large angle Coulomb collision approximation.
+    mfp_close_cc_collisions_thermaltarget(v_p, q_p, q_t, m_p, m_t, T_t, n_t)
+Calculate the mean free path of a particle colliding with cold target
+in the close Coulomb collision approximation.
+The parameters are:
+- `v_p`: the particle speed
+- `q_p`: the particle charge
+- `q_t`: the target charge
+- `m_p`: the particle mass
+- `m_t`: the target mass
+- `T_t`: the target temperature
+- `n_t`: the target number density
+The result is the mean free path in meters.
 """
-function mfp_ei_largeangle_thermalions(v_e, n_i, m_i, T_i)
-    σ2 = TraceParticles.k_B * T_i / m_i # square of hermal speed of ions
-    α = 16π * TraceParticles.ϵ_0^2 * TraceParticles.m_e^2 / (n_i * TraceParticles.e^4)
-    return @. α * (v_e^4 + 6v_e^2 * σ2 + 3σ2^2)
+function mfp_close_cc_thermaltarget(v, q, q_t, m, m_t, T_t, n_t)
+    mu = m * m_t / (m + m_t) # reduced mass
+    α = 16π * TraceParticles.ϵ_0^2 * m * mu / (n_t * q^2 * q_t^2)
+    return α * v^4
+end
+
+"""
+    mfp_distant_cc_thermaltarget(v, q, q_t, m, m_t, T_t, n_t; coulomb_logarithm=20)
+Calculate the mean free path of a particle colliding with a cold target
+in the distant Coulomb collision approximation.
+"""
+function mfp_distant_cc_thermaltarget(v, q, q_t, m, m_t, T_t, n_t; coulomb_logarithm=20)
+    return mfp_close_cc_thermaltarget(v, q, q_t, m, m_t, T_t, n_t) / coulomb_logarithm
+end
+
+"""
+    collisionaltime(meanfreepath, speed)
+Calculate the collisional time of a particle given its mean free path.
+"""
+function collisionaltime(meanfreepath, speed)
+    return meanfreepath / speed
+end
+
+"""
+    spitzercollisionaltime(q, m, T, n; coulomb_logarithm=20)
+Calculate the collisional time in SI-units of a particle in a plasma due to
+Coulomb collisions.
+Source: Somov 2012 "Plasma Astrophysics, Part I, section 8.3.1, page 158.
+"""
+function spitzercollisionaltime(q, m, T, n; coulomb_logarithm=20)
+    # From Somov 2012 "Plasma Astrophysics, Part I, section 8.3.1, page 158
+    numerator = 16π * TraceParticles.ϵ_0^2 * m^2 * (3 * TraceParticles.k_B * T / m)^(3 / 2)
+    denominator = (n * q^4 * 8 * coulomb_logarithm) * 0.714
+    return numerator / denominator
+end
+
+"""
+    spitzercollisionaltime_cgs(q, m, t, n; coulomb_logarithm=20)
+calculate the collisional time in cgs-units of a particle in a plasma due to
+coulomb collisions.
+source: Somov 2012 "plasma astrophysics, part i, section 8.3.1, page 158.
+"""
+function spitzercollisionaltime_cgs(q, m, T, n; coulomb_logarithm=20)
+    # From Somov 2012 "Plasma Astrophysics, Part I, section 8.3.1, page 158
+    # in CGS units
+    numerator = m^2 * (3 * TraceParticles.k_B_cgs * T / m)^(3 / 2)
+    denominator = (π * n * e^4 * 8 * coulomb_logarithm) * 0.714
+    return numerator / denominator
+end
+
+"""
+    spitzercollisionaltime_chen(q, m, t, n; coulomb_logarithm=20)
+calculate the collisional time in SI-units of a particle in a plasma due to
+coulomb collisions.
+source: Chen 2016 "Introduction to Plasma Physics and Controlled Fusion,
+"""
+function spitzercollisionaltime_chen(q, m, T, n; coulomb_logarithm=20)
+    # From Somov 2012 "Plasma Astrophysics, Part I, section 8.3.1, page 158
+    numerator = 16π * TraceParticles.ϵ_0^2 * m^2 * (TraceParticles.k_B * T / m)^(3 / 2)
+    denominator = n * q^4 * coulomb_logarithm
+    return numerator / denominator
+end
+
+"""
+    localcollisiontime(particledata, densityitp, temperatureitp)
+Calculate the Coulomb collision time for an ensemble of particles, where
+the local density and temperature at the particle's initial position is used.
+"""
+function localcollisiontime(particledata, densityitp, temperatureitp)
+    x0 = h5_getdataset(particledata, "x0")
+    y0 = h5_getdataset(particledata, "y0")
+    z0 = h5_getdataset(particledata, "z0")
+    charge = h5_getdataset(particledata, "charge")
+    mass = h5_getdataset(particledata, "mass")
+    n_itp = load_object(densityitp)
+    T_itp = load_object(temperatureitp)
+    n = [n_itp(x0[i], y0[i], z0[i]) / TraceParticles.m_p for i in eachindex(x0)]
+    T = [T_itp(x0[i], y0[i], z0[i]) for i in eachindex(x0)]
+    # Assuming the like-particle collisions are the most frequent
+    return spitzercollisionaltime.(charge, mass, T, n)
+end
+
+"""
+    dreicerfield_cgs(n, T; coulomb_logarithm=20)
+Calculate the Dreicer field in CGS units.
+"""
+function dreicerfield_cgs(n, T; coulomb_logarithm=20)
+    nominator = 4π * TraceParticles.e_cgs^3 * coulomb_logarithm * n
+    denominator = TraceParticles.k_B_cgs * T
+    return nominator / denominator
+end
+
+"""
+    criticalvelocity_cgs(n, T, E, m; coulomb_logarithm=20)
+Calculate the critical velocity of particles with mass `m` in CGS units.
+The critical velocity is the velocity at which the Dreicer field
+is equal to the electric field `E`, or the velocity at which the frictional
+drag from Coulomb collisions (of thermal like-particle targets) is equal to
+the acceleration from the parallel electric field.
+"""
+function criticalvelocity_cgs(n, T, E, m; coulomb_logarithm=20)
+    E_D = dreicerfield_cgs(n, T; coulomb_logarithm=coulomb_logarithm)
+    v_th = sqrt(TraceParticles.k_B_cgs * T / m)
+    return v_th * sqrt(E_D / E)
+end
+
+"""
+    localcriticalvelocity_cgs(
+        particledata,
+        densityitp,
+        temperatureitp,
+        electricfielditp;
+        coulomb_logarithm=20
+    )
+Calculate the critical velocity of an ensemble of particles in CGS units,
+using the local density, temperature and parallel electric field at the
+particle's initial position.
+"""
+function localcriticalvelocity_cgs(
+    particledata,
+    densityitp,
+    temperatureitp,
+    electricfielditp;
+    coulomb_logarithm=20
+)
+    x0 = h5_getdataset(particledata, "x0")
+    y0 = h5_getdataset(particledata, "y0")
+    z0 = h5_getdataset(particledata, "z0")
+    mass = h5_getdataset(particledata, "mass")
+    n_itp = load_object(densityitp)
+    T_itp = load_object(temperatureitp)
+    E_itp = load_object(electricfielditp)
+    n = [n_itp(x0[i], y0[i], z0[i]) * 1e-3 / TraceParticles.m_p_cgs for i in eachindex(x0)]
+    T = [T_itp(x0[i], y0[i], z0[i]) for i in eachindex(x0)]
+    E = [abs(E_itp(1e2x0[i], 1e2y0[i], 1e2z0[i])) for i in eachindex(x0)]
+    return criticalvelocity_cgs.(
+        n, T, E, mass;
+        coulomb_logarithm=coulomb_logarithm
+    )
 end
