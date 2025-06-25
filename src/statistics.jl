@@ -606,12 +606,12 @@ function binmap(
     gdf = groupby(df, [:binindex_x, :binindex_y, :binindex_z])
     #giddf = select(gdf, groupindices => :gid)
 
-    binvalues = missings(eltype(data), nbinsx, nbinsy, nbinsz)
+    binvalues = missings(eltype(eltype(data)), nbinsx, nbinsy, nbinsz)
     k = keys(gdf)
     Threads.@threads for i in eachindex(k)
         if !ismissing(k[i].binindex_x) &&
-            !ismissing(k[i].binindex_y) &&
-            !ismissing(k[i].binindex_z)
+           !ismissing(k[i].binindex_y) &&
+           !ismissing(k[i].binindex_z)
             groupdf = gdf[i]
             binvalues[k[i].binindex_x, k[i].binindex_y, k[i].binindex_z] = mapfunc(
                 groupdf.d,
@@ -634,7 +634,7 @@ normalisation factor is calculated over the entire grid.
 """
 function normfactor_2Duniformmesh(
     var::Matrix{<:Real},
-    axes::Tuple{AbstractVector, AbstractVector};
+    axes::Tuple{AbstractVector,AbstractVector};
     xlim=nothing,
     ylim=nothing,
 )
