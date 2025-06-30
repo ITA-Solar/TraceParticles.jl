@@ -1,9 +1,0 @@
-[deps]
-BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
-JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
-TraceParticles = "391c92f7-b09d-4c05-9261-2c00f62b9ca4"
