@@ -20,9 +20,9 @@ create_bifrost_itps(
     Flat(),
     expdir * "/cs",
     "si",
-    ["BE", "tg"];
-    normalise=[false, false],
-    destagger=[true, false],
+    ["BE", "tg", "r"];
+    normalise=[false, false, false],
+    destagger=[true, false, false],
     xzinterpolation=true,
 )
 
@@ -31,8 +31,7 @@ create_bifrost_itps(
 # Concerning field, duration and bounds
 fields_itp = load_object(expdir * "/cs_BE.jld2")
 tg_itp = load_object(expdir * "/cs_tg_normfalse.jld2")
-ne_itp = load_object(expdir * "/cs_ne_normfalse.jld2")
-ne_norm_itp = load_object(expdir * "/cs_ne_normtrue.jld2")
+r_itp = load_object(expdir * "/cs_r_normfalse.jld2")
 
 fields_itp = EMField2(fields_itp)
 
@@ -77,7 +76,7 @@ batchsize = Int(1e1)
 batchsize = npart > batchsize ? batchsize : npart
 nbatches = ceil(Int, npart / batchsize)
 # Max-value needed for the rejection algorithm
-maxval = maximum(ne_itp.itp.itp.itp.coefs)
+maxval = maximum(r_itp.itp.itp.itp.coefs)
 domain = [xbounds, zbounds] # Domain of sampling.
 
 alg = Rosenbrock23()
@@ -94,7 +93,7 @@ ensembleprob_kwargs = Dict(
     :safetycopy => false,
     # How to choose initial condition of the particle
     :prob_func => DposMBvel(
-        rng, ne_itp, ne_itp, [xbounds, zbounds], maxval, tg_itp
+        rng, r_itp, r_itp, [xbounds, zbounds], maxval, tg_itp
     )
 )
 
@@ -263,6 +262,7 @@ end
 # Remove gnerated files before testing.
 rm(expdir * "/cs_BE.jld2")
 rm(expdir * "/cs_tg_normfalse.jld2")
+rm(expdir * "/cs_r_normfalse.jld2")
 rm(fname)
 rm(joinpath(expdir, expname, expname * "_gcastates0.h5"))
 rm(joinpath(expdir, expname, expname * "_gcastatesf.h5"))
