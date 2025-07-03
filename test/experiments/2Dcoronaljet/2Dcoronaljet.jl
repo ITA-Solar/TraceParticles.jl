@@ -206,7 +206,7 @@ e0, ef = h5_getenergies(fname)
 df = h5_getall(fname)
 
 # The particles that have larger errors
-errorprone = [75, 81, 1, 14, 49, 70, 46, 93, 84, 44, 53, 80, 27, 9, 13, 41, 30, 39]
+errorprone = [15, 75, 81, 1, 14, 49, 70, 46, 93, 84, 44, 53, 80, 27, 9, 13, 41, 30, 39]
 # Create a filter for masking out the errorprone particles
 totest = BitVector(undef, 100)
 totest .= [i ∉ errorprone for i in 1:100]
