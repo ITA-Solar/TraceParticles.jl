@@ -77,7 +77,7 @@ function save_gcastates(
         catch e
             rm(name0)
             rm(namef)
-            @error "While saving GCA states:" exeption=(e, catch_backtrace())
+            @error "While saving GCA states:" exeption = (e, catch_backtrace())
         end
         try
             groupname = "metadata"
@@ -87,7 +87,7 @@ function save_gcastates(
             write_dict(metagroup0, metadata)
             write_dict(metagroupf, metadata)
         catch e
-            @warn "While copying metadata:" exeption=(e, catch_backtrace())
+            @warn "While copying metadata:" exeption = (e, catch_backtrace())
         end
         close(h5_sol)
         close(h5_gcastates0)
@@ -393,8 +393,8 @@ julia> xzitp(.5, 1.0, .5) == xzitp(.5, .5) == xzitp(.5, .5, .5)
 true
 ```
 """
-struct XZInterpolation
-    itp::AbstractInterpolation
+struct XZInterpolation{T}
+    itp::T
 end
 function (self::XZInterpolation)(x::Real, z::Real)
     self.itp(x, z)
@@ -433,7 +433,7 @@ function create_bifrost_itps(
     itp_type::Interpolations.InterpolationType,
     itp_bc::Union{
         Interpolations.BoundaryCondition,
-        NTuple{N, Interpolations.BoundaryCondition} where N
+        NTuple{N,Interpolations.BoundaryCondition} where N
     },
     filename::String,
     units,
@@ -462,9 +462,10 @@ function create_bifrost_itps(
         end
         @save string(filename, "_BE.jld2") interpolator
     end
+    mask = variables .!= "BE"
+
 
     # Create interpolators for the auxiliary variables
-    mask = variables .!= "BE"
     variables = variables[mask]
     normalise = normalise[mask]
     destagger = destagger[mask]
