@@ -143,8 +143,8 @@ struct EMField1{T}
     itp::T
 end
 function (self::EMField1)(x, y, z)
-    fields = self.itp(x, y, z)
-    return SVector{3}(fields[4:6]), SVector{3}(fields[1:3])
+    bx, by, bz, ex, ey, ez = self.itp(x, y, z)
+    return SVector(ex, ey, ez), SVector(bx, by, bz)
 end
 
 
@@ -152,12 +152,19 @@ struct EMField2{T}
     itp::Vector{T}
 end
 function (self::EMField2)(x, y, z)
-    fields = [itp(x, y, z) for itp in self.itp]
-    #return fields[4:6], fields[1:3]
-    return SVector{3}(fields[4:6]), SVector{3}(fields[1:3])
+    ex = self.itp[4](x, y, z)
+    ey = self.itp[5](x, y, z)
+    ez = self.itp[6](x, y, z)
+    bx = self.itp[1](x, y, z)
+    by = self.itp[2](x, y, z)
+    bz = self.itp[3](x, y, z)
+    return SVector(ex, ey, ez), SVector(bx, by, bz)
 end
 function (self::EMField2)(x, z)
-    fields = [itp(x, z) for itp in self.itp]
-    #return fields[4:6], fields[1:3]
-    return SVector{3}(fields[4:6]), SVector{3}(fields[1:3])
+    E[1] = self.itp[4](x, z)
+    E[2] = self.itp[5](x, z)
+    E[3] = self.itp[6](x, z)
+    B[1] = self.itp[1](x, z)
+    B[2] = self.itp[2](x, z)
+    B[3] = self.itp[3](x, z)
 end
