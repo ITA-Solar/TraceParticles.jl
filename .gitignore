@@ -33,3 +33,6 @@ docs/Manifest.toml
 \#*\#
 # Vim backup-files?
 \.\#*
+
+# MacBook Finder files
+*.DS_Store
