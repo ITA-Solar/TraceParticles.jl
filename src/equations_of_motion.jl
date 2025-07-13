@@ -130,7 +130,7 @@ function guidingcentreapproximation!(du, u, p, _)
 
     # We index `du` with 1:4 to allow aribitrary size of u.
     # (This is necessary when doing hybrid swtich method).
-    du[1:4] = gca_drift_and_acceleration(
+    du[1:4] .= gca_drift_and_acceleration(
         ∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ
     )
 end
