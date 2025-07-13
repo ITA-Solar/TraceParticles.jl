@@ -10,6 +10,36 @@
 #-------------------------------------------------------------------------------
 
 """
+    ElectromagneticFieldInterpolator{T<:AbstractVector}(interpolator::T)
+A convenience struct for a vector of interpolators representing the components
+of the electromagnetic field. Following the convention of storing the
+vector of components that are stored as a JLD2 object [bx, by, bz, ex, ey, ez].
+Calling an instance of this struct with spatial coordinates returns the electric
+and magnetic fields at that point as two `SVector{3}` vectors.
+"""
+struct ElectromagneticFieldInterpolator{T<:AbstractVector}
+    interpolator::T
+end
+function (self::ElectromagneticFieldInterpolator{T})(x, y, z) where {T}
+    ex = self.interpolator[4](x, y, z)
+    ey = self.interpolator[5](x, y, z)
+    ez = self.interpolator[6](x, y, z)
+    bx = self.interpolator[1](x, y, z)
+    by = self.interpolator[2](x, y, z)
+    bz = self.interpolator[3](x, y, z)
+    return SVector{3}(ex, ey, ez), SVector{3}(bx, by, bz)
+end
+function (self::ElectromagneticFieldInterpolator{T})(x, y) where {T}
+    ex = self.interpolator[4](x, y)
+    ey = self.interpolator[5](x, y)
+    ez = self.interpolator[6](x, y)
+    bx = self.interpolator[1](x, y)
+    by = self.interpolator[2](x, y)
+    bz = self.interpolator[3](x, y)
+    return SVector{3}(ex, ey, ez), SVector{3}(bx, by, bz)
+end
+
+"""
     Base.dropdims(arr::AbstractArray)
 Extend `dropdims` to find and drop all axes with one point when `dims` keyword 
 is excluded.
@@ -80,7 +110,7 @@ function findslice(axis, lim)
     if isnothing(i)
         i = 1
     end
-    return range(i,j)
+    return range(i, j)
 end
 """
     findslice(x, y, z, xlim, ylim, zlim)
