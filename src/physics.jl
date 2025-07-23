@@ -20,7 +20,7 @@ function larmorradius(mass, vperp::Real, charge, magneticfieldstrength::Real)
     return abs(mass * vperp / (charge * magneticfieldstrength))
 end
 function larmorradius(
-    R::Vector{<:Real},
+    R::AbstractVector,
     μ::Real,
     q::Real,
     m::Real,
@@ -31,7 +31,7 @@ function larmorradius(
     return larmorradius(m, vperp, q, B)
 end
 function larmorradius(
-    R::Vector{<:Real},
+    R::AbstractVector,
     params::NamedTuple
 )
     B = norm(params.electromagneticfield(R...)[2])
@@ -68,10 +68,10 @@ function perpendicular_velocity(
     sqrt(2magnetic_moment * magneticfieldstrength / mass)
 end
 function perpendicular_velocity(
-    vel::SVector{3},
-    magneticfield::SVector{3},
-    electricfield::SVector{3},
-)::SVector{3}
+    vel::AbstractVector,
+    magneticfield::AbstractVector,
+    electricfield::AbstractVector,
+)
     B = norm(magneticfield) # Magnetic field strength
     b_vec = magneticfield / B   # Magnetic field direction (unit vector)
     ExBdrift = exbdrift(magneticfield, electricfield) # get E cross B drift,
@@ -81,10 +81,10 @@ function perpendicular_velocity(
     return vperp
 end
 function perpendicular_velocity(
-    gyrationvelocity::SVector{3},
-    b_vec::SVector{3},
-    vparal::Real
-)::SVector{3}
+    gyrationvelocity::AbstractVector,
+    b_vec::AbstractVector,
+    vparal::Real,
+)
     return gyrationvelocity - vparal * b_vec
 end
 
@@ -107,18 +107,12 @@ Return the characteristic length of a field.
 """
 function characteristicfieldlength(
     fieldstrength::Real,
-    fieldstrengthgradient::SVector{3}
+    fieldstrengthgradient::AbstractVector
 )
     return fieldstrength / norm(fieldstrengthgradient)
 end
 function characteristicfieldlength(
-    fieldstrength::Real,
-    fieldstrengthgradient::Vector{<:Real}
-)
-    return fieldstrength / norm(fieldstrengthgradient)
-end
-function characteristicfieldlength(
-    position::Vector{<:Real},
+    position::AbstractVector,
     itpvec::Vector{<:Any}
 )
     fieldstrength = norm([itpvec[i](position...) for i in 1:3])
@@ -126,7 +120,7 @@ function characteristicfieldlength(
     return characteristicfieldlength(fieldstrength, grad)
 end
 function characteristicfieldlength(
-    position::Vector{<:Real},
+    position::AbstractVector,
     field::Function,
 )
     fieldstrength = norm(field(position...))
@@ -161,9 +155,9 @@ length of the magnetic field.
     performed. 1 for guiding centre approximation, 2 for full orbit.
 """
 function scalesratio(
-    R::Vector{<:Real},
+    R::AbstractVector,
     itpvec::Vector{<:Any},
-    ∇B::Vector{<:Real},
+    ∇B::AbstractVector,
     params::Any
 )
     μ = params.magneticmoment
@@ -173,10 +167,10 @@ function scalesratio(
     return scalesratio(B, ∇B, vperp, params.charge, params.mass)
 end
 function scalesratio(
-    pos::Vector{<:Real},
-    vel::Vector{<:Real},
+    pos::AbstractVector,
+    vel::AbstractVector,
     itpvec::Vector{<:AbstractInterpolation},
-    ∇B::Vector{<:Real},
+    ∇B::AbstractVector,
     params::Any
 )
     Bvec = [itp(pos...) for itp in itpvec[1:3]]
@@ -187,7 +181,7 @@ function scalesratio(
 end
 function scalesratio(
     B::Real,
-    ∇B::Vector{<:Real},
+    ∇B::AbstractVector,
     vperp::Real,
     q::Real,
     m::Real
@@ -197,7 +191,7 @@ function scalesratio(
     return r_L / L_B
 end
 function scalesratio(
-    statevector::Vector{<:Real},
+    statevector::AbstractVector,
     time::Real,
     params::NamedTuple,
     switch::Int
@@ -241,10 +235,10 @@ end
     kineticenergy(
         parallel_velocity::Real,
         vperp            ::Real,
-        exbdrift         ::SVector{3},
-        ∇Bdrift          ::SVector{3},
-        curvaturedrift   ::SVector{3},
-        polarisationdrift::SVector{3},
+        exbdrift         ::AbstractVector,
+        ∇Bdrift          ::AbstractVector,
+        curvaturedrift   ::AbstractVector,
+        polarisationdrift::AbstractVector,
         mass             ::Real,
         )
 Return the kinetic energy of charged particle given the particle mass,
@@ -254,10 +248,10 @@ velocity of its *guiding centre*.
 function kineticenergy(
     parallel_velocity::Real,
     vperp::Real,
-    exbdrift::SVector{3},
-    ∇Bdrift::SVector{3},
-    curvaturedrift::SVector{3},
-    polarisationdrift::SVector{3},
+    exbdrift::AbstractVector,
+    ∇Bdrift::AbstractVector,
+    curvaturedrift::AbstractVector,
+    polarisationdrift::AbstractVector,
     mass::Real,
 )
     vdrift = norm(exbdrift + ∇Bdrift + curvaturedrift + polarisationdrift)
@@ -269,7 +263,7 @@ end
     kineticenergy(
          parallel_velocity::Real,
          vperp            ::Real,
-         exbdrift         ::Vector{<:Real},
+         exbdrift         ::AbstractVector,
          mass             ::Real,
     )
 Return the kinetic energy of charged particle given the particle mass,
@@ -280,7 +274,7 @@ are neglected.
 function kineticenergy(
     parallel_velocity::Real,
     vperp::Real,
-    exbdrift::SVector{3},
+    exbdrift::AbstractVector,
     mass::Real,
 )
     velsquared = parallel_velocity^2 + vperp^2 + norm(exbdrift)^2
@@ -294,23 +288,26 @@ Calculate the E cross B drift in a given electromagnetic field.
 
 # Methods
     exbdrift(
-        magneticfield::Vector{<:Real}, 
-        electricfield::Vector{<:Real}
+        magneticfield::AbstractVector,
+        electricfield::AbstractVector
     )
     exbdrift(
-        magneticfield_direction::Vector{<:Real},
-        electricfield::Vector{<:Real},
+        magneticfield_direction::AbstractVector,
+        electricfield::AbstractVector,
         inverted_magneticfieldstrength::Real,
     )
 """
 function exbdrift(
-    b̂::SVector{3},
-    E_vec::SVector{3},
+    b::AbstractVector,
+    E_vec::AbstractVector,
     B_inv::Real,
 )
-    return (E_vec × b̂) * B_inv
+    return (E_vec × b) * B_inv
 end
-function exbdrift(magneticfield::SVector{3}, electricfield::SVector{3})
+function exbdrift(
+    magneticfield::AbstractVector,
+    electricfield::AbstractVector
+)
     B = norm(magneticfield) # Magnetic field strength
     B_inv = 1 / B
     b̂ = magneticfield * B_inv     # Magnetic field direction (unit vector)
@@ -320,31 +317,31 @@ end
 
 """
     gradbdrift(
-        b̂    ::Vector{<:Real},
-        ∇B   ::Vector{<:Real},
-        B_inv::Real,
+        b    ::AbstractVector,
+        ∇B   ::AbstractVector,
         μ    ::Real,
+        B_inv::Real,
         q_inv::Real,
         )
 Calculate the ∇B-drift given the inverse of the magnetic field strength `B_inv`,
-the magnetic field direction `b̂` (a unit vector), the gradient of the magnetic
+the magnetic field direction `b` (a unit vector), the gradient of the magnetic
 field strength `∇B`, inverse of particle charge `q_inv` and magnetic moment `μ`.
 """
 function gradbdrift(
-    b̂::SVector{3}, # The direction of the magnetic fielda
-    ∇B::SVector{3}, # The gradient of the magnetic field strength
+    b::AbstractVector, # The direction of the magnetic field
+    ∇B::AbstractVector, # The gradient of the magnetic field strength
     μ::Real, # the magnetic moment of the particle
     B_inv::Real, # The inverse of the magnetic field strength
     q_inv::Real  # The inverse of the charge of the particle
 )
-    return q_inv * B_inv * μ * (b̂ × ∇B)
+    return q_inv * B_inv * μ * (b × ∇B)
 end
 
 
 """
     curvaturedrift(
-        b̂     ::Vector{<:Real},  # The direction of the magnetic fielda
-        db̂dt  ::Matrix{<:Real},# Material derivative of the magn. field direction
+        b     ::AbstractVector,  # The direction of the magnetic fielda
+        dbdt  ::AbstractMatrix,# Material derivative of the magn. field direction
         vparal::Real, # Particle velocity component parallel to the magnetic field
         B_inv ::Real, # The inverse of the magnetic field strength
         q_inv ::Real, # The inverse of the charge of the particle
@@ -353,21 +350,21 @@ end
 Calculate the curvature drift of a charged particle in an electromagnetic field.
 """
 function curvaturedrift(
-    b̂::SVector{3},  # The direction of the magnetic fielda
-    db̂dt::SVector{3}, # Material derivative of the magn. field direction
+    b::AbstractVector,  # The direction of the magnetic fielda
+    dbdt::AbstractVector, # Material derivative of the magn. field direction
     vparal::Real, # Particle velocity component parallel to the magnetic field
     B_inv::Real, # The inverse of the magnetic field strength
     q_inv::Real, # The inverse of the charge of the particle
     mass::Real  # The particle mass
 )
-    return q_inv * B_inv * mass * b̂ × (vparal * db̂dt)
+    return q_inv * B_inv * mass * b × (vparal * dbdt)
 end
 
 
 """
     polarisationdrift(
-        b̂     ::Vector{<:Real},  # The direction of the magnetic fielda
-        dExBdt::Matrix{<:Real},# Material derivative of the E cross B drift
+        b     ::AbstractVector,  # The direction of the magnetic fielda
+        dExBdt::AbstractMatrix,# Material derivative of the E cross B drift
         B_inv ::Real, # The inverse of the magnetic field strength
         q_inv ::Real, # The inverse of the charge of the particle
         mass  ::Real  # The particle mass
@@ -376,66 +373,66 @@ Calculate the polarisation drift of a charged particle in an electromagnetic
 field.
 """
 function polarisationdrift(
-    b̂::SVector{3},  # The direction of the magnetic fielda
-    dExBdt::SVector{3},# Material derivative of the E cross B drift
+    b::AbstractVector,  # The direction of the magnetic fielda
+    dExBdt::AbstractVector,# Material derivative of the E cross B drift
     B_inv::Real, # The inverse of the magnetic field strength
     q_inv::Real, # The inverse of the charge of the particle
     mass::Real  # The particle mass
 )
-    return q_inv * B_inv * mass * b̂ × dExBdt
+    return q_inv * B_inv * mass * b × dExBdt
 end
 
 
 """
     magneticmirror_acceleration(
-        b̂ ::Vector{<:Real},
-        ∇B::Vector{<:Real},
+        b ::AbstractVector,
+        ∇B::AbstractVector,
         μ ::Real,
         m ::Real,
         )
 Calculate the magnetic mirror force acting on a guiding centre particle in a
-magnetic field, given by the magnetic field direction `b̂`, the gradient of the
+magnetic field, given by the magnetic field direction `b`, the gradient of the
 magnetic field strength `∇B`, the magnetic moment `μ` and the particle mass `m`.
 """
 function magneticmirror_acceleration(
-    b̂::SVector{3},  # The direction of the magnetic fielda
-    ∇B::SVector{3},  # The gradient of the magnetic field strength
+    b::AbstractVector,  # The direction of the magnetic fielda
+    ∇B::AbstractVector,  # The gradient of the magnetic field strength
     μ::Real, # The magnetic moment of the particle
     m::Real, # The particle mass
 )
-    return -μ * b̂ ⋅ ∇B / m
+    return -μ * b ⋅ ∇B / m
 end
 
 
 """
     parallel_acceleration(
-        b̂    ::SVector{3},
-        E_vec::SVector{3},
+        b    ::AbstractVector,
+        E_vec::AbstractVector,
         q    ::Real,
         m    ::Real,
         )
 Calculate the acceleration of a charged particle due to electric fields
-`E_vec` parallal to the magnetic field direction `b̂`.
+`E_vec` parallal to the magnetic field direction `b`.
 """
 function parallel_acceleration(
-    b̂::SVector{3},  # The direction of the magnetic fielda
-    E_vec::SVector{3},# The electric field
+    b::AbstractVector,  # The direction of the magnetic fielda
+    E_vec::AbstractVector,# The electric field
     q::Real, # The charge of the particle
     m::Real, # The particle mass
 )
-    return q * (E_vec ⋅ b̂) / m
+    return q * (E_vec ⋅ b) / m
 end
 
 
 """
     fermi_acceleration(
-        ExBdrift::SVector{3},
-        ∇Bdrift::SVector{3},
-        dbdt   ::SVector{3},
+        ExBdrift::AbstractVector,
+        ∇Bdrift::AbstractVector,
+        dbdt   ::AbstractVector,
         )
     fermi_acceleration(
-        ExBdrift::Vector{<:Real},
-        dbdt   ::Vector{<:Real},
+        ExBdrift::AbstractVector,
+        dbdt   ::AbstractVector,
         )
 Calculate the acceleration of a charged particle due to an E cross B drift
 along the material derivative of the magnetic field direction. This
@@ -443,15 +440,15 @@ acceleration term is associated with a curvature drift along the electric
 field. It is also termed 1st order Fermi acceleration by Birn et al. 2017.
 """
 function fermi_acceleration(
-    ExBdrift::SVector{3},
-    ∇Bdrift::SVector{3},
-    dbdt::SVector{3},
+    ExBdrift::AbstractVector,
+    ∇Bdrift::AbstractVector,
+    dbdt::AbstractVector,
 )
     return (ExBdrift + ∇Bdrift) ⋅ dbdt
 end
 function fermi_acceleration(
-    ExBdrift::Vector{<:Real},
-    dbdt::Vector{<:Real},
+    ExBdrift::AbstractVector,
+    dbdt::AbstractVector,
 )
     return ExBdrift ⋅ dbdt
 end
@@ -459,7 +456,7 @@ end
 
 """
     fieldgradients(
-        R::Vector{<:Real},
+        R::AbstractVector,
         electromagneticfield::Any
     )
 Calculate gradients of the electromagnetic field given by the function/functor
@@ -505,7 +502,7 @@ Calculates and returns the perpendicular drifts in the guiding centre
 approximation
 """
 function drifts(
-    R::SVector{3},
+    R::AbstractVector,
     vparal::Real,
     q::Real,
     m::Real,
@@ -537,11 +534,11 @@ end
 
 """
     gca_drift_and_acceleration(
-        ∇b         ::Matrix{<:Real},
-        ∇ExBdrift  ::Matrix{<:Real},
-        ∇B         ::Vector{<:Real},
-        B_vec      ::Vector{<:Real},
-        E_vec      ::Vector{<:Real},
+        ∇b         ::AbstractMatrix,
+        ∇ExBdrift  ::AbstractMatrix,
+        ∇B         ::AbstractVector,
+        B_vec      ::AbstractVector,
+        E_vec      ::AbstractVector,
         vparal     ::Real,
         q          ::Real,
         m          ::Real,
@@ -552,11 +549,11 @@ electromagnetic field. The function returns the total time derivative
 of the guiding centre position and parallel velocity.
 """
 function gca_drift_and_acceleration(
-    ∇b::SMatrix{3,3},
-    ∇ExBdrift::SMatrix{3,3},
-    ∇B::SVector{3},
-    B_vec::SVector{3},
-    E_vec::SVector{3},
+    ∇b::AbstractMatrix,
+    ∇ExBdrift::AbstractMatrix,
+    ∇B::AbstractVector,
+    B_vec::AbstractVector,
+    E_vec::AbstractVector,
     vparal::Real,
     q::Real,
     m::Real,
@@ -735,7 +732,7 @@ end
 
 """
     cosineof_pitchangle(
-        magneticfield    ::SVector{3},
+        magneticfield    ::AbstractVector,
         parallel_velocity::Real,
         mass             ::Real,
         magneticmoment   ::Real,
@@ -744,7 +741,7 @@ Calculates the cosine of the pitch angle of a charge particle in a magnetic
 field, given the particle's parallel velocity, mass and magnetic moment.
 """
 function cosineof_pitchangle(
-    magneticfield::SVector{3},
+    magneticfield::AbstractVector,
     parallel_velocity::Real,
     mass::Real,
     magneticmoment::Real,

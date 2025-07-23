@@ -43,7 +43,7 @@ function ∇(
     end
 end
 function ∇(
-    coords::Vector{<:Real},
+    coords::AbstractVector,
     field::Function
 )
     res = ForwardDiff.gradient(coords) do x
