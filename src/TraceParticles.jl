@@ -57,6 +57,9 @@ include("runs.jl")
 #____/\______/\_________________________________________________________________
 
 
+# utils.jl
+export
+    ElectromagneticFieldInterpolator
 # runs.jl
 export
     rerun
@@ -69,6 +72,17 @@ export
 export
     maxwellianvelocitysample,
     binmap
+# physics.jl
+export
+    get_fullorbit,
+    get_fullorbit!,
+    get_guidingcentre!,
+    kineticenergy,
+    perpendicular_velocity,
+    larmorradius,
+    characteristicfieldlength,
+    scalesratio,
+    magneticmoment
 # callbacks.jl
 export
     OutOfDomainCondition_3D,
