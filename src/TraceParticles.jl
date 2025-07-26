@@ -32,7 +32,6 @@ using StatsBase
 
 include("utils.jl")
 include("constants.jl")
-include("mathematics.jl")
 include("statistics.jl")
 include("physics.jl")
 include("equations_of_motion.jl")
