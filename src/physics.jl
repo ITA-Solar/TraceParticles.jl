@@ -596,31 +596,29 @@ function gca_drift_and_acceleration(
     return [dRdt; dvparaldt]
 end
 
-
 """
-    get_guidingcentre!(
-        u            ::Vector{<:Real},
-        mu           ::Real,
-        pos          ::Vector{<:Real},
-        vel          ::Vector{<:Real},
-        magneticfield::Vector{<:Real},
-        electricfield::Vector{<:Real},
+    get_guidingcentre(
+        pos          ::AbstractVector,
+        vel          ::AbstractVector,
+        magneticfield::AbstractVector,
+        electricfield::AbstractVector,
         charge       ::Real,
         mass         ::Real
         )
 Calculates and returns the guiding-centre position, parallel velocity, and
  magnetic moment of a charged particle in a electromagnetic field.
 """
-function get_guidingcentre!(
-    u::Vector{<:Real},
-    pos::Vector{<:Real},
-    vel::Vector{<:Real},
-    magneticfield::SVector{3},
-    electricfield::SVector{3},
+function get_guidingcentre(
+    pos::AbstractVector,
+    vel::AbstractVector,
+    magneticfield::AbstractVector,
+    electricfield::AbstractVector,
     charge::Real,
     mass::Real,
 )
-    B, b_vec, B_inv = strength_direction_invers(magneticfield)
+    B = norm(magneticfield) # Magnetic field strength
+    B_inv = 1 / B # Inverse of the magnetic field strength
+    b_vec = magneticfield * B_inv # Magnetic field direction (unit vector)
     vel_in_E_frame = vel - exbdrift(b_vec, electricfield, B_inv)
     # Calculate the guiding centre posistion
     R = pos + mass / (charge * B) * (vel_in_E_frame × b_vec)
@@ -629,8 +627,30 @@ function get_guidingcentre!(
     vparal = vel ⋅ b_vec
     vperp = perpendicular_velocity(vel_in_E_frame, b_vec, vparal)
     mu = magneticmoment(norm(vperp), mass, B)
-    # In place return
-    u[1:3] = R
+    # Out-of-plece return
+    return R, vparal, mu
+end
+function get_guidingcentre(
+    pos::AbstractVector,
+    vel::AbstractVector,
+    electromagneticfield,
+    args...
+)
+    electricfield, magneticfield = electromagneticfield(pos[1], pos[2], pos[3])
+    return get_guidingcentre(pos, vel, magneticfield, electricfield, args...)
+end
+
+
+"""
+    get_guidingcentre!(u::AbstractVector, args...)
+In-place version of `get_guidingcentre`.
+"""
+function get_guidingcentre!(
+    u::AbstractVector,
+    args...
+)
+    R, vparal, mu = get_guidingcentre(args...)
+    u[1:3] .= R
     u[4] = vparal
     return mu
 end
