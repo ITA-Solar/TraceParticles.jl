@@ -498,19 +498,19 @@ Calculate gradients of the electromagnetic field given by the function/functor
 
 The magnetic and electric field vectors are created by the call
 ```
-E, B = electromagneticfield(R...)
+E, B = electromagneticfield(R[1], R[2], R[3])
 ```
 """
 function fieldgradients(
-    R::SVector{3},
+    R::AbstractVector,
     electromagneticfield::Any
 )
     # Interpolate the electromagnetic field to the guiding centre position.
-    E_vec, B_vec = electromagneticfield(R...)
+    E_vec, B_vec = electromagneticfield(R[1], R[2], R[3])
 
     # Calculate the field gradients.
     J = ForwardDiff.jacobian(R) do x
-        E_vec_fd, B_vec_fd = electromagneticfield(x...)
+        E_vec_fd, B_vec_fd = electromagneticfield(x[1], x[2], x[3])
         B_fd = norm(B_vec_fd)
         b_fd = B_vec_fd / B_fd
         out = vcat(b_fd, E_vec_fd × b_fd / B_fd)
@@ -685,12 +685,11 @@ function get_guidingcentre!(
     return mu
 end
 
-
 """
     get_fullorbit(
-        magneticfield::Vector{<:Real},
-        electricfield::Vector{<:Real},
-        R            ::Vector{<:Real},
+        magneticfield::AbstractVector,
+        electricfield::AbstractVector,
+        R            ::AbstractVector,
         vparal       ::Real,
         μ            ::Real,
         mass         ::Real,
@@ -707,14 +706,14 @@ is with respect to vector perpendicular to the magnetic field and guiding
 centre position vector.
 """
 function get_fullorbit(
-    magneticfield::SVector{3},
-    electricfield::SVector{3},
-    R::SVector{3}, # Guiding centre position
-    vparal::Real,           # Velocity parallel to the magnetic field
-    μ::Real,           # Magnetic moment of particle
+    magneticfield::AbstractVector,
+    electricfield::AbstractVector,
+    R::AbstractVector, # Guiding centre position
+    vparal::Real, # Velocity parallel to the magnetic field
+    μ::Real, # Magnetic moment of particle
     charge::Real,
     mass::Real,
-    phaseangle::Real,           # Arbitrary phase angle of gyration.
+    phaseangle::Real, # Arbitrary phase angle of gyration.
 )
     B = norm(magneticfield) # Magnetic field strength
     b = magneticfield / B   # Magnetic field direction (unit vector)

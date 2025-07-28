@@ -100,7 +100,7 @@ function lorentzforce!(du, u, p, _)
     E, B = p.electromagneticfield(u[1], u[2], u[3])
     dvdt = q / m * (E + v × B)
     dxdt = v
-    du[:] = [dxdt; dvdt]
+    du .= [dxdt; dvdt]
 end
 
 
@@ -115,7 +115,7 @@ magnetic field, `[Rx, Ry, Rz, vparal]`, respectively.
 The parameters `p` are the particle charge, mass and magnetic moment (which is 
 assumed to be constant in the GCA), along with the interpolation functor 
 from Interpolations.jl giving the magnetic and electric field at an arbitrary 
-position. The functor should give a 6-component vector, where the first 3 
+position. The functor should give a 6-component vector, where the first 3
 components represents the magnetic field and the last 3 the electric field.
 
 The function uses ForwardDiff and Interpolations to calculate gradients.
@@ -133,6 +133,7 @@ function guidingcentreapproximation!(du, u, p, _)
     du[1:4] .= gca_drift_and_acceleration(
         ∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ
     )
+    return nothing
 end
 
 
