@@ -13,6 +13,14 @@ such that the GCA holds.
 The GC is initialised in the centre of the bottle to avoid any other drifts.
 """
 
+using DifferentialEquations
+using Interpolations
+using LinearAlgebra
+using StaticArrays
+using Test
+using TraceParticles
+
+
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS
 #
@@ -41,6 +49,7 @@ L = 0.4 # Mirroring length
 vel0 = [0.0, 0.1, 0.1]
 rL = mass * √(vel0[1]^2 + vel0[2]^2) / (charge * B0)
 pos0 = [-rL, 0.0, 0.0]
+#pos0 = [-100rL * charge / mass, 0.0, 0.0]
 
 #...............................................
 # SPATIAL PARAMETERS (x, y, z)
@@ -68,7 +77,7 @@ ni = (100, 100, 100)
 
 analytical_field = false
 if analytical_field
-    emfields_itp(x, y, z) = (zeros(3), magneticmirrorfield(x, y, z, B0, L))
+    emfields_itp = (x, y, z) -> (zeros(3), magneticmirrorfield(x, y, z, B0, L))
 else
     xx, yy, zz, dx, dy, dz = TraceParticles.create3Daxes(xi0, xif, ni)
     Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
@@ -101,9 +110,7 @@ numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
 # PARTICLE CREATION
 # Set initial position and velocities
 E, B = emfields_itp(pos0...)
-statevector = zeros(4)
-μ = TraceParticles.get_guidingcentre!(
-    statevector,
+R0, vparal, μ = TraceParticles.get_guidingcentre(
     pos0,
     vel0,
     B,
@@ -111,8 +118,9 @@ statevector = zeros(4)
     charge,
     mass
 )
-R0 = statevector[1:3]
-vparal = statevector[4]
+# To make R0 a vector instead of SVector which crashes the ODE solver with an
+# in-place EoM.
+R0 = [R0...]
 #-------------------------------------------------------------------------------
 # CREATE PROBLEM
 prob_FO = ODEProblem(
@@ -136,7 +144,7 @@ prob_GCA = ODEProblem(
 #...............................................................................
 # RUN SIMULATION
 sol_FO = DifferentialEquations.solve(prob_FO, Tsit5();
-    reltol=5e-5)
+    reltol=5e-7, abstol=1e-9)
 sol_GCA = DifferentialEquations.solve(prob_GCA, Tsit5();
     reltol=1e-4, abstol=1e-9)
 
@@ -166,8 +174,8 @@ z_FO = [u[3] for u in sol_FO.u]
 rmse_GCA = √(sum((z_anal_GCA .- z_GCA) .^ 2) / numsteps)
 rmse_FO = √(sum((z_anal_FO .- z_FO) .^ 2) / numsteps)
 @testset verbose = true "GCA: Default alg." begin
-    @test isapprox(rmse_GCA, 0.0, atol=0.001)
+    @test isapprox(rmse_GCA, 0.0, atol=1e-5)
 end # testset GCA: Euler
 @testset verbose = true "Full orbit: Default alg." begin
-    @test isapprox(rmse_FO, 0.0, atol=0.001)
+    @test isapprox(rmse_FO, 0.0, atol=3e-4)
 end # testset GCA: Euler

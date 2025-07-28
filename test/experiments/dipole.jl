@@ -44,7 +44,7 @@ itp_bc = Flat()
 # at x⃗ = [1, 0, 0]. It is also assumed that the GCA is valid such that B is equal
 # to B(x⃗) = 2M, directed in -ẑ. We may then compare with the Walt (1994)
 # approximation of the azimuthal drift-period.
-R0 = SA[1, 0, 0]
+R0 = SA[1.0, 0, 0]
 vparal = 0.5
 vperp = 1.0
 
@@ -101,9 +101,9 @@ emfields_itp = EMField2(emfields_itp)
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
 # Set initial position and velocities
-E, B = emfields_itp(R0...)
+E, B = emfields_itp(R0[1], R0[2], R0[3])
 μ = TraceParticles.magneticmoment(vperp, mass, norm(B))
-u0 = TraceParticles.get_fullorbit(B, E, R0, vparal, μ, charge, mass, 0.0)
+u0 = TraceParticles.get_fullorbit(B, E, R0, vparal, μ, charge, mass, pi/2)
 u0 = [u0[1], u0[2], u0[3], u0[4], u0[5], u0[6]]  # Make not static
 
 fo_params = (charge=charge, mass=mass, electromagneticfield=emfields_itp)
@@ -124,12 +124,18 @@ gca_prob = ODEProblem(
 
 #...............................................................................
 # RUN SIMULATION
-reltol_fo = 1e-4
+reltol_fo = 1e-7
+abstol_fo = 1e-9
 reltol_gca = 1e-4
-fo_sim = DifferentialEquations.solve(fo_prob, Tsit5();
-    reltol=reltol_fo, abstol=1e-9)
-gca_sim = DifferentialEquations.solve(gca_prob, Tsit5();
-    reltol=reltol_gca, abstol=1e-9)
+abstol_gca = 1e-9
+fo_sim = DifferentialEquations.solve(
+    fo_prob, Tsit5();
+    reltol=reltol_fo, abstol=abstol_fo
+)
+gca_sim = DifferentialEquations.solve(
+    gca_prob, Tsit5();
+    reltol=reltol_gca, abstol=abstol_gca
+)
 #...............................................................................
 
 
