@@ -91,10 +91,22 @@ and the initial and final times must be accessible with `first(sol.t)` and
 `last(sol.t)`, respectively.
 """
 function find_max_larmorradius(sol; ntimes=5length(sol.t))
-    f(t) = larmorradius(sol(first(t))[1:3], sol.prob.p)
+    f(t) = larmorradius(
+        sol(first(t), idxs=1:3),
+        sol.prob.p.magneticmoment,
+        sol.prob.p.charge,
+        sol.prob.p.mass,
+        sol.prob.p.electromagneticfield,
+    )
     if ntimes == 1
         time = sol.t[1]
-        farray = larmorradius(sol[1][1:3], sol.prob.p)
+        farray = larmorradius(
+            sol[1][1:3],
+            sol.prob.p.magneticmoment,
+            sol.prob.p.charge,
+            sol.prob.p.mass,
+            sol.prob.p.electromagneticfield,
+        )
         max = MaxValue(farray, sol[1], time)
         mean = sum(farray) / length(farray)
     else
@@ -120,14 +132,14 @@ and the initial and final times must be accessible with `first(sol.t)` and
 """
 function find_min_fieldlength(sol; ntimes=5length(sol.t))
     f(t) = characteristicfieldlength(
-        sol(first(t))[1:3],
-        (x, y, z) -> sol.prob.p.electromagneticfield(x, y, z)[2]
+        sol(first(t), idxs=1:3),
+        sol.prob.p.electromagneticfield,
     )
     if ntimes == 1
         time = sol.t[1]
         farray = characteristicfieldlength(
             sol[1][1:3],
-            (x, y, z) -> sol.prob.p.electromagneticfield(x, y, z)[2]
+            sol.prob.p.electromagneticfield,
         )
         min = MinValue(farray, sol[1], time)
         mean = farray
@@ -153,19 +165,22 @@ and the initial and final times must be accessible with `first(sol.t)` and
 `last(sol.t)`, respectively.
 """
 function find_max_scalesratio(sol; ntimes=5length(sol.t))
-    frl(t) = larmorradius(sol(first(t))[1:3], sol.prob.p)
-    flb(t) = characteristicfieldlength(
-        sol(first(t))[1:3],
-        (x, y, z) -> sol.prob.p.electromagneticfield(x, y, z)[2]
+    f(t) = scalesratio(
+        sol(first(t), idxs=1:3),
+        sol.prob.p.mass,
+        sol.prob.p.charge,
+        sol.prob.p.magneticmoment,
+        sol.prob.p.electromagneticfield,
     )
-    f(t) = frl(t) / flb(t)
     if ntimes == 1
         time = sol.t[1]
-        farray = larmorradius(sol[1][1:3], sol.prob.p) /
-                characteristicfieldlength(
-                    sol[1][1:3],
-                    (x, y, z) -> sol.prob.p.electromagneticfield(x, y, z)[2]
-                )
+        farray = scalesratio(
+            sol[1][1:3],
+            sol.prob.p.mass,
+            sol.prob.p.charge,
+            sol.prob.p.magneticmoment,
+            sol.prob.p.electromagneticfield,
+        )
         max = MaxValue(farray, sol[1], time)
         mean = farray
     else

@@ -125,8 +125,7 @@ function (self::RelativisticConditionGCA_2Dxz)(u, _, integrator)
     μ = integrator.p.magneticmoment
     mass = integrator.p.mass
 
-    B_vec = [itp(Rx, Rz) for itp in integrator.p.fields[1:3]]
-    E_vec = [itp(Rx, Rz) for itp in integrator.p.fields[4:6]]
+    E_vec, B_vec = integrator.p.electromagneticfield(Rx, Rz)
     v_E = exbdrift(B_vec, E_vec)
     B = norm(B_vec)
     vperp = perpendicular_velocity(μ, mass, B)
@@ -147,7 +146,7 @@ end
 Sets the energy limit for the the relativistic condition.
 """
 function set_limit!(
-    condition::Union{RelativisticConditionGCA, RelativisticConditionGCA_2Dxz};
+    condition::Union{RelativisticConditionGCA,RelativisticConditionGCA_2Dxz};
     mass,
     fraction,
 )
@@ -277,7 +276,14 @@ mutable struct GCABreakDownCondition
     tolerance::Real
 end
 function (self::GCABreakDownCondition)(u, t, integrator)
-    ratio = scalesratio(u[1:3], t, integrator.p)
+    R = SVector(u[1], u[2], u[3]) # The gyrocentre position vector
+    ratio = scalesratio(
+        R,
+        integrator.p.mass,
+        integrator.p.charge,
+        integrator.p.magneticmoment,
+        integrator.p.electromagneticfield,
+    )
     return ratio > self.tolerance
 end
 
@@ -292,7 +298,14 @@ mutable struct GCABreakDownCondition_2Dxz
     tolerance::Real
 end
 function (self::GCABreakDownCondition_2Dxz)(u, t, integrator)
-    ratio = scalesratio([u[1], u[3]], t, integrator.p)
+    R = SVector(u[1], u[2], u[3]) # The gyrocentre position vector in 2D
+    ratio = scalesratio(
+        R,
+        integrator.p.mass,
+        integrator.p.charge,
+        integrator.p.magneticmoment,
+        integrator.p.electromagneticfield,
+    )
     return ratio > self.tolerance
 end
 
@@ -305,7 +318,7 @@ end
 Sets the tolerance for the GCABreakDownCondition.
 """
 function set_tol!(
-    condition::Union{GCABreakDownCondition, GCABreakDownCondition_2Dxz},
+    condition::Union{GCABreakDownCondition,GCABreakDownCondition_2Dxz},
     tol
 )
     condition.tolerance = tol

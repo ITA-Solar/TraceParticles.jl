@@ -150,20 +150,33 @@ end
 
     @testset "scalesratio" begin
         R = [1, 1, 1]
-        itpvec = [
-            (x, y, z) -> 0,
-            (x, y, z) -> 0,
-            (x, y, z) -> 2y + 1
-        ]
         ∇B = [0, 2, 0]
         params = (
             charge=-√6,
             mass=9,
             magneticmoment=9,
-            fields=itpvec
+            fields=(x, y, z) -> ([0, 0, 0], [0, 0, 2y + 1]),
         )
-        result = scalesratio(R, itpvec, ∇B, params)
+        result = scalesratio(
+            R,
+            params.mass,
+            params.charge,
+            params.magneticmoment,
+            params.fields,
+        )
         @test isapprox(result, 2, atol=1e-6)
+        # Test different method
+        vperp = sqrt(2 * params.magneticmoment * 3 / params.mass)
+        result = scalesratio(3, ∇B, vperp, params.charge, params.mass)
+        @test isapprox(result, 2, atol=1e-6)
+        # Test different method
+        vel = [vperp, 0, 1]
+        result = scalesratio(
+            R, vel, params.mass, params.charge,
+            params.fields,
+        )
+        @test isapprox(result, 2, atol=1e-6)
+
     end
 
     @testset "kineticenergy" begin

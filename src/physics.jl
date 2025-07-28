@@ -13,48 +13,72 @@
 #-------------------------------------------------------------------------------
 
 """
-    larmorradius(mass, vperp, charge, magneticfieldstrength)
 Return the Larmor radius of a charged particle.
+# Methods
+    larmorradius(mass, vperp, charge, magneticfieldstrength)
+    larmorradius(vel, mass, charge, electricfield, magneticfield)
+    # Methods with interpolation objects
+    larmorradius(R, μ, q, m, emfields) # for guiding centre approximation
+    larmorradius(position, velocity, mass, charge, emfields) # direct solution
 """
-function larmorradius(mass, vperp::Real, charge, magneticfieldstrength::Real)
+function larmorradius(
+    mass::Real,
+    vperp::Real,
+    charge::Real,
+    magneticfieldstrength::Real
+)::Real
     return abs(mass * vperp / (charge * magneticfieldstrength))
+end
+function larmorradius(
+    vel::AbstractVector,
+    mass::Real,
+    charge::Real,
+    electricfield::AbstractVector,
+    magneticfield::AbstractVector,
+)
+    vperp = norm(perpendicular_velocity(
+        vel, magneticfield, electricfield
+    ))
+    B = norm(magneticfield)
+    return larmorradius(mass, vperp, charge, B)
 end
 function larmorradius(
     R::AbstractVector,
     μ::Real,
     q::Real,
     m::Real,
-    itpvec::Vector{<:Any}
+    emfields
 )
-    B = norm([itp(R...) for itp in itpvec])
+    B = norm(emfields(R[1], R[2], R[3])[2])
     vperp = perpendicular_velocity(μ, m, B)
     return larmorradius(m, vperp, q, B)
 end
 function larmorradius(
-    R::AbstractVector,
-    params::NamedTuple
+    position::AbstractVector,
+    velocity::AbstractVector,
+    mass::Real,
+    charge::Real,
+    emfields,
 )
-    B = norm(params.electromagneticfield(R...)[2])
-    μ = params.magneticmoment
-    q = params.charge
-    m = params.mass
-    vperp = perpendicular_velocity(μ, m, B)
-    return larmorradius(m, vperp, q, B)
+    E, B = emfields(position[1], position[2], position[3])
+    return larmorradius(velocity, mass, charge, E, B)
 end
 
 """
     gyrofrequency(mass, charge, magneticfieldstrength)
 Return the gyrofrequency of a charged particle.
 """
-function gyrofrequency(mass, charge, magneticfieldstrength)
+function gyrofrequency(
+    mass::Real,
+    charge::Real,
+    magneticfieldstrength::Real,
+)::Real
     return abs(charge * magneticfieldstrength / mass)
 end
-
 
 """
 Return the perpendicular velocity of a charged particle in a electromagnetic
 field.
-
 # Methods
     perpendicular_velocity(velocity, magneticfield, electricfield)
     perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength)
@@ -66,6 +90,13 @@ function perpendicular_velocity(
     magneticfieldstrength::Real
 )::Real
     sqrt(2magnetic_moment * magneticfieldstrength / mass)
+end
+function perpendicular_velocity(
+    gyrationvelocity::AbstractVector,
+    b_vec::AbstractVector,
+    vparal::Real,
+)
+    return gyrationvelocity - vparal * b_vec
 end
 function perpendicular_velocity(
     vel::AbstractVector,
@@ -80,30 +111,53 @@ function perpendicular_velocity(
     vperp = perpendicular_velocity(vel_in_E_frame, b_vec, vparal)
     return vperp
 end
-function perpendicular_velocity(
-    gyrationvelocity::AbstractVector,
-    b_vec::AbstractVector,
-    vparal::Real,
-)
-    return gyrationvelocity - vparal * b_vec
-end
-
 
 """
-    magneticmoment(perpendicular_velocity, mass, magneticfieldstrength)
 Return the magnetic moment of a chargred particle in a magnetic field.
+# Methods
+    magneticmoment(perpendicular_velocity, mass, magneticfieldstrength)
+    magneticmoment(vel, mass, electricfield, magneticfield)
+    # interpolation object for direct of the Lorentz equation.
+    magneticmoment(position, velocity, mass, emfields)
 """
-function magneticmoment(perpendicular_velocity, mass, magneticfieldstrength)
+function magneticmoment(
+    perpendicular_velocity::Real,
+    mass::Real,
+    magneticfieldstrength::Real
+)
     0.5mass * perpendicular_velocity^2 / magneticfieldstrength
 end
-
+function magneticmoment(
+    vel::AbstractVector,
+    mass::Real,
+    electricfield::AbstractVector,
+    magneticfield::AbstractVector,
+)
+    vperp = norm(perpendicular_velocity(
+        vel,
+        magneticfield,
+        electricfield
+    ))
+    B = norm(magneticfield)
+    return magneticmoment(vperp, mass, B)
+end
+function magneticmoment(
+    position::AbstractVector,
+    velocity::AbstractVector,
+    mass::Real,
+    emfields
+)
+    electricfield, magneticfield = emfields(
+        position[1], position[2], position[3]
+    )
+    return magneticmoment(velocity, mass, electricfield, magneticfield)
+end
 
 """
 Return the characteristic length of a field.
-
 # Methods
     characteristicfieldlength(fieldstrength, fieldstrengthgradient)
-    characteristicfieldlength(position, itpvec)
+    characteristicfieldlength(position, emfields)
 """
 function characteristicfieldlength(
     fieldstrength::Real,
@@ -113,18 +167,12 @@ function characteristicfieldlength(
 end
 function characteristicfieldlength(
     position::AbstractVector,
-    itpvec::Vector{<:Any}
+    emfields,
 )
-    fieldstrength = norm([itpvec[i](position...) for i in 1:3])
-    grad = ∇(position, itpvec)
-    return characteristicfieldlength(fieldstrength, grad)
-end
-function characteristicfieldlength(
-    position::AbstractVector,
-    field::Function,
-)
-    fieldstrength = norm(field(position...))
-    grad = ∇(position, field)
+    fieldstrength = norm(emfields(position[1], position[2], position[3])[2])
+    grad = ForwardDiff.gradient(position) do x
+        norm(emfields(x[1], x[2], x[3])[2])
+    end
     return characteristicfieldlength(fieldstrength, grad)
 end
 
@@ -134,51 +182,23 @@ Calculates the ratio between the Larmor radius and the characteristic field
 length of the magnetic field.
 
 # Methods
-    scalesratio(R, itpvec, ∇B, params)
-    scalesratio(pos, vel, itpvec, ∇B, params)
     scalesratio(B, ∇B, vperp, q, m)
-    scalesratio(statevector, time, params, switch)
-    scalesratio(R, _, params)
+    # Using interpolation object
+    scalesratio(R, mass, charge, magneticmoment, emfields)
+    scalesratio(pos, vel, mass, charge, emfields)
 
 # Arguments
 - `R`, the guiding centre location.
 - `pos`, the 3 component particle position.
 - `vel`, the 3 component particle velocity.
-- `itpvec`, the magnetic field, as a vector of interpolation objects for each
-    component
-- `∇B`, the gradient of the magnetic field, as a vector of components.
-- `params`, `NamedTuple` containing the parameters charge, mass and magnetic
-    moment.
-- `statevector`, the state vector of the particle.
-- `time`, the time of the state vector.
-- `switch`, an integer value that determines the type of calculation to be
-    performed. 1 for guiding centre approximation, 2 for full orbit.
+- `∇B`, the magnitude of the gradient of the magnetic field
+- `B`, the magnetic field strength.
+- `vperp`, the particle velocity component perpendicular to the magnetic field.
+- `q`, the particle charge.
+- `m`, the particle mass.
+- `emfields`, a functor that returns a tuple of the electric and magnetic field
+  vectors at a given position, in the form
 """
-function scalesratio(
-    R::AbstractVector,
-    itpvec::Vector{<:Any},
-    ∇B::AbstractVector,
-    params::Any
-)
-    μ = params.magneticmoment
-    m = params.mass
-    B = norm([itp(R...) for itp in itpvec[1:3]])
-    vperp = perpendicular_velocity(μ, m, B)
-    return scalesratio(B, ∇B, vperp, params.charge, params.mass)
-end
-function scalesratio(
-    pos::AbstractVector,
-    vel::AbstractVector,
-    itpvec::Vector{<:AbstractInterpolation},
-    ∇B::AbstractVector,
-    params::Any
-)
-    Bvec = [itp(pos...) for itp in itpvec[1:3]]
-    Evec = [itp(pos...) for itp in itpvec[4:6]]
-    B = norm(Bvec)
-    vperp = norm(perpendicular_velocity(vel, Bvec, Evec))
-    return scalesratio(B, ∇B, vperp, params.charge, params.mass)
-end
 function scalesratio(
     B::Real,
     ∇B::AbstractVector,
@@ -191,30 +211,38 @@ function scalesratio(
     return r_L / L_B
 end
 function scalesratio(
-    statevector::AbstractVector,
-    time::Real,
-    params::NamedTuple,
-    switch::Int
+    R::AbstractVector,
+    mass::Real,
+    charge::Real,
+    magneticmoment::Real,
+    emfields,
 )
-    pos = statevector[1:3]
-    ∇B = ∇(pos, params.fields)
-    if switch == 1
-        scalesratio(pos, params.fields, ∇B, params)
-    elseif switch == 2
-        vel = statevector[4:6]
-        scalesratio(pos, vel, params.fields, ∇B, params)
-    else
-        error("Unknown switch value.")
+    B = norm(emfields(R[1], R[2], R[3])[2])
+    vperp = perpendicular_velocity(magneticmoment, mass, B)
+    ∇B = ForwardDiff.gradient(R) do x
+        norm(emfields(x[1], x[2], x[3])[2])
     end
+    scalesratio(B, ∇B, vperp, charge, mass)
 end
-function scalesratio(R, _, params)
-    emfields = params.electromagneticfield
-    B = norm(emfields(R...)[2])
-    vperp = perpendicular_velocity(params.magneticmoment, params.mass, B)
-    ∇B = ∇(R, (R...) -> emfields(R...)[2])
-    scalesratio(B, ∇B, vperp, params.charge, params.mass)
+function scalesratio(
+    pos::AbstractVector,
+    vel::AbstractVector,
+    mass::Real,
+    charge::Real,
+    emfields
+)
+    electricfield, magneticfield = emfields(pos[1], pos[2], pos[3])
+    vperp = norm(perpendicular_velocity(
+        vel,
+        magneticfield,
+        electricfield
+    ))
+    B = norm(magneticfield)
+    ∇B = ForwardDiff.gradient(pos) do x
+        norm(emfields(x[1], x[2], x[3])[2])
+    end
+    return scalesratio(B, ∇B, vperp, charge, mass)
 end
-
 
 """
 Return the kinetic energy of a particle.
@@ -229,7 +257,6 @@ end
 function kineticenergy(velocity::Vector, mass::Real)
     kineticenergy(norm(velocity), mass)
 end
-
 
 """
     kineticenergy(
@@ -257,7 +284,6 @@ function kineticenergy(
     vdrift = norm(exbdrift + ∇Bdrift + curvaturedrift + polarisationdrift)
     return 0.5 * mass * (parallel_velocity^2 + vperp^2 + vdrift^2)
 end
-
 
 """
     kineticenergy(
@@ -296,6 +322,7 @@ Calculate the E cross B drift in a given electromagnetic field.
         electricfield::AbstractVector,
         inverted_magneticfieldstrength::Real,
     )
+    exbdrift(pos, emfields)
 """
 function exbdrift(
     b::AbstractVector,
@@ -312,6 +339,13 @@ function exbdrift(
     B_inv = 1 / B
     b̂ = magneticfield * B_inv     # Magnetic field direction (unit vector)
     return exbdrift(b̂, electricfield, B_inv)
+end
+function exbdrift(
+    pos::AbstractVector,
+    emfields,
+)
+    electricfield, magneticfield = emfields(pos[1], pos[2], pos[3])
+    return exbdrift(magneticfield, electricfield)
 end
 
 
@@ -453,7 +487,6 @@ function fermi_acceleration(
     return ExBdrift ⋅ dbdt
 end
 
-
 """
     fieldgradients(
         R::AbstractVector,
@@ -495,7 +528,6 @@ function fieldgradients(
     return ∇b, ∇ExB, ∇B, B_vec, E_vec
 end
 
-
 """
     drifts(R, vparal, q, m, μ, electromagneticfield)
 Calculates and returns the perpendicular drifts in the guiding centre
@@ -530,7 +562,6 @@ function drifts(
 
     return ExBdrift, ∇Bdrift, Rdrift, Pdrift
 end
-
 
 """
     gca_drift_and_acceleration(
@@ -639,7 +670,6 @@ function get_guidingcentre(
     electricfield, magneticfield = electromagneticfield(pos[1], pos[2], pos[3])
     return get_guidingcentre(pos, vel, magneticfield, electricfield, args...)
 end
-
 
 """
     get_guidingcentre!(u::AbstractVector, args...)
@@ -770,7 +800,6 @@ function cosineof_pitchangle(
     return sqrt(1 / (2B * magneticmoment / (mass * parallel_velocity^2) + 1))
 end
 
-
 """
     lorentzfactor(speed::Real)
 The relativistic Lorentz factor in SI units.
@@ -779,7 +808,6 @@ function lorentzfactor(speed::Real)
     return 1 / √(1 - speed^2 * csqrdinv)
 end
 
-
 """
     kineticspeed(kineticenergy::Real, mass::Real)
 Calculate the speed of a particle from its `kineticenergy` and `mass`.
@@ -787,7 +815,6 @@ Calculate the speed of a particle from its `kineticenergy` and `mass`.
 function kineticspeed(kineticenergy::Real, mass::Real)
     return √(2kineticenergy / mass)
 end
-
 
 """
     mfp_close_cc_collisions_thermaltarget(v_p, q_p, q_t, m_p, m_t, T_t, n_t)
