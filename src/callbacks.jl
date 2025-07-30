@@ -16,10 +16,10 @@ DifferentialEquations.jl.
         zbounds::Tuple{<:Real, <:Real}
 Returns true if the particle is outside the bounds.
 """
-mutable struct OutOfDomainCondition_3D
-    xbounds::Tuple{<:Real,<:Real}
-    ybounds::Tuple{<:Real,<:Real}
-    zbounds::Tuple{<:Real,<:Real}
+mutable struct OutOfDomainCondition_3D{T<:Tuple{<:Real,<:Real}}
+    xbounds::T
+    ybounds::T
+    zbounds::T
 end
 function (self::OutOfDomainCondition_3D)(u, _, _)
     return u[1] <= self.xbounds[1] || u[1] >= self.xbounds[2] ||
@@ -34,9 +34,9 @@ end
         zbounds::Tuple{<:Real, <:Real}
 Returns true if the particle is outside the 2D bounds in x and z.
 """
-mutable struct OutOfDomainCondition_2Dxz
-    xbounds::Tuple{<:Real,<:Real}
-    zbounds::Tuple{<:Real,<:Real}
+mutable struct OutOfDomainCondition_2Dxz{T<:Tuple{<:Real,<:Real}}
+    xbounds::T
+    zbounds::T
 end
 function (self::OutOfDomainCondition_2Dxz)(u, _, _)
     return u[1] <= self.xbounds[1] || u[1] >= self.xbounds[2] ||
@@ -84,11 +84,11 @@ energy. Perpendicular drifts other than E cross B drift are neglected.
 
 Default fraction is 0.002, which is 1022 eV for an electron.
 """
-mutable struct RelativisticConditionGCA
-    fractionofrestenergy::Real
+mutable struct RelativisticConditionGCA{T<:Real}
+    fractionofrestenergy::T
 
-    function RelativisticConditionGCA(; mass, fraction)
-        return new(fraction * mass * csqrd)
+    function RelativisticConditionGCA(; mass::T, fraction) where {T}
+        return new{T}(fraction * mass * csqrd)
     end
 end
 function (self::RelativisticConditionGCA)(u, _, integrator)
@@ -104,7 +104,6 @@ function (self::RelativisticConditionGCA)(u, _, integrator)
     return energy > self.fractionofrestenergy
 end
 
-
 """
     RelativisticConditionGCA_2Dxz
 Callback condition for checking if the GCA particle is relativistic. Returns
@@ -113,15 +112,15 @@ energy. Perpendicular drifts other than E cross B drift are neglected.
 
 Default fraction is 0.002, which is 1022 eV for an electron.
 """
-mutable struct RelativisticConditionGCA_2Dxz
-    energylimit::Real
+mutable struct RelativisticConditionGCA_2Dxz{T<:Real}
+    energylimit::T
 
-    function RelativisticConditionGCA_2Dxz(; mass, fraction)
-        return new(fraction * mass * csqrd)
+    function RelativisticConditionGCA_2Dxz(; mass::T, fraction) where {T}
+        return new{T}(fraction * mass * csqrd)
     end
 end
 function (self::RelativisticConditionGCA_2Dxz)(u, _, integrator)
-    Rx, _, Rz, vparal = u[1:4]
+    Rx, Rz, vparal = u[1], u[3], u[4]
     μ = integrator.p.magneticmoment
     mass = integrator.p.mass
 
@@ -221,7 +220,7 @@ opposite.
 function switch_affect!(integrator)
     println("Switch_affect!")
     println("Switch value before: $(integrator.p.switch)")
-#    println("mu before:           $(integrator.p.magneticmoment)")
+    #    println("mu before:           $(integrator.p.magneticmoment)")
     println("u before: $(integrator.u)")
     if integrator.p.switch == 1
         switch2fo_affect!(integrator)
@@ -229,7 +228,7 @@ function switch_affect!(integrator)
         switch2gca_affect!(integrator)
     end
     println("Switch value after:  $(integrator.p.switch)")
-#    println("mu after:            $(integrator.p.magneticmoment)")
+    #    println("mu after:            $(integrator.p.magneticmoment)")
     println("u after:  $(integrator.u)")
 end
 
@@ -272,8 +271,8 @@ Callback condition for checking GCA assumption. Returns `true` if the ratio
 between the particle Larmor radius and the characteristic length of the
 magnetic field is higher than a tolerance `switchtol`.
 """
-mutable struct GCABreakDownCondition
-    tolerance::Real
+mutable struct GCABreakDownCondition{T<:Real}
+    tolerance::T
 end
 function (self::GCABreakDownCondition)(u, t, integrator)
     R = SVector(u[1], u[2], u[3]) # The gyrocentre position vector
@@ -294,8 +293,8 @@ Callback condition for checking GCA assumption. Returns `true` if the ratio
 between the particle Larmor radius and the characteristic length of the
 magnetic field is higher than a tolerance `switchtol`.
 """
-mutable struct GCABreakDownCondition_2Dxz
-    tolerance::Real
+mutable struct GCABreakDownCondition_2Dxz{T<:Real}
+    tolerance::T
 end
 function (self::GCABreakDownCondition_2Dxz)(u, t, integrator)
     R = SVector(u[1], u[2], u[3]) # The gyrocentre position vector in 2D
