@@ -19,14 +19,15 @@ function output_func_max_lightweight(sol, i)
     )
     x0, y0, z0, vparal0 = first(sol)
     xf, yf, zf, vparalf = last(sol)
-    # Select parameters to save
-    exclusionlist = [:electromagneticfield, :temp, :userdata]
-    param_to_save = filter(x -> !(x in exclusionlist), keys(sol.prob.p))
     # Construct and retunr the output tuple
     return (
         x0=x0, y0=y0, z0=z0, vparal0=vparal0,
         xf=xf, yf=yf, zf=zf, vparalf=vparalf,
-        sol.prob.p[param_to_save]...,
+        charge=sol.prob.p.charge,
+        mass=sol.prob.p.mass,
+        magneticmoment=sol.prob.p.magneticmoment,
+        weight=sol.prob.p.weight,
+        nrejections=sol.prob.p.nrejections,
         t0=first(sol.t),
         tf=last(sol.t),
         nt=length(sol.t),
@@ -51,8 +52,8 @@ function output_func_max_lightweight(sol, i)
         meanrl=meanrl,
         meanlb=meanlb,
         meanscalesratio=meanscalesratio,
-        retcode=string(sol.retcode),
-        retmsg=sol.prob.p.userdata.retmsg,
+        retcode=Int(sol.retcode),
+        retmsg=sol.prob.p.retcode,
     ),
     false
 end
@@ -75,6 +76,10 @@ function output_func_lightweight(sol, i)
         charge=sol.prob.p.charge,
         mass=sol.prob.p.mass,
         magneticmoment=sol.prob.p.magneticmoment,
+        weight=sol.prob.p.weight,
+        nrejections=sol.prob.p.nrejections,
+        retcode=Int(sol.retcode),
+        retmsg=sol.prob.p.retcode
     ),
     false
 end

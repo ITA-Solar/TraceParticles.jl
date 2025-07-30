@@ -92,6 +92,13 @@ Method which return random variables from a normal distribution with
 expectation value `μ` and standard deviation `σ`.
 """
 function Base.randn(
+    rng::AbstractRNG,
+    μ::AbstractFloat,
+    σ::AbstractFloat,
+)
+    return μ + σ * randn(rng)
+end
+function Base.randn(
     μ::AbstractFloat,
     σ::AbstractFloat,
     dims...
@@ -122,81 +129,16 @@ end
 
 
 """
-    Base.rand(rng, precision, a, b, dims)
+    Base.rand(rng, a::AbstractFloat, b::AbstractFloat)
 Method which return random variables from a uniform distribution on the interval
 [a, b] with DataType `precision` and random seed generator `rng`.
 """
 function Base.rand(
-    a::AbstractFloat,
-    b::AbstractFloat,
-    dims...
-)
-    return a .+ rand(dims...) .* (b - a)
-end
-function Base.rand(
-    precision::DataType,
-    a::AbstractFloat,
-    b::AbstractFloat,
-    dims...
-)
-    a = convert(precision, a)
-    b = convert(precision, b)
-    return a .+ rand(precision, dims...) .* (b - a)
-end
-function Base.rand(
     rng::AbstractRNG,
     a::AbstractFloat,
     b::AbstractFloat,
-    dims...
 )
-    return a .+ rand(rng, dims...) .* (b - a)
-end
-function Base.rand(
-    rng::AbstractRNG,
-    precision::DataType,
-    a::AbstractFloat,
-    b::AbstractFloat,
-    dims...
-)
-    a = convert(precision, a)
-    b = convert(precision, b)
-    return a .+ rand(rng, precision, dims...) .* (b - a)
-end
-function Base.rand(
-    a::AbstractFloat,
-    b::AbstractFloat,
-    dims::Tuple{Vararg{Int}}
-)
-    return a .+ rand(dims...) .* (b - a)
-end
-function Base.rand(
-    precision::DataType,
-    a::AbstractFloat,
-    b::AbstractFloat,
-    dims::Tuple{Vararg{Int}}
-)
-    a = convert(precision, a)
-    b = convert(precision, b)
-    return a .+ rand(precision, dims...) .* (b - a)
-end
-function Base.rand(
-    rng::AbstractRNG,
-    a::AbstractFloat,
-    b::AbstractFloat,
-    dims::Tuple{Vararg{Int}}
-)
-    return a .+ rand(rng, dims...) .* (b - a)
-end
-function Base.rand(
-    rng::AbstractRNG,
-    precision::DataType,
-    a::AbstractFloat,
-    b::AbstractFloat,
-    dims::Tuple{Vararg{Int}}
-)
-    a = convert(precision, a)
-    b = convert(precision, b)
-    return a .+ rand(rng, precision, dims...) .* (b - a)
+    return a + rand(rng) * (b - a)
 end
 function Base.rand(
     rng::AbstractRNG,
@@ -207,11 +149,48 @@ function Base.rand(
     for i = 1:numaxes
         a = domain[i][1]
         b = domain[i][2]
-        r[i] = a .+ rand(rng) .* (b - a)
+        r[i] = rand(rng, a, b)
     end
     return r
 end # function rand
-
+function rand!(
+    r::AbstractVector,
+    rng::AbstractRNG,
+    domain::Vector{<:Tuple{Real,Real}}
+)
+    numaxes = length(domain)
+    for i in eachindex(1:numaxes)
+        a = domain[i][1]
+        b = domain[i][2]
+        r[i] = rand(rng, a, b)
+    end
+    return nothing
+end
+function rand!(
+    r::AbstractVector,
+    rng::AbstractRNG,
+    bounds::NTuple{N,Tuple{Real,Real}} where {N}
+)
+    numaxes = length(bounds)
+    for i in eachindex(1:numaxes)
+        a = bounds[i][1]
+        b = bounds[i][2]
+        r[i] = rand(rng, a, b)
+    end
+    return nothing
+end
+function rand!(
+    r::AbstractVector,
+    rng::AbstractRNG,
+    a::AbstractFloat,
+    b::AbstractFloat,
+    n::Integer
+)
+    for i in 1:n
+        r[i] = rand(rng, a, b)
+    end
+    return nothing
+end
 
 #----------#
 # Sampling #
@@ -231,17 +210,13 @@ given by a function call with aribtrary arguments, and by a mass.
 """
 function maxwellianvelocitysample(
     rng::AbstractRNG,
-    temperature_itp::Any,
+    T::Real,
     mass::Real,
-    args...
-    ;
-    precision::DataType=Float64,
 )
-    T = temperature_itp.(args...)
     μ = 0.0
-    σ = sqrt.(TraceParticles.k_B * T / mass) # Standard deviation of the Maxwell
+    σ = sqrt(TraceParticles.k_B * T / mass) # Standard deviation of the Maxwell
     # distribution at this temperature
-    return randn.(rng, precision, μ, σ, 3)
+    return randn(rng, μ, σ)
 end
 
 
@@ -283,6 +258,76 @@ function rejectionsample(
         ytarget = target(pos...)[1]
     end
     return pos, numrejections
+end
+function rejectionsample!(
+    pos::AbstractVector,
+    target::Any,
+    maxvalue::Real,
+    domain::Vector{<:Tuple{Real,Real}},
+    rng::AbstractRNG
+)
+    numrejections = 0
+    rand!(pos, rng, domain)
+    yguess = rand(rng, 0.0, maxvalue)
+    ytarget = target(pos...)[1] # Target should return a single float, but in
+    while yguess > ytarget
+        numrejections += 1
+        rand!(pos, rng, domain)
+        yguess = rand(rng, 0.0, maxvalue)
+        ytarget = target(pos...)[1]
+    end
+    return pos, numrejections
+end
+
+function rejectionsample(
+    rng::AbstractRNG,
+    target::Any,
+    maxvalue::Real,
+    x0::Real,
+    xf::Real,
+    y0::Real,
+    yf::Real,
+)
+    numrejections = 0
+    x = rand(rng, x0, xf)
+    y = rand(rng, y0, yf)
+    u = rand(rng, 0.0, maxvalue)
+    t = target(x, y)
+    while u > t
+        numrejections += 1
+        x = rand(rng, x0, xf)
+        y = rand(rng, y0, yf)
+        u = rand(rng, 0.0, maxvalue)
+        t = target(x, y)
+    end
+    return x, y, numrejections
+end
+function rejectionsample(
+    rng::AbstractRNG,
+    target::Any,
+    maxvalue::Real,
+    x0::Real,
+    xf::Real,
+    y0::Real,
+    yf::Real,
+    z0::Real,
+    zf::Real,
+)
+    numrejections = 0
+    x = rand(rng, x0, xf)
+    y = rand(rng, y0, yf)
+    z = rand(rng, z0, zf)
+    u = rand(rng, 0.0, maxvalue)
+    t = target(x, y, z)
+    while u > t
+        numrejections += 1
+        x = rand(rng, x0, xf)
+        y = rand(rng, y0, yf)
+        z = rand(rng, z0, zf)
+        u = rand(rng, 0.0, maxvalue)
+        t = target(x, y, z)
+    end
+    return x, y, z, numrejections
 end
 
 

@@ -67,7 +67,7 @@ Callback affect which terminates the integration and sets the return message to
 "OutofDomain".
 """
 function outofdomainaffect!(integrator)
-    integrator.p.userdata.retmsg = "OutofDomain"
+    integrator.p.retcode = 1
     terminate!(integrator)
 end
 
@@ -159,7 +159,7 @@ Callback affect which terminates the integration and sets the return message to
 "Relativistic".
 """
 function relativisticaffect!(integrator)
-    integrator.p.userdata.retmsg = "Relativistic"
+    integrator.p.retcode = 3
     terminate!(integrator)
 end
 
@@ -330,7 +330,7 @@ Callback affect which terminates the integration and sets the return message to
 "GCABreakDown".
 """
 function gcabreakdownaffect!(integrator)
-    integrator.p.userdata.retmsg = "GCABreakDown"
+    integrator.p.retcode = 2
     terminate!(integrator)
 end
 

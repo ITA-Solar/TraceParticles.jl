@@ -148,8 +148,8 @@ function (self::EMField1)(x, y, z)
 end
 
 
-struct EMField2{T}
-    itp::Vector{T}
+struct EMField2{T<:AbstractVector}
+    itp::T
 end
 function (self::EMField2)(x, y, z)
     ex = self.itp[4](x, y, z)

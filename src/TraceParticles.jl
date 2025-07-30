@@ -107,6 +107,10 @@ export
     SaveBatchAsCSV,
     SaveBatchAsHDF5,
     get_filename
+# parameterstructs.jl
+export
+    GCAParams,
+    ParticleParams
 # io.jl
 export
     h5_getall,

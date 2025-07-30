@@ -66,16 +66,6 @@ end
 
 
 #____/\_____/\_________________________________________________________________
-"""
-Convenience struct for storing user data in the parameters of a
-`DifferentialEquations` problem.
-
-For now contains only a return message `retmsg` to be edited by user-defined
-callbacks that terminate the simulation.
-"""
-mutable struct UserData
-    retmsg::String
-end
 
 """
 Convenience structure for storing the maximum value of some quantity during

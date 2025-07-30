@@ -93,7 +93,7 @@ ensembleprob_kwargs = Dict(
     :safetycopy => false,
     # How to choose initial condition of the particle
     :prob_func => DposMBvel(
-        rng, r_itp, r_itp, [xbounds, zbounds], maxval, tg_itp
+        rng, r_itp, r_itp, tg_itp, [xbounds, zbounds], maxval
     )
 )
 
@@ -154,7 +154,7 @@ minrtol = 1e-8
 # These are the columns of the results that should be exactly equal to the
 # answers, independent of machine.
 exactsyms = (
-    "acceptanceratio",
+    "nrejections",
     "charge",
     "mass",
     "retmsg",
