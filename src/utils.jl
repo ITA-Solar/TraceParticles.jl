@@ -230,5 +230,3 @@ function discretise(
     end
     return field
 end # function discretise
-
-

@@ -233,7 +233,7 @@ end
 
 # Compare the results of the particles that are errorprone
 #syms_errorpron = names(answersol1_df)
-syms_errorprone = unique([exactsyms..., minrtolsyms..., keys(rtols_errorprone)...])
+syms_errorprone = unique([exactsyms..., keys(rtols)..., keys(rtols_errorprone)...])
 nsyms_errorprone = length(syms)
 testres_errorprone = BitVector(undef, nsyms_errorprone)
 testres_errorprone .= 1

@@ -36,13 +36,13 @@ end
 """
 Draws x, y, and z positions from a given distribution using rejection sampling.
 """
-struct DposMBvel{T1<:AbstractRNG,T2,T3<:AbstractVector,T4<:Number}
+struct DposMBvel{T1<:AbstractRNG,T2,T3,T4<:AbstractVector,T5<:Number}
     rng::T1
     proposal_distr::T2
-    target_distr::T2
-    tg_itp::T2
-    domain::T3
-    max_value::T4
+    target_distr::T3
+    tg_itp::T3
+    domain::T4
+    max_value::T5
 end
 function (self::DposMBvel)(prob, i, repeat)
     if length(self.domain) == 2
