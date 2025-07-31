@@ -277,13 +277,13 @@ catch
     for i in eachindex(testres)
         str *= "$(testres[i]): $(syms[i])\n"
     end
-    @info str
+    @warn str
     str2 = ""
     for i in eachindex(testres)
         reldiff = abs.((df[totest, syms[i]] ./ answersol1_df[totest, syms[i]]) .-1)
         str2 *= "$(syms[i]) : $(maximum(reldiff)) : $(argmax(reldiff))\n"
     end
-    @info str2
+    @warn str2
 end
 # Test the initial energy of all particles
 @test all(isapprox.(e0, answersol1_e0; rtol=minrtol))
