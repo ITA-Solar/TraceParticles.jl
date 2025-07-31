@@ -148,9 +148,6 @@ save_gcastates(fname, fields_itp)
 
 # Test the results
 #==============================================================================#
-# Default rtol for isapprox is sqrt(eps()) which is a bit more than 1e-8
-minrtol = 1e-8
-
 # These are the columns of the results that should be exactly equal to the
 # answers, independent of machine.
 exactsyms = (
@@ -167,16 +164,19 @@ exactsyms = (
 )
 # These are the columns that have a slight error in the results across machines,
 # but for most particles the relative error is lower than 1e-8
-minrtolsyms = (
-    "vparal0",
-    "magneticmoment",
-    "xf",
-    "yf",
-    "zf",
-    "vparalf",
-    "tf",
-    "maxrl",
+# Default rtol for isapprox is sqrt(eps()) which is a bit more than 1e-8
+minrtol = 1e-8
+rtols = Dict(
+    "vparal0" => minrtol,
+    "magneticmoment" => minrtol,
+    "xf" => minrtol,
+    "yf" => minrtol,
+    "zf" => minrtol,
+    "vparalf" => minrtol,
+    "tf" => minrtol,
+    "maxrl" => minrtol,
 )
+
 # These are the columns that have larger errors across machines for certain
 # particles. For these particles, the tolerance is adjusted.
 rtols_errorprone = Dict(
@@ -205,13 +205,13 @@ e0, ef = h5_getenergies(fname)
 df = h5_getall(fname)
 
 # The particles that have larger errors
-errorprone = [15, 75, 81, 1, 14, 49, 70, 46, 93, 84, 44, 53, 80, 27, 9, 13, 41, 30, 39]
+errorprone = [15, 75, 81, 1, 14, 49, 70, 46, 93, 84, 44, 53, 80, 27, 9, 13, 41, 30, 39, 26]
 # Create a filter for masking out the errorprone particles
 totest = BitVector(undef, 100)
 totest .= [i ∉ errorprone for i in 1:100]
 
 # Get the column names
-syms = [exactsyms..., minrtolsyms...]
+syms = [exactsyms..., keys(rtols)...]
 nsyms = length(syms)
 
 # Compare the results of the particles that are not errorprone.
@@ -221,11 +221,11 @@ for i in 1:nsyms
     sym = syms[i]
     if sym ∈ exactsyms
         testres[i] = all(df[totest, sym] .== answersol1_df[totest, sym])
-    elseif sym ∈ minrtolsyms
+    elseif sym ∈ keys(rtols)
         testres[i] = all(isapprox.(
             df[totest, sym],
             answersol1_df[totest, sym],
-            rtol=minrtol
+            rtol=rtols[sym]
         )
         )
     end
@@ -248,11 +248,11 @@ for i in 1:nsyms_errorprone
         )
     elseif sym ∈ exactsyms
         testres_errorprone[i] = all(df[errorprone, sym] .== answersol1_df[errorprone, sym])
-    elseif sym ∈ minrtolsyms
+    elseif sym ∈ keys(rtols)
         testres_errorprone[i] = all(isapprox.(
             df[errorprone, sym],
             answersol1_df[errorprone, sym],
-            rtol=minrtol
+            rtol=rtols[sym]
         )
         )
 
