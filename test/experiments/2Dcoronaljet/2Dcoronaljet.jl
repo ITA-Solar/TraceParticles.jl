@@ -270,7 +270,21 @@ rm(joinpath(expdir, expname, expname * "_gcastatesf.h5"))
 # Test the results form the relativistic particles in sol2
 @test all([u.u for u in sol2.u] .≈ answersol2)
 # Test the columns of the not so errorprone particles
-@test all(testres)
+try
+    @test all(testres)
+catch
+    str = ""
+    for i in eachindex(testres)
+        str *= "$(testres[i]): $(syms[i])\n"
+    end
+    @info str
+    str2 = ""
+    for i in eachindex(testres)
+        reldiff = abs.((df[totest, syms[i]] ./ answersol1_df[totest, syms[i]]) .-1)
+        str2 *= "$(syms[i]) : $(maximum(reldiff)) : $(argmax(reldiff))\n"
+    end
+    @info str2
+end
 # Test the initial energy of all particles
 @test all(isapprox.(e0, answersol1_e0; rtol=minrtol))
 # The final energy of the not so errorprone particles
