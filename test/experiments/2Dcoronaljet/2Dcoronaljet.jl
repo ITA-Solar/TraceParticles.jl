@@ -208,7 +208,7 @@ df = h5_getall(fname)
 errorprone = [
     15, 75, 81, 1, 14, 49, 70, 46, 93,
     84, 44, 53, 80, 27, 9, 13, 41, 30,
-    39, 26, 6, 5, 4
+    39, 26, 7
 ]
 # Create a filter for masking out the errorprone particles
 totest = BitVector(undef, 100)
