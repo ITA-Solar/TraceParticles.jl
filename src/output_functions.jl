@@ -68,11 +68,13 @@ charge, mass and magnetic moment. We set the required "rerun" return argument
 to false.
 """
 function output_func_lightweight(sol, i)
-    u0 = first(sol)
-    uf = last(sol)
+    x0, y0, z0, vparal0 = first(sol)
+    xf, yf, zf, vparalf = last(sol)
     return (
-        u0=u0,
-        uf=uf,
+        x0=x0, y0=y0, z0=z0, vparal0=vparal0,
+        xf=xf, yf=yf, zf=zf, vparalf=vparalf,
+        nt=length(sol.t),
+        tf=last(sol.t),
         charge=sol.prob.p.charge,
         mass=sol.prob.p.mass,
         magneticmoment=sol.prob.p.magneticmoment,
