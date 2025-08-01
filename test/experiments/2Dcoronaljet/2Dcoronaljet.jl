@@ -206,7 +206,7 @@ df = h5_getall(fname)
 
 # The particles that have larger errors
 errorprone = [
-    15, 75, 81, 1, 14, 49, 70, 46, 93, 84, 44, 53, 80, 27, 9, 13, 41, 30, 39, 26, 6
+    15, 75, 81, 1, 14, 49, 70, 46, 93, 84, 44, 53, 80, 27, 9, 13, 41, 30, 39, 26, 6, 5
     ]
 # Create a filter for masking out the errorprone particles
 totest = BitVector(undef, 100)
@@ -282,7 +282,11 @@ str2 = ""
 for i in eachindex(testres)
     global str2
     reldiff = abs.((df[totest, syms[i]] ./ answersol1_df[totest, syms[i]]) .-1)
-    str2 *= "$(syms[i]) : $(maximum(reldiff)) : $(argmax(reldiff))\n"
+    mask = findall( x -> x >= minrtol, reldiff)
+    str2 *= "$(syms[i]):\n"
+    for j in mask
+        str2 *= "$  $j : (reldiff[j])\n"
+    end
 end
 @warn str2
 @test all(testres)
