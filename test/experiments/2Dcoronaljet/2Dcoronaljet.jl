@@ -285,7 +285,7 @@ for i in eachindex(testres)
     mask = findall( x -> x >= minrtol, reldiff)
     str2 *= "$(syms[i]):\n"
     for j in mask
-        str2 *= "$  $j : (reldiff[j])\n"
+        str2 *= "  $j : $(reldiff[j])\n"
     end
 end
 @warn str2
