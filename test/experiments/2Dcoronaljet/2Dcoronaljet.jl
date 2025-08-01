@@ -8,7 +8,6 @@ using TraceParticles
 using StaticArrays
 
 expdir = Base.source_dir()
-include(expdir * "/../../testfields.jl")
 
 # Create interpolation objects
 # To create electron density interpolators demands EoS-tables so we avoid that.
@@ -33,7 +32,7 @@ fields_itp = load_object(expdir * "/cs_BE.jld2")
 tg_itp = load_object(expdir * "/cs_tg_normfalse.jld2")
 r_itp = load_object(expdir * "/cs_r_normfalse.jld2")
 
-fields_itp = EMField2(fields_itp)
+fields_itp = ElectromagneticFieldInterpolator(fields_itp)
 
 dtsnap = 1e-2 # in code units (hs)
 tspan = (0.0, dtsnap * 100)   # Simulation time-span
@@ -274,17 +273,17 @@ rm(joinpath(expdir, expname, expname * "_gcastatesf.h5"))
 @test all([u.u for u in sol2.u] .≈ answersol2)
 # Test the columns of the not so errorprone particles
 str = ""
-#for i in eachindex(testres)
-#    global str
-#    str *= "$(testres[i]): $(syms[i])\n"
-#end
-#@warn str
-#str2 = ""
-#for i in eachindex(testres)
-#    global str2
-#    reldiff = abs.((df[totest, syms[i]] ./ answersol1_df[totest, syms[i]]) .-1)
-#    str2 *= "$(syms[i]) : $(maximum(reldiff)) : $(argmax(reldiff))\n"
-#end
+for i in eachindex(testres)
+    global str
+    str *= "$(testres[i]): $(syms[i])\n"
+end
+@warn str
+str2 = ""
+for i in eachindex(testres)
+    global str2
+    reldiff = abs.((df[totest, syms[i]] ./ answersol1_df[totest, syms[i]]) .-1)
+    str2 *= "$(syms[i]) : $(maximum(reldiff)) : $(argmax(reldiff))\n"
+end
 @warn str2
 @test all(testres)
 # Test the initial energy of all particles
