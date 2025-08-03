@@ -9,11 +9,9 @@
 # Contains functions for reading Bifrost snapshots and creating interpoaltion
 # objects from the snapshot-fields. Depends on BifrostTools.jl.
 #-------------------------------------------------------------------------------
-
-
 function get_br_var_interpolator(
     brxp::BifrostExperiment,
-    snap::Integer,
+    snaps::Union{Integer,AbstractVector},
     variable::String,
     ;
     itp_type=BSpline(Linear()),
@@ -27,26 +25,28 @@ function get_br_var_interpolator(
         if destagger
             error("Electron density is not staggered. Set `destagger=false`")
         else
-            var = get_electron_density(brxp, snap; units=units, kwargs...)
+            var = get_electron_density(brxp, snaps; units=units, kwargs...)
         end
     elseif variable == "eparal"
-        var = get_eparal(brxp, snap; units=units, destagger=destagger, kwargs...)
+        var = get_eparal(brxp, snaps; units=units, destagger=destagger, kwargs...)
     else
         var = get_var(
             brxp,
-            snap,
+            snaps,
             variable;
             units=units,
             destagger=destagger,
             kwargs...
         )
     end
+    var = stack(var)
     var = dropdims(var)
     br_axes = get_axes(brxp, units=units)
     br_axes = dropdims(br_axes)
-    #var_itp = linear_interpolation(
-    #    br_axes, var, extrapolation_bc=itp_bc
-    #    )
+    if snaps isa AbstractVector
+        times = get_var(brxp, snaps, "t"; units=units)
+        br_axes = (br_axes..., times)
+    end
     if normalise
         if !(variable in ("ne", "r", "tg"))
             error("Normalisation of vector components not implemented")
@@ -83,7 +83,6 @@ function get_br_var_interpolator(
         #var_itp = interpolate(var, itp_type)
         #var_itp = extrapolate(scale(var_itp, br_axes...), itp_bc)
     end
-
     var_itp = itp_func(br_axes, var, extrapolation_bc=itp_bc)
     return var_itp, br_axes
 end

@@ -58,7 +58,10 @@ include("runs.jl")
 
 # utils.jl
 export
-    ElectromagneticFieldInterpolator
+    ElectromagneticFieldInterpolator,
+    StaticInterpolation,
+    XZInterpolation,
+    StaticXZInterpolation
 # runs.jl
 export
     rerun
@@ -120,8 +123,7 @@ export
     h5_getinitialstate,
     h5_getfinalstate,
     save_gcastates,
-    create_bifrost_itps,
-    XZInterpolation
+    create_bifrost_itps
 # dataprosessing.jl
 export
     initialstate_retmsg,

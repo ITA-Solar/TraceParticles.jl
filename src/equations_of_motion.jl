@@ -94,10 +94,10 @@ parameters `p` contains the charge and mass of the particle, and an
 interpolation functor giving the magnetic and electric field by passing the 
 position coordinates.
 """
-function lorentzforce!(du, u, p, _)
+function lorentzforce!(du, u, p, t)
     q, m = p.charge, p.mass
     v = SVector(u[4], u[5], u[6]) # The velocity vector
-    E, B = p.electromagneticfield(u[1], u[2], u[3])
+    E, B = p.electromagneticfield(u[1], u[2], u[3], t)
     dvdt = q / m * (E + v × B)
     dxdt = v
     du .= [dxdt; dvdt]
@@ -112,26 +112,28 @@ by the Lorentz force), the statevector `u` is reduced from 6 DoF to 4, namely
 the guiding centre position and the guiding centre velocity parallel to the 
 magnetic field, `[Rx, Ry, Rz, vparal]`, respectively.
 
-The parameters `p` are the particle charge, mass and magnetic moment (which is 
-assumed to be constant in the GCA), along with the interpolation functor 
-from Interpolations.jl giving the magnetic and electric field at an arbitrary 
-position. The functor should give a 6-component vector, where the first 3
-components represents the magnetic field and the last 3 the electric field.
+The parameters `p` are the particle charge, mass and magnetic moment (which is
+assumed to be constant in the GCA), along with an interpolation functor/functor
+taking the arguments `(x, y, z, t)` and giving the magnetic and electric field
+at an arbitrary position. The function/functor should return two
+`AbstractVector`s, representing the 3-component electric and magnetic field,
+respectievely. If the function/functor returns `StaticArrays`, `fieldgradients`
+will also return `StaticArrays`.
 
 The function uses ForwardDiff and Interpolations to calculate gradients.
 """
-function guidingcentreapproximation!(du, u, p, _)
-    R = SVector(u[1], u[2], u[3]) # The gyrocentre position vector
+function guidingcentreapproximation!(du, u, p, t)
+    x, y, z = u[1], u[2], u[3] # The guiding centre position vector
     vparal = u[4] # Particle velocity parallel to the magnetic field
-    # Extract parameters
     q, m, μ = p.charge, p.mass, p.magneticmoment
     # Calculate the field gradients.
-    ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(R, p.electromagneticfield)
-
+    ∇b, ∇ExB, ∇B, B_vec, E_vec, ∂b, ∂ExB, _ = fieldgradients(
+        x, y, z, t, p.electromagneticfield
+    )
     # We index `du` with 1:4 to allow aribitrary size of u.
     # (This is necessary when doing hybrid swtich method).
     du[1:4] .= gca_drift_and_acceleration(
-        ∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ
+        ∇b, ∇ExB, ∇B, B_vec, E_vec, ∂b, ∂ExB, vparal, q, m, μ
     )
     return nothing
 end

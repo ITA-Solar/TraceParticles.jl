@@ -20,6 +20,7 @@ using StaticArrays
 using Test
 using TraceParticles
 
+include(joinpath(Base.source_dir(), "../testfields.jl"))
 
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS
@@ -48,20 +49,21 @@ L = 0.4 # Mirroring length
 # INITIAL CONDITIONS
 vel0 = [0.0, 0.1, 0.1]
 rL = mass * √(vel0[1]^2 + vel0[2]^2) / (charge * B0)
-pos0 = [-rL, 0.0, 0.0]
+pos0 = [-1rL, 0.0, 0.0]
 #pos0 = [-100rL * charge / mass, 0.0, 0.0]
 
 #...............................................
 # SPATIAL PARAMETERS (x, y, z)
 numdims = 3
 # Lower bounds of the three spatial axes
-a = 2.1L
+a = 2 * 2.1L
 xi0 = (-a, -a, -a)
 # Upper bound of the three spatial axes
 xif = (a, a, a)
 # Grid resolution of the axes
 #n = (10, 10, 2)
-ni = (100, 100, 100)
+ni = (20, 20, 20)
+#ni = (3, 3, 3)
 
 #...............................................
 # SOLVER CONDITIONS
@@ -98,7 +100,9 @@ else
             extrapolation_bc=Flat()
         )
     end
-    emfields_itp = EMField2(emfields_itp)
+    emfields_itp = ElectromagneticFieldInterpolator(
+        [StaticInterpolation(itp) for itp in emfields_itp]
+    )
 end
 #-------------------------------------------------------------------------------
 # SIMULATION DURATION

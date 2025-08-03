@@ -42,7 +42,7 @@ function save_gcastates(
         df = DataFrame(CSV.File(filename))
         dfgca0, dfgcaf = GCAState(
             df,
-            fields_itp;
+            electromagneticfield;
             components=components,
         )
         CSV.write(filename * "_gcastate0.csv", dfgca0)
@@ -376,37 +376,6 @@ end
 #
 # Creating interpolation objects from Bifrost input (MHD snapshots)
 #
-
-"""
-    XZInterpolation
-An interpolator that calls `(x, z)` if called with `(x, y, z)`. Also calls
-`(x, z)` if called with `(x, z)`.
-
-## Fields
-- itp::AbstractInterpolation
-
-## Examples
-```Julia
-julia> xzitp = XZInterpolation(itp)
-
-julia> xzitp(.5, 1.0, .5) == xzitp(.5, .5) == xzitp(.5, .5, .5)
-true
-```
-"""
-struct XZInterpolation{T}
-    itp::T
-end
-function (self::XZInterpolation)(x::Real, z::Real)
-    self.itp(x, z)
-end
-function (self::XZInterpolation)(x::Real, y::Real, z::Real)
-    self.itp(x, z)
-end
-function Base.ndims(itp::XZInterpolation)
-    return ndims(itp.itp)
-end
-
-
 """
     create_bifrost_interpolators(
         brxp::BifrostExperiment,
@@ -429,7 +398,7 @@ and save them as JLD2-files.
 """
 function create_bifrost_itps(
     brxp::BifrostExperiment,
-    snap::Integer,
+    snaps::Union{Integer,AbstractVector},
     itp_type::Interpolations.InterpolationType,
     itp_bc::Union{
         Interpolations.BoundaryCondition,
@@ -447,18 +416,29 @@ function create_bifrost_itps(
             "Length of `variables` and `normalise` and `destagger` must be equal."
         ))
     end
+    if length(snaps) == 1
+        if xzinterpolation
+            wrapper = StaticXZInterpolation
+        else
+            wrapper = StaticInterpolation
+        end
+    elseif xzinterpolation
+        wrapper = XZInterpolation
+    else
+        wrapper = nothing
+    end
     # Create interpolator for the electromagnetic field
     if "BE" ∈ variables
         interpolator = get_br_emfield_vecof_interpolators(
             brxp,
-            snap,
+            snaps,
             itp_type=itp_type,
             itp_bc=itp_bc,
             units=units,
             destagger=true,
         )
-        if ndims(first(interpolator)) == 2 && xzinterpolation
-            interpolator = [XZInterpolation(itp) for itp in interpolator]
+        if !isnothing(wrapper)
+            interpolator = [wrapper(itp) for itp in interpolator]
         end
         @save string(filename, "_BE.jld2") interpolator
     end
@@ -472,7 +452,7 @@ function create_bifrost_itps(
     for (var, norm, dstgr) in zip(variables, normalise, destagger)
         interpolator, _ = get_br_var_interpolator(
             brxp,
-            snap,
+            snaps,
             var,
             itp_type=itp_type,
             itp_bc=itp_bc,
@@ -480,8 +460,8 @@ function create_bifrost_itps(
             normalise=norm,
             destagger=dstgr,
         )
-        if ndims(interpolator) == 2 && xzinterpolation
-            interpolator = XZInterpolation(interpolator)
+        if !isnothing(wrapper)
+            interpolator = wrapper(interpolator)
         end
         @save string(filename, "_$(var)_norm$(norm).jld2") interpolator
     end

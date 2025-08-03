@@ -489,28 +489,40 @@ end
 
 """
     fieldgradients(
-        R::AbstractVector,
+        x::Real,
+        y::Real,
+        z::Real,
+        time::Real,
         electromagneticfield::Any
     )
 Calculate gradients of the electromagnetic field given by the function/functor
 `electromagneticfield`. The gradient that are calculated are
-- ∇b, ∇ExB and ∇B
+- ∇b, ∇ExB, ∇B, ∂b, ∂ExB, ∂B, where '∇' is the 3D spatial gradient and '∂' is
+the time derivative.
 
 The magnetic and electric field vectors are created by the call
 ```
-E, B = electromagneticfield(R[1], R[2], R[3])
+E, B = electromagneticfield(x, y, z, time)
 ```
+
+Return the gradients as `StaticArrays` if `electromagneticfield` returns
+`StaticArrays`.
 """
 function fieldgradients(
-    R::AbstractVector,
+    x::Real,
+    y::Real,
+    z::Real,
+    time::Real,
     electromagneticfield::Any
 )
     # Interpolate the electromagnetic field to the guiding centre position.
-    E_vec, B_vec = electromagneticfield(R[1], R[2], R[3])
+    E_vec, B_vec = electromagneticfield(x, y, z, time)
+
+    spacetime = SVector{4}(x, y, z, time)
 
     # Calculate the field gradients.
-    J = ForwardDiff.jacobian(R) do x
-        E_vec_fd, B_vec_fd = electromagneticfield(x[1], x[2], x[3])
+    J = ForwardDiff.jacobian(spacetime) do x
+        E_vec_fd, B_vec_fd = electromagneticfield(x[1], x[2], x[3], x[4])
         B_fd = norm(B_vec_fd)
         b_fd = B_vec_fd / B_fd
         out = vcat(b_fd, E_vec_fd × b_fd / B_fd)
@@ -525,7 +537,12 @@ function fieldgradients(
     )
     ∇B = SVector{3}(J[7], J[14], J[21])
 
-    return ∇b, ∇ExB, ∇B, B_vec, E_vec
+    # The time derivatives
+    ∂b = SVector{3}(J[22], J[23], J[24])
+    ∂ExB = SVector{3}(J[25], J[26], J[27])
+    ∂B = J[28]
+
+    return ∇b, ∇ExB, ∇B, B_vec, E_vec, ∂b, ∂ExB, ∂B
 end
 
 """
@@ -534,17 +551,19 @@ Calculates and returns the perpendicular drifts in the guiding centre
 approximation
 """
 function drifts(
-    R::AbstractVector,
+    x::Real,
+    y::Real,
+    z::Real,
+    t::Real,
     vparal::Real,
     q::Real,
     m::Real,
     μ::Real,
     electromagneticfield::Any,
 )
-    ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(
-        R, electromagneticfield
+    ∇b, ∇ExB, ∇B, B_vec, E_vec, ∂b, ∂ExB, _ = fieldgradients(
+        x, y, z, t, electromagneticfield
     )
-
     B = norm(B_vec)
     B_inv = 1 / B
     b = B_vec * B_inv
@@ -553,8 +572,8 @@ function drifts(
 
     vparal_vec = vparal * b
     total_velocity = vparal_vec + ExBdrift
-    dbdt = ∇b * total_velocity
-    dExBdt = ∇ExB * total_velocity
+    dbdt = ∇b * total_velocity + ∂b
+    dExBdt = ∇ExB * total_velocity + ∂ExB
 
     ∇Bdrift = gradbdrift(b, ∇B, μ, B_inv, q_inv)
     Rdrift = curvaturedrift(b, dbdt, vparal, B_inv, q_inv, m)
@@ -576,8 +595,9 @@ end
         μ          ::Real,
         )
 Calculate the drifts and accelerations of a charged particle in a 
-electromagnetic field. The function returns the total time derivative
-of the guiding centre position and parallel velocity.
+electromagnetic fiel using the guiding centre approximation. The function
+returns the total time derivative of the guiding centre position and parallel
+velocity in the most computationally efficient way.
 """
 function gca_drift_and_acceleration(
     ∇b::AbstractMatrix,
@@ -585,6 +605,8 @@ function gca_drift_and_acceleration(
     ∇B::AbstractVector,
     B_vec::AbstractVector,
     E_vec::AbstractVector,
+    ∂b::AbstractVector,
+    ∂ExB::AbstractVector,
     vparal::Real,
     q::Real,
     m::Real,
@@ -604,12 +626,11 @@ function gca_drift_and_acceleration(
     ∇Bdrift = gradbdrift(b, ∇B, μ, B_inv, q_inv)
     #∇Bdrift = q_inv*B_inv*μ*(b × ∇B)
 
-    # Total time derivatives. Assumes ∂/∂t = 0, and neglects other
-    # drifts than ExB
+    # Total time derivatives. Neglects other drifts than ExB
     vparal_vec = vparal * b
     total_velocity = vparal_vec + ExBdrift
-    dbdt = ∇b * total_velocity
-    dExBdt = ∇ExBdrift * total_velocity
+    dbdt = ∇b * total_velocity + ∂b
+    dExBdt = ∇ExBdrift * total_velocity + ∂ExB
     #dbdt = vparal * (∇b * b) + ∇b*ExBdrift
     #dExBdt = vparal * (∇ExB * b) + ∇ExB*ExBdrift
 

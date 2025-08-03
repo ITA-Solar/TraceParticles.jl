@@ -96,14 +96,16 @@ else
         )
     end
 end
-emfields_itp = EMField2(emfields_itp)
+emfields_itp = ElectromagneticFieldInterpolator(
+    [StaticInterpolation(itp) for itp in emfields_itp]
+)
 
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
 # Set initial position and velocities
 E, B = emfields_itp(R0[1], R0[2], R0[3])
 μ = TraceParticles.magneticmoment(vperp, mass, norm(B))
-u0 = TraceParticles.get_fullorbit(B, E, R0, vparal, μ, charge, mass, pi/2)
+u0 = TraceParticles.get_fullorbit(B, E, R0, vparal, μ, charge, mass, pi / 2)
 u0 = [u0[1], u0[2], u0[3], u0[4], u0[5], u0[6]]  # Make not static
 
 fo_params = (charge=charge, mass=mass, electromagneticfield=emfields_itp)

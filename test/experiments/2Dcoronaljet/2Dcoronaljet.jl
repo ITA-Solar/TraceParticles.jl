@@ -32,7 +32,9 @@ fields_itp = load_object(expdir * "/cs_BE.jld2")
 tg_itp = load_object(expdir * "/cs_tg_normfalse.jld2")
 r_itp = load_object(expdir * "/cs_r_normfalse.jld2")
 
-fields_itp = ElectromagneticFieldInterpolator(fields_itp)
+fields_itp = ElectromagneticFieldInterpolator(
+    [StaticInterpolation(itp) for itp in fields_itp]
+)
 
 dtsnap = 1e-2 # in code units (hs)
 tspan = (0.0, dtsnap * 100)   # Simulation time-span
@@ -279,18 +281,18 @@ for i in eachindex(testres)
     global str
     str *= "$(testres[i]): $(syms[i])\n"
 end
-@warn str
+#@warn str
 str2 = ""
 for i in eachindex(testres)
     global str2
-    reldiff = abs.((df[totest, syms[i]] ./ answersol1_df[totest, syms[i]]) .-1)
-    mask = findall( x -> x >= minrtol, reldiff)
+    reldiff = abs.((df[totest, syms[i]] ./ answersol1_df[totest, syms[i]]) .- 1)
+    mask = findall(x -> x >= minrtol, reldiff)
     str2 *= "$(syms[i]):\n"
     for j in mask
         str2 *= "  $j : $(reldiff[j])\n"
     end
 end
-@warn str2
+#@warn str2
 @test all(testres)
 # Test the initial energy of all particles
 @test all(isapprox.(e0, answersol1_e0; rtol=minrtol))

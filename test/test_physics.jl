@@ -256,26 +256,45 @@ end
     end
 
     @testset "fieldgradients" begin
-        R = SA[1, 2, 3]
-        ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(
-            R,
-            (x, y, z) -> ([x / 2, 0, 0], [0, 0, 2y])
+        x, y, z, t = 1.0, 2.0, 3.0, 0.0
+        ∇b, ∇ExB, ∇B, B_vec, E_vec, ∂b, ∂ExB, ∂B = fieldgradients(
+            x, y, z, t,
+            (x, y, z, t) -> ([x / 2, 0, 0], [0, 0, 2y])
         )
         @test isapprox(B_vec, [0.0, 0.0, 4.0], atol=1e-6)
         @test isapprox(E_vec, [0.5, 0.0, 0.0], atol=1e-6)
         @test isapprox(∇B, [0.0, 2.0, 0.0], atol=1e-6)
         @test isapprox(∇b, [0 0 0; 0 0 0; 0 0 0], atol=1e-6)
         @test isapprox(∇ExB, [0 0 0; -1/8 1/16 0; 0 0 0], atol=1e-6)
+        @test isapprox(∂b, [0.0, 0.0, 0.0], atol=1e-6)
+        @test isapprox(∂ExB, [0.0, 0.0, 0.0], atol=1e-6)
+        @test isapprox(∂B, 0.0, atol=1e-6)
+
+        # test the time derivation
+        x, y, z, t = 1.0, 2.0, 3.0, 4.0
+        ∇b, ∇ExB, ∇B, B_vec, E_vec, ∂b, ∂ExB, ∂B = fieldgradients(
+            x, y, z, t,
+            (x, y, z, t) -> ([t, 0, 0], [0, 0, 2.0t^2])
+        )
+        @test isapprox(B_vec, [0.0, 0.0, 32.0], atol=1e-6)
+        @test isapprox(E_vec, [4, 0, 0], atol=1e-6)
+        @test isapprox(∇B, [0.0, 0, 0.0], atol=1e-6)
+        @test isapprox(∇b, [0 0 0; 0 0 0; 0 0 0], atol=1e-6)
+        @test isapprox(∇ExB, [0 0 0; 0 0 0; 0 0 0], atol=1e-6)
+        @test isapprox(∂b, [0.0, 0.0, 0.0], atol=1e-6)
+        @test isapprox(∂ExB, [0.0, 1 / 32, 0.0], atol=1e-6)
+        @test isapprox(∂B, 16.0, atol=1e-6)
     end
 
     @testset "drifts" begin
-        R = SA[1, 2, 3]
+        x, y, z, t = 1.0, 2.0, 3.0, 0.0
         vparal = 1
         q = 1
         m = 1
         μ = 1
-        emfield(x, y, z) = (SA[x/2, 0, 0], SA[0, 0, 2y])
-        ExBdrift, ∇Bdrift, Rdrift, Pdrift = drifts(R, vparal, q, m, μ, emfield)
+        emfield(x, y, z, t) = ([x / 2, 0, 0], [0, 0, 2y])
+        ExBdrift, ∇Bdrift, Rdrift, Pdrift = drifts(
+            x, y, z, t, vparal, q, m, μ, emfield)
 
         v_E = [0, -1 / 8, 0]
         v_∇B = [-μ / 2q, 0, 0]
@@ -288,28 +307,38 @@ end
     end
 
     @testset "gca_drift_and_acceleration" begin
-        R = SA[1, 2, 3]
+        x, y, z, t = 1.0, 2.0, 3.0, 1.0
         vparal = 1
         q = 1
         m = 1
         μ = 1
-        ∇b, ∇ExB, ∇B, B_vec, E_vec = fieldgradients(
-            R,
-            (x, y, z) -> (SA[x/2, 0, 0], SA[0, 0, 2y]),
+        ∇b, ∇ExB, ∇B, B_vec, E_vec, ∂b, ∂ExB, ∂B = fieldgradients(
+            x, y, z, t,
+            (x, y, z, t) -> ([x * t / 2, 0, 0], [0, 0, 2y * t^2]),
         )
-        result = gca_drift_and_acceleration(∇b, ∇ExB, ∇B, B_vec, E_vec, vparal, q, m, μ)
-
+        dellb_addition = [0.1, 0, 0]
+        result = gca_drift_and_acceleration(
+            ∇b, ∇ExB, ∇B, B_vec, E_vec,
+            ∂b + dellb_addition, ∂ExB, vparal,
+            q, m, μ
+        )
+        B = 4.0
+        b = [0, 0, 1]
         v_E = [0, -1 / 8, 0]
         v_∇B = [-μ / 2q, 0, 0]
-        v_C = 0
-        v_P = [m / q * 1 / 512, 0, 0]
+        v_C = 0 .+ (m * vparal / (q * B)) * b × dellb_addition
+        v_P = [m / q * 1 / 512, 0, 0] - [m / (q * B) * 0.125, 0, 0]
         vparal_vec = [0, 0, vparal]
         @test isapprox(
             result[1:3],
             vparal_vec .+ v_E .+ v_∇B .+ v_C .+ v_P,
             atol=1e-6
         )
-        @test isapprox(result[4], 0.0, atol=1e-6)
+        @test isapprox(
+            result[4],
+            dot(v_E + v_∇B, dellb_addition),
+            atol=1e-6
+        )
     end
 
     @testset "cosineof_pitchangle" begin
