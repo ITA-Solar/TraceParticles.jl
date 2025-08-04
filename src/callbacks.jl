@@ -91,12 +91,12 @@ mutable struct RelativisticConditionGCA{T<:Real}
         return new{T}(fraction * mass * csqrd)
     end
 end
-function (self::RelativisticConditionGCA)(u, _, integrator)
+function (self::RelativisticConditionGCA)(u, t, integrator)
     Rx, Ry, Rz, vparal = u[1:4]
     μ = integrator.p.magneticmoment
     mass = integrator.p.mass
 
-    E_vec, B_vec = integrator.p.electromagneticfield(Rx, Ry, Rz)
+    E_vec, B_vec = integrator.p.electromagneticfield(Rx, Ry, Rz, t)
     v_E = exbdrift(B_vec, E_vec)
     B = norm(B_vec)
     vperp = perpendicular_velocity(μ, mass, B)
@@ -278,6 +278,7 @@ function (self::GCABreakDownCondition)(u, t, integrator)
     R = SVector(u[1], u[2], u[3]) # The gyrocentre position vector
     ratio = scalesratio(
         R,
+        t,
         integrator.p.mass,
         integrator.p.charge,
         integrator.p.magneticmoment,

@@ -44,23 +44,25 @@ function larmorradius(
 end
 function larmorradius(
     R::AbstractVector,
+    t::Real,
     μ::Real,
     q::Real,
     m::Real,
     emfields
 )
-    B = norm(emfields(R[1], R[2], R[3])[2])
+    B = norm(emfields(R[1], R[2], R[3], t)[2])
     vperp = perpendicular_velocity(μ, m, B)
     return larmorradius(m, vperp, q, B)
 end
 function larmorradius(
     position::AbstractVector,
     velocity::AbstractVector,
+    t::Real,
     mass::Real,
     charge::Real,
     emfields,
 )
-    E, B = emfields(position[1], position[2], position[3])
+    E, B = emfields(position[1], position[2], position[3], t)
     return larmorradius(velocity, mass, charge, E, B)
 end
 
@@ -83,6 +85,8 @@ field.
     perpendicular_velocity(velocity, magneticfield, electricfield)
     perpendicular_velocity(magnetic_moment, mass, magneticfieldstrength)
     perpendicular_velocity(velocity, b_vec, vparal)
+    perpendicular_velocity(R, t, magnetic_moment, mass, emfields)
+    perpendicular_velocity(pos, vel, t, emfields)
 """
 function perpendicular_velocity(
     magnetic_moment::Real,
@@ -110,6 +114,25 @@ function perpendicular_velocity(
     vparal = vel ⋅ b_vec
     vperp = perpendicular_velocity(vel_in_E_frame, b_vec, vparal)
     return vperp
+end
+function perpendicular_velocity(
+    R::AbstractVector,
+    t::Real,
+    magnetic_moment::Real,
+    mass::Real,
+    emfields,
+)
+    B = norm(emfields(R[1], R[2], R[3], t)[2])
+    return perpendicular_velocity(magnetic_moment, mass, B)
+end
+function perpendicular_velocity(
+    pos::AbstractVector,
+    vel::AbstractVector,
+    t::Real,
+    emfields,
+)
+    electricfield, magneticfield =  emfields(pos[1], pos[2], pos[3], t)
+    return perpendicular_velocity(vel, magneticfield, electricfield)
 end
 
 """
@@ -144,11 +167,12 @@ end
 function magneticmoment(
     position::AbstractVector,
     velocity::AbstractVector,
+    t::Real,
     mass::Real,
     emfields
 )
     electricfield, magneticfield = emfields(
-        position[1], position[2], position[3]
+        position[1], position[2], position[3], t
     )
     return magneticmoment(velocity, mass, electricfield, magneticfield)
 end
@@ -167,11 +191,12 @@ function characteristicfieldlength(
 end
 function characteristicfieldlength(
     position::AbstractVector,
+    t::Real,
     emfields,
 )
-    fieldstrength = norm(emfields(position[1], position[2], position[3])[2])
+    fieldstrength = norm(emfields(position[1], position[2], position[3], t)[2])
     grad = ForwardDiff.gradient(position) do x
-        norm(emfields(x[1], x[2], x[3])[2])
+        norm(emfields(x[1], x[2], x[3], t)[2])
     end
     return characteristicfieldlength(fieldstrength, grad)
 end
@@ -212,26 +237,28 @@ function scalesratio(
 end
 function scalesratio(
     R::AbstractVector,
+    t::Real,
     mass::Real,
     charge::Real,
     magneticmoment::Real,
     emfields,
 )
-    B = norm(emfields(R[1], R[2], R[3])[2])
+    B = norm(emfields(R[1], R[2], R[3], t)[2])
     vperp = perpendicular_velocity(magneticmoment, mass, B)
     ∇B = ForwardDiff.gradient(R) do x
-        norm(emfields(x[1], x[2], x[3])[2])
+        norm(emfields(x[1], x[2], x[3], t)[2])
     end
     scalesratio(B, ∇B, vperp, charge, mass)
 end
 function scalesratio(
     pos::AbstractVector,
     vel::AbstractVector,
+    t::Real,
     mass::Real,
     charge::Real,
     emfields
 )
-    electricfield, magneticfield = emfields(pos[1], pos[2], pos[3])
+    electricfield, magneticfield = emfields(pos[1], pos[2], pos[3], t)
     vperp = norm(perpendicular_velocity(
         vel,
         magneticfield,
@@ -239,7 +266,7 @@ function scalesratio(
     ))
     B = norm(magneticfield)
     ∇B = ForwardDiff.gradient(pos) do x
-        norm(emfields(x[1], x[2], x[3])[2])
+        norm(emfields(x[1], x[2], x[3], t)[2])
     end
     return scalesratio(B, ∇B, vperp, charge, mass)
 end
@@ -342,9 +369,10 @@ function exbdrift(
 end
 function exbdrift(
     pos::AbstractVector,
+    t::Real,
     emfields,
 )
-    electricfield, magneticfield = emfields(pos[1], pos[2], pos[3])
+    electricfield, magneticfield = emfields(pos[1], pos[2], pos[3], t)
     return exbdrift(magneticfield, electricfield)
 end
 
@@ -685,10 +713,13 @@ end
 function get_guidingcentre(
     pos::AbstractVector,
     vel::AbstractVector,
+    time::Real,
     electromagneticfield,
     args...
 )
-    electricfield, magneticfield = electromagneticfield(pos[1], pos[2], pos[3])
+    electricfield, magneticfield = electromagneticfield(
+        pos[1], pos[2], pos[3], time
+    )
     return get_guidingcentre(pos, vel, magneticfield, electricfield, args...)
 end
 
@@ -754,9 +785,10 @@ end
 function get_fullorbit(
     electromagneticfield,
     R::AbstractVector, # Guiding centre position
+    time::Real,
     args...
 )
-    electricfield, magneticfield = electromagneticfield(R[1], R[2], R[3])
+    electricfield, magneticfield = electromagneticfield(R[1], R[2], R[3], time)
     return get_fullorbit(magneticfield, electricfield, R, args...)
 end
 

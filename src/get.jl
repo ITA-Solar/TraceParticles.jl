@@ -141,6 +141,7 @@ function get_observable(
             TraceParticles.magneticmoment(
                 sol(t, idxs=1:3),
                 sol(t, idxs=4:6),
+                t,
                 sol.prob.p.mass,
                 sol.prob.p.electromagneticfield
             ) for t in times
@@ -149,19 +150,20 @@ function get_observable(
         if EoM == "GCA"
             obs = [
                 TraceParticles.perpendicular_velocity(
+                    sol(t, idxs=1:3),
+                    t,
                     sol.prob.p.magneticmoment,
                     sol.prob.p.mass,
-                    norm(
-                        sol.prob.p.electromagneticfield(sol(t, idxs=1:3)...)[2]
-                    ),
+                    sol.prob.p.electromagneticfield
                 ) for t in times
             ]
         elseif EoM == "FO"
             obs = [
                 TraceParticles.perpendicular_velocity(
+                    sol(t, idxs=1:3),
                     sol(t, idxs=4:6),
-                    sol.prob.p.electromagneticfield(sol(t, idxs=1:3)...)[2],
-                    sol.prob.p.electromagneticfield(sol(t, idxs=1:3)...)[1],
+                    t,
+                    sol.prob.p.electromagneticfield,
                 ) for t in times
             ]
         end
@@ -170,6 +172,7 @@ function get_observable(
             obs = [
                 larmorradius(
                     sol(t, idxs=1:3),
+                    t,
                     sol.prob.p.magneticmoment,
                     sol.prob.p.charge,
                     sol.prob.p.mass,
@@ -181,6 +184,7 @@ function get_observable(
                 larmorradius(
                     sol(t, idxs=1:3),
                     sol(t, idxs=4:6),
+                    t,
                     sol.prob.p.mass,
                     sol.prob.p.charge,
                     sol.prob.p.electromagneticfield
@@ -190,7 +194,7 @@ function get_observable(
     elseif sym == :L_B
         obs = [
             characteristicfieldlength(
-                sol(t, idxs=1:3), sol.prob.p.electromagneticfield
+                sol(t, idxs=1:3), t, sol.prob.p.electromagneticfield
             ) for t in times
         ]
     elseif sym == :scalesratio
@@ -198,6 +202,7 @@ function get_observable(
             obs = [
                 scalesratio(
                     sol(t, idxs=1:3),
+                    t,
                     sol.prob.p.mass,
                     sol.prob.p.charge,
                     sol.prob.p.magneticmoment,
@@ -209,6 +214,7 @@ function get_observable(
                 scalesratio(
                     sol(t, idxs=1:3),
                     sol(t, idxs=4:6),
+                    t,
                     sol.prob.p.mass,
                     sol.prob.p.charge,
                     sol.prob.p.electromagneticfield,
@@ -218,7 +224,7 @@ function get_observable(
     elseif sym == :exbdrift
         obs = [
             exbdrift(
-                sol(t, idxs=1:3), sol.prob.p.electromagneticfield
+                sol(t, idxs=1:3), t, sol.prob.p.electromagneticfield
             ) for t in times
         ]
 
@@ -249,11 +255,11 @@ function get_observable(
             getfield(
                 GCAState(
                     sol(t)[1:4],
+                    t,
                     charge,
                     mass,
                     magneticmoment,
-                    emfield;
-                    time=t,
+                    emfield
                 ),
                 sym)
             for t in times
@@ -333,11 +339,11 @@ function get_fermi(
     q = sol.prob.p.charge
     gcastate = GCAState(
         sol(t, idxs=1:4),
+        t,
         q,
         sol.prob.p.mass,
         sol.prob.p.magneticmoment,
         sol.prob.p.electromagneticfield;
-        time=t,
     )
     v_C = gcastate.curvaturedrift
     E = gcastate.efield
@@ -360,11 +366,11 @@ function get_betatron(
     q = sol.prob.p.charge
     gcastate = GCAState(
         sol(t, idxs=1:4),
+        t,
         q,
         sol.prob.p.mass,
         sol.prob.p.magneticmoment,
         sol.prob.p.electromagneticfield;
-        time=t,
     )
     v_gradB = gcastate.∇Bdrift
     E = gcastate.efield
@@ -388,10 +394,10 @@ function get_parallelpower(
     gcastate = GCAState(
         sol(t, idxs=1:4),
         q,
+        t,
         sol.prob.p.mass,
         sol.prob.p.magneticmoment,
         sol.prob.p.electromagneticfield;
-        time=t,
     )
     vparal = gcastate.state[4]
     paralacc = gcastate.paralacc
@@ -414,11 +420,11 @@ function get_polarisationacc(
     q = sol.prob.p.charge
     gcastate = GCAState(
         sol(t, idxs=1:4),
+        t,
         q,
         sol.prob.p.mass,
         sol.prob.p.magneticmoment,
         sol.prob.p.electromagneticfield;
-        time=t,
     )
     v_P = gcastate.polarisationdrift
     E = gcastate.efield
@@ -451,11 +457,11 @@ function get_energy(
     elseif EoM == "GCA" # Guiding centre approximation
         energy = kineticenergy(GCAState(
             sol(t, idxs=1:4),
+            t,
             sol.prob.p.charge,
             sol.prob.p.mass,
             sol.prob.p.magneticmoment,
             sol.prob.p.electromagneticfield,
-            t;
         ))
     end
     if units == "eV"
@@ -481,11 +487,11 @@ function get_driftenergy(
     m = sol.prob.p.mass
     gcastate = GCAState(
         sol(t)[1:4],
+        t,
         q,
         m,
         sol.prob.p.magneticmoment,
         sol.prob.p.electromagneticfield;
-        time=t,
     )
     v_E = gcastate.exbdrift
     v_gradB = gcastate.∇Bdrift
@@ -541,11 +547,11 @@ function get_eparal(
     m = sol.prob.p.mass
     gcastate = GCAState(
         sol(t, idxs=1:4),
+        t,
         q,
         m,
         sol.prob.p.magneticmoment,
         sol.prob.p.electromagneticfield;
-        time=t,
     )
     B = norm(gcastate.bfield)
     b = gcastate.bfield / B

@@ -155,10 +155,12 @@ end
             charge=-√6,
             mass=9,
             magneticmoment=9,
-            fields=(x, y, z) -> ([0, 0, 0], [0, 0, 2y + 1]),
+            fields=(x, y, z, t) -> ([0, 0, 0], [0, 0, 2y + 1]),
         )
+        t = 0.0
         result = scalesratio(
             R,
+            t,
             params.mass,
             params.charge,
             params.magneticmoment,
@@ -172,7 +174,7 @@ end
         # Test different method
         vel = [vperp, 0, 1]
         result = scalesratio(
-            R, vel, params.mass, params.charge,
+            R, vel, t, params.mass, params.charge,
             params.fields,
         )
         @test isapprox(result, 2, atol=1e-6)

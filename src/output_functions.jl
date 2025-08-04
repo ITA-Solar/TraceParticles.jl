@@ -100,6 +100,7 @@ and the initial and final times must be accessible with `first(sol.t)` and
 function find_max_larmorradius(sol; ntimes=5length(sol.t))
     f(t) = larmorradius(
         sol(first(t), idxs=1:3),
+        t,
         sol.prob.p.magneticmoment,
         sol.prob.p.charge,
         sol.prob.p.mass,
@@ -109,6 +110,7 @@ function find_max_larmorradius(sol; ntimes=5length(sol.t))
         time = sol.t[1]
         farray = larmorradius(
             sol[1][1:3],
+            time,
             sol.prob.p.magneticmoment,
             sol.prob.p.charge,
             sol.prob.p.mass,
@@ -139,13 +141,14 @@ and the initial and final times must be accessible with `first(sol.t)` and
 """
 function find_min_fieldlength(sol; ntimes=5length(sol.t))
     f(t) = characteristicfieldlength(
-        sol(first(t), idxs=1:3),
+        sol(first(t), idxs=1:3), t,
         sol.prob.p.electromagneticfield,
     )
     if ntimes == 1
         time = sol.t[1]
         farray = characteristicfieldlength(
             sol[1][1:3],
+            time,
             sol.prob.p.electromagneticfield,
         )
         min = MinValue(farray, sol[1], time)
@@ -174,6 +177,7 @@ and the initial and final times must be accessible with `first(sol.t)` and
 function find_max_scalesratio(sol; ntimes=5length(sol.t))
     f(t) = scalesratio(
         sol(first(t), idxs=1:3),
+        t,
         sol.prob.p.mass,
         sol.prob.p.charge,
         sol.prob.p.magneticmoment,
@@ -182,6 +186,7 @@ function find_max_scalesratio(sol; ntimes=5length(sol.t))
     if ntimes == 1
         time = sol.t[1]
         farray = scalesratio(
+            time,
             sol[1][1:3],
             sol.prob.p.mass,
             sol.prob.p.charge,

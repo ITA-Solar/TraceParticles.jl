@@ -92,25 +92,27 @@ struct GCAState
 
     function GCAState(
         state::Vector{<:Real},
+        time::Real,
         q::Real,
         m::Real,
         μ::Real,
-        electromagneticfield::Any;
-        time=0.0,
+        electromagneticfield::Any
     )
-        R = state[1:3]
+        x, y, z = state[1:3]
         vparal = state[4]
         q⁻¹ = 1 / q # Inverse of q - to replace division with multiplication
         # Use the gyrocentre position interpolate the vectors
         # scalars from the interpolation objects.
-        E_vec, B_vec = electromagneticfield(R...)
+        E_vec, B_vec = electromagneticfield(x, y, z, time)
         B = norm(B_vec)   # The magnetic field strength
         B⁻¹ = 1 / B         # Inverse of B - to replace divition with multipl.
         b = B_vec * B⁻¹     # An unit vector pointing in the direction of the
         ExBdrift = (E_vec × b) / B # The E cross B-drift
 
-        J = ForwardDiff.jacobian(R) do x
-            E_vec_fd, B_vec_fd = electromagneticfield(x...)
+        spacetime = SVector{4}(x, y, z, time)
+
+        J = ForwardDiff.jacobian(spacetime) do x
+            E_vec_fd, B_vec_fd = electromagneticfield(x[1], x[2], x[3], time)
             B_fd = norm(B_vec_fd)
             b̂_fd = B_vec_fd / B_fd
             return [b̂_fd; E_vec_fd × b̂_fd / B_fd; B_fd]
@@ -123,9 +125,14 @@ struct GCAState
         )
         ∇B = SVector{3}(J[7], J[14], J[21])
 
+        # The time derivatives
+        ∂b = SVector{3}(J[22], J[23], J[24])
+        ∂ExB = SVector{3}(J[25], J[26], J[27])
+        ∂B = J[28]
+
         # Total time derivatives. Assumes ∂/∂t = 0,
-        dbdt = vparal * (∇b * b) + ∇b * ExBdrift
-        dExBdt = vparal * (∇ExB * b) + ∇ExB * ExBdrift
+        dbdt = vparal * (∇b * b) + ∇b * ExBdrift + ∂b
+        dExBdt = vparal * (∇ExB * b) + ∇ExB * ExBdrift + ∂ExB
 
         # Calculate other drifts
         ∇Bdrift = gradbdrift(b, ∇B, μ, B⁻¹, q⁻¹)
@@ -450,27 +457,25 @@ function timeseriesofgcastates(
         if components == "all"
             timeseries[i] = GCAState(
                 interpolated_solution,
+                times[i],
                 solution.prob.p.charge,
                 solution.prob.p.mass,
                 solution.prob.p.magneticmoment,
-                solution.prob.p.fields,
-                ;
-                time=times[i],
+                solution.prob.p.electromagneticfield,
             )
         else
-            itpvec = solution.prob.fields
             R = interpolated_solution[1:3]
-            bfield = [itpvec[i](R...) for i in 1:3]
-            efield = [itpvec[i](R...) for i in 4:6]
+            efield, bfield = solution.prob.electromagneticfield(
+                R[1], R[2], R[3], times[i]
+            )
             timeseries[i] = GCAState(
                 interpolated_solution,
+                times[i],
                 solution.prob.p[1],
                 solution.prob.p[2],
                 solution.prob.p[3],
                 bfield,
                 efield
-                ;
-                time=times[i]
             )
         end
     end
@@ -607,25 +612,23 @@ function ensembleofgcastates(
         if components == "all"
             particlestates[i] = GCAState(
                 solution[i],
+                times[i],
                 charge,
                 mass,
                 magneticmoments[i],
                 electromagneticfield
-                ;
-                time=times[i],
             )
         elseif components == "exb"
             R = solution[i][1:3]
-            efield, bfield = electromagneticfield(R...)
+            efield, bfield = electromagneticfield(R[1], R[2], R[3], times[i])
             particlestates[i] = GCAState(
                 solution[i],
+                times[i],
                 charge,
                 mass,
                 magneticmoments[i],
                 bfield,
                 efield
-                ;
-                time=times[i]
             )
         end
     end
@@ -659,11 +662,11 @@ function kineticenergy(
 )
     kineticenergy(GCAState(
         state,
+        time,
         q,
         m,
         μ,
         electromagneticfield;
-        time=time,
     ))
 end
 """
