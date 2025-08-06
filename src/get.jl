@@ -246,6 +246,28 @@ function get_observable(
         obs = [get_perpenergy(sol, t) for t in times]
     elseif sym == :eparal
         obs = [get_eparal(sol, t) for t in times]
+    elseif sym == :eperp
+        obs = [get_eperp(sol, t) for t in times]
+    elseif sym == :efieldratio
+        eparal = [get_eparal(sol, t) for t in times]
+        eperp = [norm(get_eperp(sol, t)) for t in times]
+        obs = eparal ./ eperp
+    elseif sym == :efield
+        obs = [
+            sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[1]
+            for t in times
+        ]
+    elseif sym == :bfield
+        obs = [
+            sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]
+            for t in times
+        ]
+    elseif sym == :b
+        bfield = [
+            sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]
+            for t in times
+        ]
+        obs = [b / norm(b) for b in bfield]
     elseif sym in fieldnames(GCAState)
         charge = sol.prob.p.charge
         mass = sol.prob.p.mass
@@ -543,17 +565,18 @@ function get_eparal(
     sol::ODESolution,
     t::Real;
 )
-    q = sol.prob.p.charge
-    m = sol.prob.p.mass
-    gcastate = GCAState(
-        sol(t, idxs=1:4),
-        t,
-        q,
-        m,
-        sol.prob.p.magneticmoment,
-        sol.prob.p.electromagneticfield;
-    )
-    B = norm(gcastate.bfield)
-    b = gcastate.bfield / B
-    return gcastate.efield ⋅ b
+    efield, bfield = sol.prob.p.electromagneticfield(sol(t, idxs=1:3)..., t)
+    B = norm(bfield)
+    b = bfield / B
+    return efield ⋅ b
+end
+
+function get_eperp(
+    sol::ODESolution,
+    t::Real;
+)
+    efield, bfield = sol.prob.p.electromagneticfield(sol(t, idxs=1:3)..., t)
+    B = norm(bfield)
+    b = bfield / B
+    return efield - (efield ⋅ b) * b
 end
