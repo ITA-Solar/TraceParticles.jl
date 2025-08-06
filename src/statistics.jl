@@ -37,51 +37,6 @@ function normaldistr(
     return 1 / (σ * √(2π)) * exp(-0.5((x - μ) / σ)^2)
 end
 
-"""
-    uniformdistr(
-        x::Vector{T} where {T<:Real},
-        a::Real,
-        b::Real
-        )
-Function returning the values of `x` on a 1D normalised unifrom distribution on
-the interval [`a, `b`].
-
-See also [`normaldistr`](@ref).
-"""
-function uniformdistr(
-    x::Array{T} where {T<:Real},
-    a::Real,
-    b::Real
-)
-    mask = a .<= x .<= b
-    stepheight = 1.0 / (b - a)
-    prob = zeros(typeof(x[1]), size(x))
-    prob[mask] .= stepheight
-    return prob
-end # function uniformdistr
-
-
-"""
-    bivarate_uniformdistr(x,y,a,b,c,d)
-Return the probability of (`x`,`y`) in the bivariate uniform distribution
-f(x,y) = U(a,b) x U(c,d)
-"""
-function bivariate_uniformdistr(
-    x::Real,
-    y::Real
-    ;
-    a::Real=0.0,
-    b::Real=1.0,
-    c::Real=0.0,
-    d::Real=1.0
-)
-    Δx = b - a
-    Δy = d - c
-    probability = abs(1 / (Δx * Δy))
-    return a < x <= b && c < y <= d ? probability : 0.0
-end
-
-
 #----------------#
 # Random numbers #
 #----------------#--------------------------------------------------------------
@@ -278,7 +233,6 @@ function rejectionsample!(
     end
     return pos, numrejections
 end
-
 function rejectionsample(
     rng::AbstractRNG,
     target::Any,
@@ -329,7 +283,6 @@ function rejectionsample(
     end
     return x, y, z, numrejections
 end
-
 
 """
     rejectionsample(
@@ -394,7 +347,6 @@ end
 """
     binmap(
         data,
-        args...
         ;
         weights=ones(length(data)),
         mapfunc::Function = (x,w) -> sum(w),

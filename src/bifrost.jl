@@ -112,42 +112,6 @@ function get_eparal(
     return eparal
 end
 
-function get_br_emfield_numdensity_gastemp_interpolator(
-    expname::String,
-    snap::Integer,
-    expdir::String,
-    ;
-    itp_type=Gridded(Linear()),
-    itp_bc=Flat(),
-    units=units,
-)
-    #
-    bx = get_var(expname, snap, expdir, "bx"; units="SI", destagger=true)
-    by = get_var(expname, snap, expdir, "by"; units="SI", destagger=true)
-    bz = get_var(expname, snap, expdir, "bz"; units="SI", destagger=true)
-    ex = get_var(expname, snap, expdir, "ex"; units="SI", destagger=true)
-    ey = get_var(expname, snap, expdir, "ey"; units="SI", destagger=true)
-    ez = get_var(expname, snap, expdir, "ez"; units="SI", destagger=true)
-    rho = get_var(expname, snap, expdir, "r"; units="SI")
-    tg = get_var(expname, snap, expdir, "tg"; units="SI", destagger=false)
-    #
-    # Convert mass density to number density
-    rho ./= tp.m_p
-    fields = eachslice(
-        [bx;;;; by;;;; bz;;;; ex;;;; ey;;;; ez;;;; rho;;;; tg],
-        dims=(1, 2, 3)
-    )
-    #
-    # Make interpolation-object
-    fields = dropdims(fields)
-    br_axes = get_axes(brxp, units=units)
-    br_axes = dropdims(br_axes)
-    fields_itp = interpolate(br_axes, fields, itp_type)
-    fields_itp = extrapolate(fields_itp, itp_bc)
-    #
-    return fields_itp
-end
-
 """
     normfactor_2Duniformmesh(
         brxp, snap, var; xlim=[-Inf, Inf], zlim=[-Inf, Inf], units="si"

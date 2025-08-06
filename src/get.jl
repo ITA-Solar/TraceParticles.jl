@@ -309,43 +309,6 @@ function get_observable(
     return get_observable(sol, observable; times=[t], nsteps=1, kwargs...)[1]
 end
 
-
-"""
-    get_stateidx(
-        sol::ODESolution,
-        idx::Int;
-        tspan=(first(sol.t), last(sol.t)),
-        nsteps=1000,
-        times=range(tspan[1], tspan[2], length=nsteps),
-    )
-Return the `idx`-th component of the state vector of `sol` at times `times`.
-"""
-function get_stateidx(
-    sol::ODESolution,
-    idx::Int;
-    tspan=(first(sol.t), last(sol.t)),
-    nsteps=1000,
-    times=range(tspan[1], tspan[2], length=nsteps),
-)
-    return [sol(t)[idx] for t in times]
-end
-
-"""
-    get_exbdrift(
-        sol::ODESolution,
-        t::Real,
-    )
-Calculate the magnitude of the ExB-drift at time `t` of `sol`.
-"""
-function get_exbdrift(
-    sol::ODESolution,
-    t::Real,
-)
-    E, B = sol.prob.p.electromagneticfield(sol(t)[1:3]...)
-    exbdrift(B, E)
-end
-
-
 """
     get_fermi(
         sol::ODESolution,

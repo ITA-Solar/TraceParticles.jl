@@ -43,24 +43,6 @@ function (self::OutOfDomainCondition_2Dxz)(u, _, _)
            u[3] <= self.zbounds[1] || u[3] >= self.zbounds[2]
 end
 
-
-"""
-    outside2dnullpointzoom(u, t, integrator)
-Callback condition for particles exiting the zoomed-in domain in the 2D
-nullpoint Bifrost simulation used for the results in the Japan Hinode/IRIS
-poster of septermber 2023.
-
-The effect of this callback should be termination, which means that the
-callback should be created like this:
-    affect!(integrator) = terminate!(integrator)
-    cb = DiscreteCallback(condition,affect!)
-"""
-function outside2dnullpointzoom(u, _, _) # (u, t, integrator)
-    return u[1] <= 14.52e6 || u[1] >= 18.83e6 ||
-           u[3] <= -7.79e6 || u[3] >= -3.88e6
-end
-
-
 """
     outofdomainaffect!(integrator)
 Callback affect which terminates the integration and sets the return message to
@@ -104,34 +86,6 @@ function (self::RelativisticConditionGCA)(u, t, integrator)
     return energy > self.fractionofrestenergy
 end
 
-"""
-    RelativisticConditionGCA_2Dxz
-Callback condition for checking if the GCA particle is relativistic. Returns
-`true` if the particle's kinetic energy is a user defined fraction of the rest
-energy. Perpendicular drifts other than E cross B drift are neglected.
-
-Default fraction is 0.002, which is 1022 eV for an electron.
-"""
-mutable struct RelativisticConditionGCA_2Dxz{T<:Real}
-    energylimit::T
-
-    function RelativisticConditionGCA_2Dxz(; mass::T, fraction) where {T}
-        return new{T}(fraction * mass * csqrd)
-    end
-end
-function (self::RelativisticConditionGCA_2Dxz)(u, _, integrator)
-    Rx, Rz, vparal = u[1], u[3], u[4]
-    μ = integrator.p.magneticmoment
-    mass = integrator.p.mass
-
-    E_vec, B_vec = integrator.p.electromagneticfield(Rx, Rz)
-    v_E = exbdrift(B_vec, E_vec)
-    B = norm(B_vec)
-    vperp = perpendicular_velocity(μ, mass, B)
-    energy = kineticenergy(vparal, vperp, v_E, mass)
-    return energy > self.energylimit
-end
-
 
 """
     set_limit!(
@@ -145,7 +99,7 @@ end
 Sets the energy limit for the the relativistic condition.
 """
 function set_limit!(
-    condition::Union{RelativisticConditionGCA,RelativisticConditionGCA_2Dxz};
+    condition::RelativisticConditionGCA,
     mass,
     fraction,
 )
@@ -287,29 +241,6 @@ function (self::GCABreakDownCondition)(u, t, integrator)
     return ratio > self.tolerance
 end
 
-
-"""
-    GCABreakDownCondition_2Dxz
-Callback condition for checking GCA assumption. Returns `true` if the ratio
-between the particle Larmor radius and the characteristic length of the
-magnetic field is higher than a tolerance `switchtol`.
-"""
-mutable struct GCABreakDownCondition_2Dxz{T<:Real}
-    tolerance::T
-end
-function (self::GCABreakDownCondition_2Dxz)(u, t, integrator)
-    R = SVector(u[1], u[2], u[3]) # The gyrocentre position vector in 2D
-    ratio = scalesratio(
-        R,
-        integrator.p.mass,
-        integrator.p.charge,
-        integrator.p.magneticmoment,
-        integrator.p.electromagneticfield,
-    )
-    return ratio > self.tolerance
-end
-
-
 """
     set_tol!(
         condition::Union{GCABreakDownCondition, GCABreakDownCondition_2Dxz},
@@ -318,7 +249,7 @@ end
 Sets the tolerance for the GCABreakDownCondition.
 """
 function set_tol!(
-    condition::Union{GCABreakDownCondition,GCABreakDownCondition_2Dxz},
+    condition::GCABreakDownCondition,
     tol
 )
     condition.tolerance = tol
@@ -337,22 +268,4 @@ end
 
 function hybridswitch_affect!(integrator)
     integrator.p.gca = !integrator.p.gca
-end
-
-
-#------------------------------------------------------------------------------
-# MAX callback for LARMOR RADIUS
-# Condition
-function maxcondition_larmorradius_2Dxz(u, _, integrator)
-    R = [u[1], u[3]]
-    r_L = larmorradius(R, integrator.p)
-    return r_L > integrator.p.larmorradius.max
-end
-# Affect
-function maxaffect_larmorradius_2Dxz!(integrator)
-    R = [integrator.u[1], integrator.u[3]]
-    r_L = larmorradius(R, integrator.p)
-    integrator.p.larmorradius.max = r_L
-    integrator.p.larmorradius.max_u = copy(integrator.u)
-    integrator.p.larmorradius.max_t = integrator.t
 end

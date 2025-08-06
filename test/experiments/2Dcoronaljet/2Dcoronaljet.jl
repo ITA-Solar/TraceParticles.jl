@@ -28,9 +28,9 @@ create_bifrost_itps(
 # EXPEIRMENT PARAMETERS
 #===============================================================================#
 # Concerning field, duration and bounds
-fields_itp = load_object(expdir * "/cs_BE.jld2")
-tg_itp = load_object(expdir * "/cs_tg_normfalse.jld2")
-r_itp = load_object(expdir * "/cs_r_normfalse.jld2")
+fields_itp = load_object(expdir * "/cs_t1_BE.jld2")
+tg_itp = load_object(expdir * "/cs_t1_tg_normfalse.jld2")
+r_itp = load_object(expdir * "/cs_t1_r_normfalse.jld2")
 
 fields_itp = ElectromagneticFieldInterpolator(
     [StaticInterpolation(itp) for itp in fields_itp]
@@ -266,9 +266,9 @@ for i in 1:nsyms_errorprone
 end
 
 # Remove gnerated files before testing.
-rm(expdir * "/cs_BE.jld2")
-rm(expdir * "/cs_tg_normfalse.jld2")
-rm(expdir * "/cs_r_normfalse.jld2")
+rm(expdir * "/cs_t1_BE.jld2")
+rm(expdir * "/cs_t1_tg_normfalse.jld2")
+rm(expdir * "/cs_t1_r_normfalse.jld2")
 rm(fname)
 rm(joinpath(expdir, expname, expname * "_gcastates0.h5"))
 rm(joinpath(expdir, expname, expname * "_gcastatesf.h5"))

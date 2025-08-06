@@ -40,7 +40,6 @@ include("problem_functions.jl")
 include("output_functions.jl")
 include("reduction_functions.jl")
 include("parameterstructs.jl")
-include("differentiations.jl")
 include("bifrost.jl")
 include("io.jl")
 include("dataprocessing.jl")
@@ -68,16 +67,17 @@ export
 # equations_of_motion.jl
 export
     guidingcentreapproximation!,
-    gca_2Dxz!,
     lorentzforce!
 # statistics.jl
 export
+    rejectionsample,
     maxwellianvelocitysample,
     binmap
 # physics.jl
 export
     get_fullorbit,
     get_fullorbit!,
+    get_guidingcentre,
     get_guidingcentre!,
     kineticenergy,
     perpendicular_velocity,
@@ -90,20 +90,17 @@ export
     OutOfDomainCondition_3D,
     OutOfDomainCondition_2Dxz,
     RelativisticConditionGCA,
-    RelativisticConditionGCA_2Dxz,
     GCABreakDownCondition,
-    GCABreakDownCondition_2Dxz,
     outofdomainaffect!,
     relativisticaffect!,
     gcabreakdownaffect!
 # problem_functions.jl
 export
-    UposMBvel,
     DposMBvel,
-    DposMBvel_2Dxz,
     PposPvel
 # output_functions.jl
 export
+    output_func_lightweight,
     output_func_max_lightweight
 # reduction_functions.jl
 export
@@ -140,18 +137,9 @@ export
     GCAState
 # get.jl
 export
-    get_observable,
-    get_stateidx,
-    get_exbdrift,
-    get_fermi,
-    get_betatron,
-    get_polarisationacc,
-    get_driftenergy,
-    get_perpenergy,
-    get_parallelenergy
+    get_observable
 # constants.jl
 export
     J2eV
-
 #-------------------------------------------------------------------------------
 end
