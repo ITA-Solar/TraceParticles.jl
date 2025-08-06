@@ -54,35 +54,26 @@ function Base.randn(
     return μ + σ * randn(rng)
 end
 function Base.randn(
-    μ::AbstractFloat,
-    σ::AbstractFloat,
-    dims...
-)
-    return μ .+ σ .* randn(dims)
-end
-function Base.randn(
-    precision::DataType,
-    μ::AbstractFloat,
-    σ::AbstractFloat,
-    dims...
-)
-    μ = convert.(precision, μ)
-    σ = convert.(precision, σ)
-    return μ .+ σ .* randn(precision, dims)
+    )
 end
 function Base.randn(
     rng::AbstractRNG,
-    precision::DataType,
     μ::AbstractFloat,
     σ::AbstractFloat,
     dims...
 )
-    μ = convert.(precision, μ)
-    σ = convert.(precision, σ)
-    return μ .+ σ .* randn(rng, precision, dims)
+    return μ .+ σ .* randn(rng, typeof(μ), dims)
 end
-
-
+function randn!(
+    r::AbstractVector,
+    rng::AbstractRNG,
+    μ::AbstractFloat,
+    σ::AbstractFloat,
+)
+    for i in eachindex(r)
+        r[i] = randn(rng, μ, σ)
+    end
+end
 """
     Base.rand(rng, a::AbstractFloat, b::AbstractFloat)
 Method which return random variables from a uniform distribution on the interval
@@ -93,7 +84,15 @@ function Base.rand(
     a::AbstractFloat,
     b::AbstractFloat,
 )
-    return a + rand(rng) * (b - a)
+    return a + rand(rng, typeof(a)) * (b - a)
+end
+function Base.rand(
+    rng::AbstractRNG,
+    a::AbstractFloat,
+    b::AbstractFloat,
+    dims...
+)
+    return a + rand(rng, typeof(a), dims...) * (b - a)
 end
 function Base.rand(
     rng::AbstractRNG,
