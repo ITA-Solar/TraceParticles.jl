@@ -69,6 +69,9 @@ end
 function Base.size(itp::StaticInterpolation)
     return size(itp.itp)
 end
+function Base.maximum(itp::StaticInterpolation)
+    return maximum(itp.itp.itp.itp.coefs)
+end
 """
     XZInterpolation
 An interpolator that calls `(x, z, t)` if called with `(x, y, z, t)`.
@@ -90,6 +93,10 @@ end
 function Base.size(itp::XZInterpolation)
     return size(itp.itp)
 end
+function Base.maximum(itp::XZInterpolation)
+    return maximum(itp.itp.itp.itp.coefs)
+end
+
 
 """
     StaticXZInterpolation
@@ -114,6 +121,9 @@ function Base.ndims(itp::StaticXZInterpolation)
 end
 function Base.size(itp::StaticXZInterpolation)
     return size(itp.itp)
+end
+function Base.maximum(itp::StaticXZInterpolation)
+    return maximum(itp.itp.itp.itp.coefs)
 end
 
 """
