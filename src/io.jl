@@ -416,6 +416,8 @@ function create_bifrost_itps(
             "Length of `variables` and `normalise` and `destagger` must be equal."
         ))
     end
+    tstamp = length(snaps) == 1 ?
+             "_t$snaps" : "_t$(first(snaps))-$(last(snaps))"
     if length(snaps) == 1
         if xzinterpolation
             wrapper = StaticXZInterpolation
@@ -440,7 +442,7 @@ function create_bifrost_itps(
         if !isnothing(wrapper)
             interpolator = [wrapper(itp) for itp in interpolator]
         end
-        @save string(filename, "_BE.jld2") interpolator
+        @save string(filename, tstamp, "_BE.jld2") interpolator
     end
     mask = variables .!= "BE"
 
@@ -463,7 +465,9 @@ function create_bifrost_itps(
         if !isnothing(wrapper)
             interpolator = wrapper(interpolator)
         end
-        @save string(filename, "_$(var)_norm$(norm).jld2") interpolator
+        @save string(
+            filename, tstamp, "_$(var)_norm$(norm).jld2"
+        ) interpolator
     end
 end
 
