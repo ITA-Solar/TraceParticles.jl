@@ -38,16 +38,7 @@ function save_gcastates(
     verbose=false,
 )
     name, extension = splitext(filename)
-    if extension == ".csv"
-        df = DataFrame(CSV.File(filename))
-        dfgca0, dfgcaf = GCAState(
-            df,
-            electromagneticfield;
-            components=components,
-        )
-        CSV.write(filename * "_gcastate0.csv", dfgca0)
-        CSV.write(filename * "_gcastatef.csv", dfgcaf)
-    elseif extension == ".h5"
+    if extension == ".h5"
         _, nbatches = h5_nbatches(filename)
         h5_sol = h5open(filename, "r")
         name0 = name * "_gcastates0.h5"
@@ -329,48 +320,6 @@ function h5_replaceparticles!(
         end
     end
 end
-
-
-#____/\_____/\_________________________________________________________________
-#
-# CSV loading routines
-#
-
-"""
-    csv_getbatches(filename, nbatches)
-Reads data from multiple CSV-files and concatenates them into a single
-`DataFrame`.
-"""
-function csv_getbatches(filename::String, nbatches::Int)
-    df = DataFrame(CSV.File(filename * "_1.csv"))
-    for i in 2:nbatches
-        df_tmp = DataFrame(CSV.File(filename * "_$i.csv"))
-        df = vcat(df, df_tmp)
-    end
-    return df
-end
-
-
-"""
-    csv_to_h5(filename, batchnr)
-Converts a CSV-file to a HDF5-file.
-"""
-function csv_to_h5(filename, batchnr)
-    df = DataFrame(CSV.File(filename * "_$batchnr.csv"))
-    filename_h5 = filename * ".h5"
-    groupname = "batch_$batchnr"
-    h5open(filename_h5, "cw") do h5_file
-        h5group = create_group(h5_file, groupname)
-        for key in names(df)
-            if key == "retcode" || key == "retmsg"
-                write_dataset(h5group, key, string.(df[!, key]))
-            else
-                write_dataset(h5group, key, df[!, key])
-            end
-        end
-    end
-end
-
 
 #____/\_____/\_________________________________________________________________
 #

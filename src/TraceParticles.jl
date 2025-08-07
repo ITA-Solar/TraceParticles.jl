@@ -110,7 +110,6 @@ export
     output_func_max_lightweight
 # reduction_functions.jl
 export
-    SaveBatchAsCSV,
     SaveBatchAsHDF5,
     get_filename
 # parameterstructs.jl

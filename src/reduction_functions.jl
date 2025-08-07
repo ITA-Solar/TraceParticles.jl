@@ -35,48 +35,6 @@ function print_batch_statistics(batch)
         "===============")
 end
 
-
-"""
-    SaveBatchAsCSV(expdir, expname, batchsize, nbatches)
-Reduction functor that saves the batch as a DataFrame.
-The struct instance is callable and its fields are
-- `expdir::String`: The directory where the data is saved.
-- `expname::String`: The name of the experiment.
-- `batchnr::Int`: The current batch number.
-- `batchsize::Int`: The size of the batch.
-- `nbatches::Int`: The total number of batches.
-"""
-mutable struct SaveBatchAsCSV
-    datadir::String
-    expname::String
-    batchnr::Int
-    batchsize::Int
-    nbatches::Int
-    function SaveBatchAsDF(
-        expdir::String,
-        expname::String,
-        batchsize::Int,
-        nbatches::Int
-    )
-        batchnr = 0
-        new(expdir, expname, batchnr, batchsize, nbatches)
-    end
-end
-function (self::SaveBatchAsCSV)(u, batch, I)
-    # Save the batch as a DataFrame
-    self.batchnr += 1
-    filename = self.expname * "_$(self.batchnr).csv"
-    df = DataFrame(batch)
-    expdir = joinpath(self.datadir, self.expname)
-    filename = joinpath(expdir, filename)
-    print_reduction_overview(self.batchnr, self.nbatches, expdir, filename, I)
-    CSV.write(filename, df)
-    println("success")
-    print_batch_statistics(df)
-    return u, false
-end
-
-
 """
     SaveBatchAsHDF5(expdir, expname, batchsize, nbatches)
 Reduction functor that saves the batch as an HDF5 file.
