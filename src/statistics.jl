@@ -54,9 +54,6 @@ function Base.randn(
     return μ + σ * randn(rng)
 end
 function Base.randn(
-    )
-end
-function Base.randn(
     rng::AbstractRNG,
     μ::AbstractFloat,
     σ::AbstractFloat,
