@@ -12,28 +12,32 @@ rerun_idxs
 ## Equations of motion
 ```@docs
 guidingcentreapproximation!
-gca_2Dxz!
 lorentzforce!
 ```
 
 ## Statistics
 ```@docs
 maxwellianvelocitysample
+rejectionsample
 ```
 
 ## Callbacks
 ```@docs
-OutOfDomainCondition_2Dxz
-RelativisticConditionGCA_2Dxz
-GCABreakDownCondition_2Dxz
-outofdomainaffect!
+OutOfBoundsCondition
+MagneticGradientCondition
+MagneticCurvatureCondition
+ParallelElectricFieldCondition
+RelativisticConditionGCA
+outofboundsaffect!
+magneticgradientaffect!
+magneticcurvatureaffect!
+parallelelectricfieldaffect!
 relativisticaffect!
-gcabreakdownaffect!
+TerminationCode
 ```
 
 ## Problem functions
 ```@docs
-UposMBvel
 DposMBvel
 PposPvel
 ```
@@ -41,11 +45,11 @@ PposPvel
 ## Output functions
 ```@docs
 output_func_max_lightweight
+output_func_lightweight
 ```
 
 # Reduction functions
 ```@docs
-SaveBatchAsCSV
 SaveBatchAsHDF5
 get_filename
 ```
@@ -64,13 +68,18 @@ save_gcastates
 ```@docs
 GCAState
 get_observable
-get_stateidx
-get_exbdrift
-get_fermi
-get_betatron
-get_polarisationacc
-get_driftenergy
-get_perpenergy
-get_parallelenergy
-binmap
+```
+
+# Physics
+```@docs
+get_fullorbit
+get_fullorbit!
+get_guidingcentre
+get_guidingcentre!
+kineticenergy
+perpendicular_velocity
+larmorradius
+characteristicfieldlength
+scalesratio
+magneticmoment
 ```
