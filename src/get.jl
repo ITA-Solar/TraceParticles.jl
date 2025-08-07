@@ -86,8 +86,8 @@ function get_observable(
         return [get_energy(u, last(u.t); kwargs...) for u in sol]
     elseif sym == :nt
         return [length(u.t) for u in sol]
-    elseif sym == :retmsg
-        return [u.prob.p.userdata.retmsg for u in sol]
+    elseif sym == :terminationcode
+        return [u.prob.p.userdata.terminationcode for u in sol]
     elseif isnothing(t)
         throw(ArgumentError(
             "Observable $sym is not implemented without a specified time." *

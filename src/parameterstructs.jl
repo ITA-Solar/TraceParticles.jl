@@ -33,14 +33,14 @@ mutable struct HybridParams
     switch::Int
 end
 
-mutable struct GCAParams{T1<:Real,T2,T3<:Int}
+mutable struct GCAParams{T1<:Real,T2,T3<:Int,T4}
     charge::T1
     mass::T1
     electromagneticfield::T2
     magneticmoment::T1
     weight::T1
     nrejections::T3
-    retcode::T3
+    terminationcode::T4
 
     function GCAParams(
         ;
@@ -50,16 +50,16 @@ mutable struct GCAParams{T1<:Real,T2,T3<:Int}
         magneticmoment::T1,
         weight::T1,
         nrejections::T3,
-        retcode::T3,
-    ) where {T1<:Real,T2,T3<:Int}
-        new{T1,T2,T3}(
+        terminationcode::T4,
+    ) where {T1<:Real,T2,T3<:Int,T4}
+        new{T1,T2,T3, T4}(
             charge,
             mass,
             electromagneticfield,
             magneticmoment,
             weight,
             nrejections,
-            retcode,
+            terminationcode,
         )
     end
 end

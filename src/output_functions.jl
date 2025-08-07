@@ -53,7 +53,7 @@ function output_func_max_lightweight(sol, i)
         meanlb=meanlb,
         meanscalesratio=meanscalesratio,
         retcode=Int(sol.retcode),
-        retmsg=sol.prob.p.retcode,
+        terminationcode=Int(sol.prob.p.terminationcode)
     ),
     false
 end
@@ -82,7 +82,7 @@ function output_func_lightweight(sol, i)
         weight=sol.prob.p.weight,
         nrejections=sol.prob.p.nrejections,
         retcode=Int(sol.retcode),
-        retmsg=sol.prob.p.retcode
+        terminationcode=Int(sol.prob.p.terminationcode)
     ),
     false
 end

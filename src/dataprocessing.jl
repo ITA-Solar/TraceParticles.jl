@@ -57,13 +57,13 @@ end
 
 
 """
-    initialstate_retmsg(fname, retmsg)
-Find the initial state of the particles with the return message `retmsg` from
+    initialstate_terminationcode(fname, terminationcode)
+Find the initial state of the particles with a certain `terminationcode` from
 the test particle ensemble stored as HDF5 with the filename `fname`.
 """
-function initialstate_retmsg(fname::String, retmsg::String)
+function initialstate_terminationcode(fname::String, terminationcode::String)
     x0, y0, z0, vparal0, mu = h5_getinitialstate(fname)
-    idxs = findall(x -> x == retmsg, h5_getdataset(fname, "retmsg"))
+    idxs = findall(x -> x == terminationcode, h5_getdataset(fname, "terminationcode"))
     u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
     mu = mu[idxs]
     return u0, mu, idxs
@@ -71,13 +71,13 @@ end
 
 
 """
-    finalstate_retmsg(fname, retmsg)
-Find the final state of the particles with the return message `retmsg` from
+    finalstate_terminationcode(fname, terminationcode)
+Find the final state of the particles with a certain `terminationcode` from
 the test particle ensemble stored as HDF5 with the filename `fname`.
 """
-function finalstate_retmsg(fname::String, retmsg::String)
+function finalstate_terminationcode(fname::String, terminationcode::String)
     xf, yf, zf, vparalf, mu = h5_getfinalstate(fname)
-    idxs = findall(x -> x == retmsg, h5_getdataset(fname, "retmsg"))
+    idxs = findall(x -> x == terminationcode, h5_getdataset(fname, "terminationcode"))
     uf = [[xf[i], yf[i], zf[i], vparalf[i]] for i in idxs]
     mu = mu[idxs]
     return uf, mu, idxs
@@ -179,7 +179,7 @@ end
         yflim=nothing
         zflim=nothing,
         timelim=nothing,
-        retmsg=nothing,
+        terminationcode=nothing,
 )
 Create a function that filters out particles based on the specified limits.
 The function accepts a dictionary which it filters based on the key-limit pairs
@@ -190,7 +190,7 @@ The function accepts a dictionary which it filters based on the key-limit pairs
 - `:yf` for `yflim`
 - `:zf` for `zflim`
 - `:tf` for `timelim`
-- `:retmsg` for `retmsg`
+- `:terminationcode` for `terminationcode`
 
 It assumes the dictionary has the key `:x0` to find out how many particles there
 are in the dataset.
@@ -204,12 +204,12 @@ function particlemaskfunction(
     yflim=nothing,
     zflim=nothing,
     timelim=nothing,
-    retmsg=nothing,
+    terminationcode=nothing,
 )
 
     conditions = Dict{Symbol,Function}()
-    if !isnothing(retmsg)
-        conditions[:retmsg] = x -> retmsg == x
+    if !isnothing(terminationcode)
+        conditions[:terminationcode] = x -> terminationcode == x
     end
     for (sym, limit) in zip(
         (:x0, :y0, :z0, :xf, :yf, :zf, :tf),

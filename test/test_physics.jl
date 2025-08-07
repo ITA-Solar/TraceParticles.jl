@@ -11,6 +11,7 @@ using TraceParticles:
     magneticmoment,
     characteristicfieldlength,
     scalesratio,
+    magneticcurvatureratio,
     kineticenergy,
     exbdrift,
     gradbdrift,
@@ -178,7 +179,34 @@ end
             params.fields,
         )
         @test isapprox(result, 2, atol=1e-6)
-
+    end
+    @testset "magneticcurvatureratio" begin
+        R = [1, 1, 1]
+        ∇B = [0, 2, 0]
+        params = (
+            charge=-√6,
+            mass=9,
+            magneticmoment=9,
+            fields=(x, y, z, t) -> ([0, 0, 0], [0, 0, 2y + 1]),
+        )
+        t = 0.0
+        result = magneticcurvatureratio(
+            R,
+            t,
+            params.mass,
+            params.charge,
+            params.magneticmoment,
+            params.fields,
+        )
+        @test isapprox(result, 0, atol=1e-6)
+        # Test different method
+        vperp = sqrt(2 * params.magneticmoment * 3 / params.mass)
+        vel = [vperp, 0, 1]
+        result = magneticcurvatureratio(
+            R, vel, t, params.mass, params.charge,
+            params.fields,
+        )
+        @test isapprox(result, 0, atol=1e-6)
     end
 
     @testset "kineticenergy" begin

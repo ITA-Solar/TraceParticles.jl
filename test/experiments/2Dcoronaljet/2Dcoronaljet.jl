@@ -1,5 +1,6 @@
 using BifrostTools
 using DifferentialEquations
+using DataFrames
 using Interpolations
 using JLD2
 using Random
@@ -60,16 +61,16 @@ fname = joinpath(expdir, expname, expname * ".h5")
 datadir = expdir
 # Define Callbacks
 out_cb = DiscreteCallback(
-    OutOfDomainCondition_2Dxz(xbounds, zbounds),
-    outofdomainaffect!
+    OutOfBoundsCondition( (xbounds, zbounds), 1:2:3 ),
+    outofboundsaffect!
 )
 rel_cb = DiscreteCallback(
     RelativisticConditionGCA(; mass=mass, fraction=0.02),
     relativisticaffect!
 )
 gca_cb = DiscreteCallback(
-    GCABreakDownCondition(0.001),
-    gcabreakdownaffect!,
+    MagneticGradientCondition(0.001),
+    magneticgradientaffect!,
 )
 # Size of the batch of particles to be saved in a single file
 batchsize = Int(1e1)
@@ -155,7 +156,7 @@ exactsyms = (
     "nrejections",
     "charge",
     "mass",
-    "retmsg",
+    "terminationcode",
     "retcode",
     "x0",
     "y0",
@@ -201,7 +202,22 @@ answersol1_df = load_object(expdir * "/testresults/answersol1_df.jld2")
 answersol1_e0, answersol1_ef = load_object(
     expdir * "/testresults/answersol1_energies.jld2"
 )
-
+n = size(answersol1_df)[1]
+newcol = Vector{Any}(undef, n)
+for i in 1:n
+    j = answersol1_df[i, :retmsg]
+    if j == 0
+        newcol[i] = Int(TerminationCode.NotTerminated)
+    elseif j == 1
+        newcol[i] = Int(TerminationCode.OutOfBounds)
+    elseif j == 2
+        newcol[i] = Int(TerminationCode.MagneticGradient)
+    elseif j == 3
+        newcol[i] = Int(TerminationCode.Relativistic)
+    end
+end
+select!(answersol1_df, Not(:retmsg))
+answersol1_df[!, :terminationcode] = newcol
 # Get the results
 e0, ef = h5_getenergies(fname)
 df = h5_getall(fname)

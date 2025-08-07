@@ -28,7 +28,7 @@ function (self::PposPvel)(prob, i, repeat)
             electromagneticfield=prob.p.electromagneticfield,
             weight=1.0,
             nrejections=0,
-            retcode=0,
+            terminationcode=TerminationCode.NotTerminated
         )
     )
 end
@@ -93,7 +93,7 @@ function (self::DposMBvel)(prob, i, repeat)
     # to race conditions with multiple threads. However, this mutating
     # could work on distributed systems without threads
     @. prob.u0 = [R[1], R[2], R[3], vparal]
-    prob.p.particledata.retmsg = 0
+    prob.p.particledata.terminationcode = TerminationCode.NotTerminated
     prob.p.particledata.weight = weight
     prob.p.particledata.nrejections = nrejections
     return prob
@@ -112,7 +112,7 @@ function (self::DposMBvel)(prob, i, repeat)
             magneticmoment=magneticmoment,
             weight=weight,
             nrejections=nrejections,
-            retcode=0,
+            terminationcode=TerminationCode.NotTerminated
         )
     )
 end

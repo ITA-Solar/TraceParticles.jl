@@ -201,6 +201,62 @@ function characteristicfieldlength(
     return characteristicfieldlength(fieldstrength, grad)
 end
 
+"""
+    magneticcurvatureratio(R, t, charge, mass, magneticmoment, emfields)
+    magneticcurvatureratio(pos, vel, t, charge, mass, emfields)
+Calculate the ratio between the particle's Larmor radius and the radius of
+curvature of the local magnetic field.
+"""
+function magneticcurvatureratio(
+    magneticfield::AbstractVector,
+    ∇b::AbstractMatrix,
+    mass::Real,
+    charge::Real,
+    vperp::Real
+)
+    B = norm(magneticfield)
+    b = magneticfield / B
+    k = ∇b * b
+    rL = larmorradius(mass, vperp, charge, B)
+    return rL * norm(k)
+end
+function magneticcurvatureratio(
+    R::AbstractVector,
+    t::Real,
+    mass::Real,
+    charge::Real,
+    magneticmoment::Real,
+    emfields,
+    )
+    ∇b = ForwardDiff.jacobian(R) do x
+        B = emfields(x[1], x[2], x[3], t)[2]
+        return B/norm(B)
+    end
+    B = norm(emfields(R[1], R[2], R[3], t)[2])
+    vperp = perpendicular_velocity(magneticmoment, mass, B)
+    Bvec = emfields(R[1], R[2], R[3], t)[2]
+    return magneticcurvatureratio(Bvec, ∇b, mass, charge, vperp)
+end
+function magneticcurvatureratio(
+    pos::AbstractVector,
+    vel::AbstractVector,
+    t::Real,
+    mass::Real,
+    charge::Real,
+    emfields,
+    )
+    ∇b = ForwardDiff.jacobian(pos) do x
+        B = emfields(x[1], x[2], x[3], t)[2]
+        return B/norm(B)
+    end
+    Evec, Bvec = emfields(pos[1], pos[2], pos[3], t)
+    vperp = norm(perpendicular_velocity(
+        vel,
+        Bvec,
+        Evec
+    ))
+    return magneticcurvatureratio(Bvec, ∇b, mass, charge, vperp)
+end
 
 """
 Calculates the ratio between the Larmor radius and the characteristic field
@@ -364,8 +420,8 @@ function exbdrift(
 )
     B = norm(magneticfield) # Magnetic field strength
     B_inv = 1 / B
-    b̂ = magneticfield * B_inv     # Magnetic field direction (unit vector)
-    return exbdrift(b̂, electricfield, B_inv)
+    b = magneticfield * B_inv     # Magnetic field direction (unit vector)
+    return exbdrift(b, electricfield, B_inv)
 end
 function exbdrift(
     pos::AbstractVector,

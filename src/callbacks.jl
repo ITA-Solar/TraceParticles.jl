@@ -10,49 +10,40 @@ DifferentialEquations.jl.
 # -----------------------------------------------------------------------------
 
 """
-    OutOfDomainCondition_3D
-        xbounds::Tuple{<:Real, <:Real}
-        ybounds::Tuple{<:Real, <:Real}
-        zbounds::Tuple{<:Real, <:Real}
-Returns true if the particle is outside the bounds.
-"""
-mutable struct OutOfDomainCondition_3D{T<:Tuple{<:Real,<:Real}}
-    xbounds::T
-    ybounds::T
-    zbounds::T
-end
-function (self::OutOfDomainCondition_3D)(u, _, _)
-    return u[1] <= self.xbounds[1] || u[1] >= self.xbounds[2] ||
-           u[2] <= self.ybounds[1] || u[2] >= self.ybounds[2] ||
-           u[3] <= self.zbounds[1] || u[3] >= self.zbounds[2]
-end
+    OutOfBoundsCondition
+        bounds::NTuple{N, Tuple{Real, Real} where N
+        u_idxs::AbstractVector
+Returns true if the particle's statevector variable `u_idxs[i]` is outside the
+bounds given by `bounds[i]`.
 
-
+E.g. if the particle has the statevector `(x, y, z, vx, vy, vz)`, then setting
+`bounds = ( (0.0, 0.1), (1.0, 2.0) )` and `u_idxs=[1,3]` will make the condition
+return true if the particle's `x` is outside `(0.0, 1.0)` or if the particle's
+`z` is outside `(1.0, 2.0)`.
 """
-    OutOfDomainCondition_2Dxz
-        xbounds::Tuple{<:Real, <:Real}
-        zbounds::Tuple{<:Real, <:Real}
-Returns true if the particle is outside the 2D bounds in x and z.
-"""
-mutable struct OutOfDomainCondition_2Dxz{T<:Tuple{<:Real,<:Real}}
-    xbounds::T
-    zbounds::T
+struct OutOfBoundsCondition{
+    T1<:NTuple{N, Tuple{Real, Real}} where N,
+    T2<:AbstractVector,
+}
+    bounds::T1
+    u_idxs::T2
+    function OutOfBoundsCondition(bounds, u_idxs)
+        if length(u_idxs) != length(bounds)
+            throw(
+                ArgumentError("The number of bounds and u_idxs must be equal")
+            )
+        end
+        new{typeof(bounds), typeof(u_idxs)}(bounds, u_idxs)
+    end
 end
-function (self::OutOfDomainCondition_2Dxz)(u, _, _)
-    return u[1] <= self.xbounds[1] || u[1] >= self.xbounds[2] ||
-           u[3] <= self.zbounds[1] || u[3] >= self.zbounds[2]
+function (self::OutOfBoundsCondition)(u, _, _)
+    for (i, j) in zip(eachindex(self.bounds), self.u_idxs)
+        if u[j] < self.bounds[i][1] || u[j] > self.bounds[i][2]
+            return true
+        end
+    end
+    return false
 end
-
-"""
-    outofdomainaffect!(integrator)
-Callback affect which terminates the integration and sets the return message to
-"OutofDomain".
-"""
-function outofdomainaffect!(integrator)
-    integrator.p.retcode = 1
-    terminate!(integrator)
-end
-
 
 # -----------------------------------------------------------------------------
 # Relativistic particles
@@ -63,8 +54,6 @@ end
 Callback condition for checking if the GCA particle is relativistic. Returns
 `true` if the particle's kinetic energy is a user defined fraction of the rest
 energy. Perpendicular drifts other than E cross B drift are neglected.
-
-Default fraction is 0.002, which is 1022 eV for an electron.
 """
 mutable struct RelativisticConditionGCA{T<:Real}
     fractionofrestenergy::T
@@ -107,15 +96,6 @@ function set_limit!(
 end
 
 
-"""
-    relativisticaffect!(integrator)
-Callback affect which terminates the integration and sets the return message to
-"Relativistic".
-"""
-function relativisticaffect!(integrator)
-    integrator.p.retcode = 3
-    terminate!(integrator)
-end
 
 
 # -----------------------------------------------------------------------------
@@ -219,16 +199,18 @@ function (self::GCAInvalidCondition)(u, t, integrator)
         scalesratio(u, t, integrator.p, integrator.p.switch) > self.tolerance
 end
 
+
+
 """
-    GCABreakDownCondition
+    MagneticGradientCondition
 Callback condition for checking GCA assumption. Returns `true` if the ratio
 between the particle Larmor radius and the characteristic length of the
 magnetic field is higher than a tolerance `switchtol`.
 """
-mutable struct GCABreakDownCondition{T<:Real}
+mutable struct MagneticGradientCondition{T<:Real}
     tolerance::T
 end
-function (self::GCABreakDownCondition)(u, t, integrator)
+function (self::MagneticGradientCondition)(u, t, integrator)
     R = SVector(u[1], u[2], u[3]) # The gyrocentre position vector
     ratio = scalesratio(
         R,
@@ -242,30 +224,130 @@ function (self::GCABreakDownCondition)(u, t, integrator)
 end
 
 """
+    MagneticCurvatureCondition
+# Fields
+- `tolerance`
+A callback condition that returns true if the ratio between the particle's
+Larmor radius and curvature radius of the local magnetic field is larger than
+the `tolerance`.
+"""
+struct MagneticCurvatureCondition{T<:Real}
+    tolerance::T
+end
+function (self::MagneticCurvatureCondition)(u, t, integrator)
+    R = SVector(u[1], u[2], u[3])
+    ratio = magneticcurvatureratio(
+        R,
+        t,
+        integrator.p.mass,
+        integrator.p.charge,
+        integrator.p.magneticmoment,
+        integrator.p.electromagneticfield,
+    )
+    return ratio > self.tolerance
+end
+
+"""
+    ParallelElectricFieldCondition
+# Fields
+- `tolerance`
+A callback condition that returns true if the local electric field component
+parallel to the magnetic field is larger than the electric field component
+perpendicular to the magnetic field by a factor of `tolerance`.
+"""
+struct ParallelElectricFieldCondition{T<:Real}
+    tolerance::T
+end
+function (self::ParallelElectricFieldCondition)(u, t, integrator)
+    Evec, Bvec = integrator.p.electromagneticfield(u[1], u[2], u[3], t)
+    b = Bvec / norm(Bvec)
+    Eparal = Evec ⋅ b
+    Eperp = norm(Evec - Eparal * b)
+    return Eparal/Eperp > self.tolerance
+end
+
+"""
     set_tol!(
-        condition::Union{GCABreakDownCondition, GCABreakDownCondition_2Dxz},
+        condition,
         tol
     )
 Sets the tolerance for the GCABreakDownCondition.
 """
 function set_tol!(
-    condition::GCABreakDownCondition,
+    condition,
     tol
 )
     condition.tolerance = tol
 end
 
+function hybridswitch_affect!(integrator)
+    integrator.p.gca = !integrator.p.gca
+end
+
+#-------------------------------------------------------------------------------
+# Termination effects
+#-------------------------------------------------------------------------------
+"""
+An EnumX module containing termination codes. The codes are set by callback
+affects that terminate the solver. E.g. the callback affect `outofboundsaffect!`
+will terminate the integration and set the parameter `terminationcode` to
+`TerminationCode.OutOfBounds`.
+"""
+@enumx TerminationCode begin
+    NotTerminated
+    OutOfBounds
+    MagneticGradient
+    MagneticCurvature
+    ParallelElectricField
+    Relativistic
+end
 
 """
-    gcabreakdownaffect!(integrator)
-Callback affect which terminates the integration and sets the return message to
-"GCABreakDown".
+    outofboundsnaffect!(integrator)
+Callback affect which terminates the integration and sets the termination
+message to `TerminationCode.OutOfBounds`.
 """
-function gcabreakdownaffect!(integrator)
-    integrator.p.retcode = 2
+function outofboundsaffect!(integrator)
+    integrator.p.terminationcode = TerminationCode.OutOfBounds
     terminate!(integrator)
 end
 
-function hybridswitch_affect!(integrator)
-    integrator.p.gca = !integrator.p.gca
+"""
+    magneticgradientaffect!(integrator)
+Callback affect which terminates the integration and sets the return message to
+`TerminationCode.MagneticGradient`.
+"""
+function magneticgradientaffect!(integrator)
+    integrator.p.terminationcode = TerminationCode.MagneticGradient
+    terminate!(integrator)
+end
+
+"""
+    magneticcurvatureaffect!(integrator)
+Callback affect which terminates the integration and sets the return message to
+`TerminationCode.MagneticCurvature`.
+"""
+function magneticcurvatureaffect!(integrator)
+    integrator.p.terminationcode = TerminationCode.MagneticCurvature
+    terminate!(integrator)
+end
+
+"""
+    parallelelectricfieldaffect!(integrator)
+Callback affect which terminates the integration and sets the return message to
+`TerminationCode.ParallelElectricField`.
+"""
+function parallelelectricfieldaffect!(integrator)
+    integrator.p.terminationcode = TerminationCode.ParallelElectricField
+    terminate!(integrator)
+end
+
+"""
+    relativisticaffect!(integrator)
+Callback affect which terminates the integration and sets the return message to
+`TerminationCode.Relativistic`.
+"""
+function relativisticaffect!(integrator)
+    integrator.p.terminationcode = TerminationCode.Relativistic
+    terminate!(integrator)
 end

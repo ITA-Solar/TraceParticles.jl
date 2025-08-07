@@ -17,6 +17,7 @@ using DataFrames
 using Dates
 using DifferentialEquations
 using Distributed
+using EnumX
 using ForwardDiff
 using HDF5
 using Interpolations
@@ -61,9 +62,9 @@ export
     StaticInterpolation,
     XZInterpolation,
     StaticXZInterpolation
-# runs.jl
+# constants.jl
 export
-    rerun
+    J2eV
 # equations_of_motion.jl
 export
     guidingcentreapproximation!,
@@ -87,13 +88,18 @@ export
     magneticmoment
 # callbacks.jl
 export
-    OutOfDomainCondition_3D,
-    OutOfDomainCondition_2Dxz,
+    OutOfBoundsCondition,
+    MagneticGradientCondition,
+    MagneticCurvatureCondition,
+    ParallelElectricFieldCondition,
     RelativisticConditionGCA,
-    GCABreakDownCondition,
-    outofdomainaffect!,
+    outofboundsaffect!,
+    magneticgradientaffect!,
+    magneticcurvatureaffect!,
+    parallelelectricfieldaffect!,
     relativisticaffect!,
-    gcabreakdownaffect!
+    gcabreakdownaffect!,
+    TerminationCode
 # problem_functions.jl
 export
     DposMBvel,
@@ -123,8 +129,8 @@ export
     create_bifrost_itps
 # dataprosessing.jl
 export
-    initialstate_retmsg,
-    finalstate_retmsg,
+    initialstate_terminationcode,
+    finalstate_terminationcode,
     initialstate_nonthermal,
     initialstate_maxiters,
     initialstate_idxs,
@@ -138,8 +144,8 @@ export
 # get.jl
 export
     get_observable
-# constants.jl
+# runs.jl
 export
-    J2eV
+    rerun
 #-------------------------------------------------------------------------------
 end
