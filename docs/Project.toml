@@ -1,6 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-TestParticles = "391c92f7-b09d-4c05-9261-2c00f62b9ca4"
+TraceParticles = "391c92f7-b09d-4c05-9261-2c00f62b9ca4"
 
 [compat]
 Documenter = "1.8"
