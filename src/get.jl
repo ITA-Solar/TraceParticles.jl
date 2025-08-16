@@ -91,7 +91,8 @@ function get_observable(
     elseif isnothing(t)
         throw(ArgumentError(
             "Observable $sym is not implemented without a specified time." *
-            "Try setting the keyword argument `t`."
+            "Try setting the keyword argument `t`, or maybe you want to pass" *
+            " a single `ODESolution` instead of several?`"
         ))
     end
     # Variables at specific times
@@ -136,7 +137,7 @@ function get_observable(
         obs = [sol(t)[6] for t in times]
     elseif sym == :t
         obs = times
-    elseif sym == :mu
+    elseif sym == :mu || sym == :magneticmoment
         obs = [
             TraceParticles.magneticmoment(
                 sol(t, idxs=1:3),
@@ -227,7 +228,58 @@ function get_observable(
                 sol(t, idxs=1:3), t, sol.prob.p.electromagneticfield
             ) for t in times
         ]
-
+    elseif sym == :magneticcurvatureratio || sym == :mcr
+        if EoM == "GCA"
+            obs = [
+                magneticcurvatureratio(
+                    sol(t, idxs=1:3),
+                    t,
+                    sol.prob.p.mass,
+                    sol.prob.p.charge,
+                    sol.prob.p.magneticmoment,
+                    sol.prob.p.electromagneticfield
+                ) for t in times
+            ]
+        elseif EoM == "FO"
+            obs = [
+                magneticcurvatureratio(
+                    sol(t, idxs=1:3),
+                    sol(t, idxs=4:6),
+                    t,
+                    sol.prob.p.mass,
+                    sol.prob.p.charge,
+                    sol.prob.p.electromagneticfield
+                ) for t in times
+            ]
+        end
+    elseif sym == :gyrofrequency
+        obs = [norm(sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]) *
+               sol.prob.p.charge / sol.prob.p.mass for t in times]
+    elseif sym == :gyroperiod
+        factor = 2π * sol.prob.p.mass /
+                 sol.prob.p.charge
+        obs = factor / [
+            norm(sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2])
+            for t in times
+        ]
+    elseif sym == :pitchangle
+        if EoM == "GCA"
+            obs = [
+                pitchangle(
+                    sol.prob.p.electromagneticfield(sol(t, idxs=1:3)..., t)[2],
+                    sol(t, idxs=4),
+                    sol.prob.p.mass,
+                    sol.prob.p.magneticmoment,
+                ) for t in times
+            ]
+        elseif EoM == "FO"
+            B = [
+                sol.prob.p.electromagneticfield(sol(t, idxs=1:3)..., t)[2]
+                for t in times
+            ]
+            vel = [sol(t, idxs=4:6) for t in times]
+            obs = pitchangle.(vel, B)
+        end
     elseif sym == :energy
         obs = [get_energy(sol, t; EoM=EoM) for t in times]
     elseif sym == :fermi
