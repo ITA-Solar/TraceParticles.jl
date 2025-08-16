@@ -17,20 +17,22 @@ the field at the position.
 using Base: Forward
 """
 function fieldlinetracing_forward!(du, u, p, _)
-    x, y, z = u[1], [2], u[3]
-    field = p.field(x, y, z)
+    time = p.time
+    x, y, z = u[1], u[2], u[3]
+    field = p.field(x, y, z, time)
     fieldstrength = norm(field)
     fielddirection = field ./ fieldstrength
     dsdt = fielddirection
-    du[:] .= dsdt
+    du[1:3] .= dsdt
 end
 function fieldlinetracing_backward!(du, u, p, _)
-    x, y, z = u[1], [2], u[3]
-    field = p.field(x, y, z)
+    time = p.time
+    x, y, z = u[1], u[2], u[3]
+    field = p.field(x, y, z, time)
     fieldstrength = norm(field)
     fielddirection = field ./ fieldstrength
     dsdt = -fielddirection
-    du[:] .= dsdt
+    du[1:3] .= dsdt
 end
 
 """
