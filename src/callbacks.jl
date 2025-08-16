@@ -22,7 +22,7 @@ return true if the particle's `x` is outside `(0.0, 1.0)` or if the particle's
 `z` is outside `(1.0, 2.0)`.
 """
 struct OutOfBoundsCondition{
-    T1<:NTuple{N, Tuple{Real, Real}} where N,
+    T1<:NTuple{N,Tuple{Real,Real}} where {N},
     T2<:AbstractVector,
 }
     bounds::T1
@@ -33,7 +33,7 @@ struct OutOfBoundsCondition{
                 ArgumentError("The number of bounds and u_idxs must be equal")
             )
         end
-        new{typeof(bounds), typeof(u_idxs)}(bounds, u_idxs)
+        new{typeof(bounds),typeof(u_idxs)}(bounds, u_idxs)
     end
 end
 function (self::OutOfBoundsCondition)(u, _, _)
@@ -75,131 +75,78 @@ function (self::RelativisticConditionGCA)(u, t, integrator)
     return energy > self.fractionofrestenergy
 end
 
-
-"""
-    set_limit!(
-        condition::Union{
-            RelativisticConditionGCA,
-            RelativisticConditionGCA_2Dxz
-        };
-        mass,
-        fraction,
-)
-Sets the energy limit for the the relativistic condition.
-"""
-function set_limit!(
-    condition::RelativisticConditionGCA,
-    mass,
-    fraction,
-)
-    condition.energylimit = fraction * mass * csqrd
-end
-
-
-
-
 # -----------------------------------------------------------------------------
-# Hybrid switching
+# GCA breakdown and validity conditions
 # -----------------------------------------------------------------------------
 """
-    switch2gca_affect!(integrator)
-Callback affect which switches to the guiding centre approximation by setting
-the parameter `switch` to `1` and transforming `u` to the guiding centre state.
+    HybridSwitchCondition
+Callback condition for checking whether it's time to switch equations of motion
+when using the hybrid GCA/FO method. The condition returns `true` if the current
+equations are full orbit and the GCA is determined to be valid, or if the
+current equations are GCA but the GCA is determined to be invalid.
+
+The GCA is determined to be invalid in the following cases:
+- The ratio between the particle's Larmor radius and the characteristic length
+  of the magnetic field strength is larger than `tol_gradient`.
+- The ratio between the particle's Larmor radius and the curvature radius of
+  the magnetic field is larger than `tol_curvature`.
+- The ratio between the parallel and perpendicular electric field components
+  is larger than `tol_efield`.
+
+The GCA is determined to be valid if the points above are false even with an
+additional factor `switchback_tol` applied to the tolerances. The switchback
+tolerance is used to avoid rapid oscillations between the GCA and full orbit.
 """
-function switch2gca_affect!(integrator)
-    B, E = emfieldatpos(integrator.u[1:3], integrator.p.fields)
-    get_guidingcentre!(
-        integrator.u, # In-place (will be changed)
-        integrator.p.magneticmoment,# In-place
-        integrator.u[1:3],
-        integrator.u[4:6],
-        B, E,
-        integrator.p.charge,
-        integrator.p.mass
-    )
-    # Set switch to full orbit case
-    integrator.p.switch = 1
+struct HybridSwitchCondition{T<:Real}
+    tol_gradient::T
+    tol_curvature::T
+    tol_efield::T
+    switchback_tol::T # Set to 0.9 by Adam Stanier
 end
+function (self::HybridSwitchCondition)(u, t, integrator)
+    x, y, z = u[1], u[2], u[3]
+    pos = SVector(x, y, z)
+    q, m = integrator.p.charge, integrator.p.mass
+    Eratio = eratio(pos, t, integrator.p.electromagneticfield)
+    if integrator.p.eomid == 1
+        # Current scheme is guiding centre approximation
+        kratio = magneticcurvatureratio(
+            pos, t, m, q, integrator.p.magneticmoment,
+            integrator.p.electromagneticfield
+        )
+        gratio = scalesratio(
+            pos, t, m, q, integrator.p.magneticmoment,
+            integrator.p.electromagneticfield
+        )
 
-
-"""
-    switch2fo_affect!(integrator)
-Callback affect which switches to full orbit integration by setting
-the parameter `switch` to `2` and transforming `u` to a full orbit state.
-"""
-function switch2fo_affect!(integrator)
-    B, E = emfieldatpos(integrator.u[1:3], integrator.p.fields)
-    phaseangle = rand(integrator.p.rng, 0.0, Float64(pi))
-    get_fullorbit!(
-        integrator.u,
-        B, E,
-        integrator.u[1:3],
-        integrator.u[4],
-        integrator.p.magneticmoment,
-        integrator.p.charge,
-        integrator.p.mass,
-        phaseangle
-    )
-    # Set switch to full orbit case
-    integrator.p.switch = 2
-end
-
-
-"""
-    switch_affect!(integrator)
-Callback affect that checks the `switch` parameter and switches the EoM, either
-from full orbit integration to the guiding centre approximation or the
-opposite.
-"""
-function switch_affect!(integrator)
-    println("Switch_affect!")
-    println("Switch value before: $(integrator.p.switch)")
-    #    println("mu before:           $(integrator.p.magneticmoment)")
-    println("u before: $(integrator.u)")
-    if integrator.p.switch == 1
-        switch2fo_affect!(integrator)
-    else
-        switch2gca_affect!(integrator)
+        c1 = gratio > self.tol_gradient
+        c2 = kratio > self.tol_curvature
+        c3 = Eratio > self.tol_efield
+        if c1 || c2 || c3
+            return true
+        else
+            return false
+        end
+    elseif integrator.p.eomid == 2
+        vel = SVector(u[4], u[5], u[6]) # The full orbit velocity vector
+        kratio = magneticcurvatureratio(
+            pos, vel, t, m, q,
+            integrator.p.electromagneticfield
+        )
+        gratio = scalesratio(
+            pos, vel, t, m, q,
+            integrator.p.electromagneticfield
+        )
+        c1 = gratio < self.tol_gradient * self.switchback_tol
+        c2 = kratio < self.tol_curvature * self.switchback_tol
+        c3 = Eratio < self.tol_efield * self.switchback_tol
+        if c1 && c2 && c3
+            return true
+        else
+            return false
+        end
     end
-    println("Switch value after:  $(integrator.p.switch)")
-    #    println("mu after:            $(integrator.p.magneticmoment)")
-    println("u after:  $(integrator.u)")
 end
-
-
-# -----------------------------------------------------------------------------
-# GCA breakdown and validity condition
-# -----------------------------------------------------------------------------
-"""
-    GCAValidCondition
-Callback condition for checking GCA assumption. Returns `true` if the ratio
-between the particle Larmor radius and the characteristic length of the
-magnetic field is lower than a tolerance `switchtol`.
-"""
-struct GCAValidCondition
-    tolerance::Real
-end
-function (functor::GCAValidCondition)(u, t, integrator)
-    ratio = scalesratio(u, t, integrator.p)
-    return ratio < functor.tolerance
-end
-
-
-"""
-    GCAInvalidCondition
-Callback condition for checking GCA assumption. Returns `true` if the ratio
-between the particle Larmor radius and the characteristic length of the
-magnetic field is higher than a `tolerance`.
-"""
-struct GCAInvalidCondition
-    tolerance::Real
-end
-function (self::GCAInvalidCondition)(u, t, integrator)
-    integrator.p.switch == 1 &&
-        scalesratio(u, t, integrator.p, integrator.p.switch) > self.tolerance
-end
-
-
 
 """
     MagneticGradientCondition
@@ -262,30 +209,73 @@ function (self::ParallelElectricFieldCondition)(u, t, integrator)
     Evec, Bvec = integrator.p.electromagneticfield(u[1], u[2], u[3], t)
     b = Bvec / norm(Bvec)
     Eparal = Evec ⋅ b
-    Eperp = norm(Evec - Eparal * b)
-    return Eparal/Eperp > self.tolerance
-end
-
-"""
-    set_tol!(
-        condition,
-        tol
-    )
-Sets the tolerance for the GCABreakDownCondition.
-"""
-function set_tol!(
-    condition,
-    tol
-)
-    condition.tolerance = tol
-end
-
-function hybridswitch_affect!(integrator)
-    integrator.p.gca = !integrator.p.gca
+    Eperp = eperp(Evec, b, Eparal)
+    return Eparal / Eperp > self.tolerance
 end
 
 #-------------------------------------------------------------------------------
-# Termination effects
+# Callback affects
+#-------------------------------------------------------------------------------
+"""
+    switchaffect!(integrator)
+Callback affect that checks the `switch` parameter and switches the EoM, either
+from full orbit integration to the guiding centre approximation or the
+opposite.
+"""
+function switchaffect!(integrator)
+    if integrator.p.eomid == 1
+        switch2fo_affect!(integrator)
+    elseif integrator.p.eomid == 2
+        switch2gca_affect!(integrator)
+    else
+        @warn """Trying to switch EoM, but switch paramer is neither 1 nor 2.
+Current value: $(integrator.p.eomid)."""
+    end
+end
+
+
+"""
+    switch2gca_affect!(integrator)
+Callback affect which switches to the guiding centre approximation by setting
+the parameter `switch` to `1` and transforming `u` to the guiding centre state.
+"""
+function switch2gca_affect!(integrator)
+    integrator.p.magneticmoment = get_guidingcentre!(
+        integrator.u,
+        integrator.t,
+        integrator.p.electromagneticfield,
+        integrator.p.charge,
+        integrator.p.mass
+    )
+    # Set switch to full orbit case
+    integrator.p.nswitches += 1
+    integrator.p.eomid = 1
+end
+
+
+"""
+    switch2fo_affect!(integrator)
+Callback affect which switches to full orbit integration by setting
+the parameter `switch` to `2` and transforming `u` to a full orbit state.
+"""
+function switch2fo_affect!(integrator)
+    phaseangle = integrator.p.getphase(integrator)
+    get_fullorbit!(
+        integrator.u,
+        integrator.t,
+        integrator.p.electromagneticfield,
+        integrator.p.magneticmoment,
+        integrator.p.charge,
+        integrator.p.mass,
+        phaseangle
+    )
+    # Set switch to full orbit case
+    integrator.p.nswitches += 1
+    integrator.p.eomid = 2
+end
+
+#-------------------------------------------------------------------------------
+# Callback affects that terminate
 #-------------------------------------------------------------------------------
 """
 An EnumX module containing termination codes. The codes are set by callback
@@ -350,4 +340,40 @@ Callback affect which terminates the integration and sets the return message to
 function relativisticaffect!(integrator)
     integrator.p.terminationcode = TerminationCode.Relativistic
     terminate!(integrator)
+end
+
+#-------------------------------------------------------------------------------
+# Other functions
+#-------------------------------------------------------------------------------
+"""
+    set_limit!(
+        condition::Union{
+            RelativisticConditionGCA,
+            RelativisticConditionGCA_2Dxz
+        };
+        mass,
+        fraction,
+)
+Sets the energy limit for the the relativistic condition.
+"""
+function set_limit!(
+    condition::RelativisticConditionGCA,
+    mass,
+    fraction,
+)
+    condition.energylimit = fraction * mass * csqrd
+end
+
+"""
+    set_tol!(
+        condition,
+        tol
+    )
+Sets the tolerance for the GCABreakDownCondition.
+"""
+function set_tol!(
+    condition,
+    tol
+)
+    condition.tolerance = tol
 end

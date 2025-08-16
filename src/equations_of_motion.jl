@@ -46,7 +46,7 @@ function lorentzforce!(du, u, p, t)
     E, B = p.electromagneticfield(u[1], u[2], u[3], t)
     dvdt = q / m * (E + v × B)
     dxdt = v
-    du .= [dxdt; dvdt]
+    du[1:6] .= [dxdt; dvdt]
 end
 
 
@@ -90,10 +90,10 @@ end
 A hybrid EoM. Runs either the guiding centre approximation or full orbit
 integration depending on the parameter `switch`.
 """
-function hybridgcafo!(du, u, p, _)
-    if p.switch == 1
-        guidingcentreapproximation!(du, u, p, nothing)
-    elseif p.switch == 2
-        lorentzforce!(du, u, p, nothing)
+function hybridgcafo!(du, u, p, t)
+    if p.eomid == 1
+        guidingcentreapproximation!(du, u, p, t)
+    elseif p.eomid == 2
+        lorentzforce!(du, u, p, t)
     end
 end

@@ -68,7 +68,8 @@ export
 # equations_of_motion.jl
 export
     guidingcentreapproximation!,
-    lorentzforce!
+    lorentzforce!,
+    hybridgcafo!
 # statistics.jl
 export
     rejectionsample,
@@ -93,12 +94,13 @@ export
     MagneticCurvatureCondition,
     ParallelElectricFieldCondition,
     RelativisticConditionGCA,
+    HybridSwitchCondition,
     outofboundsaffect!,
     magneticgradientaffect!,
     magneticcurvatureaffect!,
     parallelelectricfieldaffect!,
     relativisticaffect!,
-    gcabreakdownaffect!,
+    switchaffect!,
     TerminationCode
 # problem_functions.jl
 export
@@ -115,7 +117,8 @@ export
 # parameterstructs.jl
 export
     GCAParams,
-    ParticleParams
+    ParticleParams,
+    HybridParams
 # io.jl
 export
     h5_getall,

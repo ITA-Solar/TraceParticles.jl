@@ -18,20 +18,6 @@ mutable struct ParticleParams{T1<:Real,T2}
     end
 end
 
-"""
-    HybridParams
-Parameter container for a hybrid GCA/FO particle simulation. The `switch`
-determines which EoM to use and the random number generator `rng` is used to
-determine the particle phase when switching from GCA to full orbit integration.
-"""
-mutable struct HybridParams
-    charge::Real
-    mass::Real
-    magneticmoment::Real
-    fields
-    rng::AbstractRNG
-    switch::Int
-end
 
 mutable struct GCAParams{T1<:Real,T2,T3<:Int,T4}
     charge::T1
@@ -48,11 +34,11 @@ mutable struct GCAParams{T1<:Real,T2,T3<:Int,T4}
         mass::T1,
         electromagneticfield::T2,
         magneticmoment::T1,
-        weight::T1,
-        nrejections::T3,
-        terminationcode::T4,
+        weight::T1=1.0,
+        nrejections::T3=0,
+        terminationcode::T4=TerminationCode.NotTerminated,
     ) where {T1<:Real,T2,T3<:Int,T4}
-        new{T1,T2,T3, T4}(
+        new{T1,T2,T3,T4}(
             charge,
             mass,
             electromagneticfield,
@@ -60,6 +46,71 @@ mutable struct GCAParams{T1<:Real,T2,T3<:Int,T4}
             weight,
             nrejections,
             terminationcode,
+        )
+    end
+end
+
+"""
+    HybridParams
+Parameter container for a hybrid GCA/FO particle simulation. The `switch`
+determines which EoM to use and the random number generator `rng` is used to
+determine the particle phase when switching from GCA to full orbit integration.
+"""
+mutable struct HybridParams{
+    T1<:Real,
+    T2,
+    T3<:Int,
+    T4,
+    T5<:AbstractRNG,
+    T6<:Function,
+    #T7<:AbstractArray
+}
+    charge::T1
+    mass::T1
+    electromagneticfield::T2
+    magneticmoment::T1
+    weight::T1
+    nrejections::T3
+    terminationcode::T4
+    rng::T5
+    getphase::T6
+    eomid::T3
+    nswitches::T3
+    #maxswitches::T3
+    #timeatswitch::T7
+    #eomidafterswitch::T7
+
+    function HybridParams(
+        ;
+        charge::T1,
+        mass::T1,
+        electromagneticfield::T2,
+        magneticmoment::T1,
+        weight::T1=1.0,
+        nrejections::T3=0,
+        terminationcode::T4=TerminationCode.NotTerminated,
+        rng::T5=Xoshiro(1),
+        getphase::T6=(integrator) -> rand(
+            integrator.p.rng, 0.0, Float64(pi)
+        ),
+        eomid::T3=1,
+        nswitches::T3=0,
+        #maxswitches::T3=100,
+    ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
+        #timeatswitch = Vector{Float64}(undef, maxswitches),
+        #eomidafterswitch = Vector{Int32}(undef, maxswitches),
+        new{T1,T2,T3,T4,T5,T6}(
+            charge,
+            mass,
+            electromagneticfield,
+            magneticmoment,
+            weight,
+            nrejections,
+            terminationcode,
+            rng,
+            getphase,
+            eomid,
+            nswitches
         )
     end
 end

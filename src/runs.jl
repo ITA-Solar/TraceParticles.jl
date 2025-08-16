@@ -47,12 +47,12 @@ function rerun(
     end
 
     for cb in solve_kwargs[:callback].discrete_callbacks
-        if cb.condition isa GCABreakDownCondition_2Dxz && !isnothing(gcatol)
+        if cb.condition isa MagneticGradientCondition && !isnothing(gcatol)
             set_tol!(cb.condition, gcatol)
         elseif (
-                (cb.condition isa RelativisticConditionGCA_2Dxz) &&
-                !isnothing(relativistic_tol)
-            )
+            (cb.condition isa RelativisticConditionGCA) &&
+            !isnothing(relativistic_tol)
+        )
             set_limit!(cb.condition, mass, relativistic_tol)
         end
     end
@@ -96,7 +96,7 @@ function rerun(
         tspans,
         merge(
             Dict(:safetycopy => false),
-            Dict{Symbol, Any}(k => v for (k, v) in kwargs)
+            Dict{Symbol,Any}(k => v for (k, v) in kwargs)
         ),
         s_kwargs;
         alg=alg,
@@ -130,9 +130,9 @@ function rerun(
     charge::Real,
     mass::Real,
     electromagneticfield::Any,
-    tspans::Vector{<:Tuple{Real, Real}},
-    ensemble_prob_kwargs::Dict{<:Symbol, <:Any},
-    solve_kwargs::Dict{<:Symbol, <:Any};
+    tspans::Vector{<:Tuple{Real,Real}},
+    ensemble_prob_kwargs::Dict{<:Symbol,<:Any},
+    solve_kwargs::Dict{<:Symbol,<:Any};
     alg=Rosenbrock23(),
     parallelisation=EnsembleSerial(),
 )

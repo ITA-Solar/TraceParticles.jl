@@ -131,7 +131,7 @@ function perpendicular_velocity(
     t::Real,
     emfields,
 )
-    electricfield, magneticfield =  emfields(pos[1], pos[2], pos[3], t)
+    electricfield, magneticfield = emfields(pos[1], pos[2], pos[3], t)
     return perpendicular_velocity(vel, magneticfield, electricfield)
 end
 
@@ -201,6 +201,12 @@ function characteristicfieldlength(
     return characteristicfieldlength(fieldstrength, grad)
 end
 
+function magneticcurvature(
+    b::AbstractVector,
+    ∇b::AbstractMatrix,
+)
+    return ∇b * b
+end
 """
     magneticcurvatureratio(R, t, charge, mass, magneticmoment, emfields)
     magneticcurvatureratio(pos, vel, t, charge, mass, emfields)
@@ -227,10 +233,10 @@ function magneticcurvatureratio(
     charge::Real,
     magneticmoment::Real,
     emfields,
-    )
+)
     ∇b = ForwardDiff.jacobian(R) do x
         B = emfields(x[1], x[2], x[3], t)[2]
-        return B/norm(B)
+        return B / norm(B)
     end
     B = norm(emfields(R[1], R[2], R[3], t)[2])
     vperp = perpendicular_velocity(magneticmoment, mass, B)
@@ -244,10 +250,10 @@ function magneticcurvatureratio(
     mass::Real,
     charge::Real,
     emfields,
-    )
+)
     ∇b = ForwardDiff.jacobian(pos) do x
         B = emfields(x[1], x[2], x[3], t)[2]
-        return B/norm(B)
+        return B / norm(B)
     end
     Evec, Bvec = emfields(pos[1], pos[2], pos[3], t)
     vperp = norm(perpendicular_velocity(
@@ -771,12 +777,15 @@ function get_guidingcentre(
     vel::AbstractVector,
     time::Real,
     electromagneticfield,
-    args...
+    charge::Real,
+    mass::Real,
 )
     electricfield, magneticfield = electromagneticfield(
         pos[1], pos[2], pos[3], time
     )
-    return get_guidingcentre(pos, vel, magneticfield, electricfield, args...)
+    return get_guidingcentre(
+        pos, vel, magneticfield, electricfield, charge, mass
+    )
 end
 
 """
@@ -785,9 +794,32 @@ In-place version of `get_guidingcentre`.
 """
 function get_guidingcentre!(
     u::AbstractVector,
-    args...
+    time::Real,
+    electromagnticfield,
+    charge::Real,
+    mass::Real,
 )
-    R, vparal, mu = get_guidingcentre(args...)
+    x, y, z, vx, vy, vz = u
+    pos = SVector(x, y, z)
+    vel = SVector(vx, vy, vz)
+    E, B = electromagnticfield(x, y, z, time)
+    R, vparal, mu = get_guidingcentre(pos, vel, B, E, charge, mass)
+    u[1:3] .= R
+    u[4] = vparal
+    return mu
+end
+function get_guidingcentre!(
+    u::AbstractVector,
+    pos::AbstractVector,
+    vel::AbstractVector,
+    magneticfield::AbstractVector,
+    electricfield::AbstractVector,
+    charge::Real,
+    mass::Real,
+)
+    R, vparal, mu = get_guidingcentre(
+        pos, vel, magneticfield, electricfield, charge, mass
+    )
     u[1:3] .= R
     u[4] = vparal
     return mu
@@ -854,9 +886,17 @@ In-place version of `get_fullorbit`.
 """
 function get_fullorbit!(
     u::AbstractVector,
-    args...
+    time::Real,
+    electromagneticfield,
+    μ::Real,
+    charge::Real,
+    mass::Real,
+    phaseangle::Real
 )
-    u[:] .= get_fullorbit(args...)
+    Rx, Ry, Rz, vparal = u
+    R = SVector(Rx, Ry, Rz)
+    E, B = electromagneticfield(Rx, Ry, Rz, time)
+    u[1:6] .= get_fullorbit(B, E, R, vparal, μ, charge, mass, phaseangle)
     return nothing
 end
 
@@ -995,4 +1035,26 @@ function criticalvelocity_cgs(n, T, E, m; coulomb_logarithm=20)
     E_D = dreicerfield_cgs(n, T; coulomb_logarithm=coulomb_logarithm)
     v_th = sqrt(TraceParticles.k_B_cgs * T / m)
     return v_th * sqrt(E_D / E)
+end
+
+function eperp(
+    Evec::AbstractVector,
+    b::AbstractVector,
+    eparal::Real,
+)
+    return norm(Evec - eparal * b)
+end
+
+function eratio(
+    pos::AbstractVector,
+    t::Real,
+    emfields,
+)
+    E, B = emfields(pos[1], pos[2], pos[3], t)
+    B_norm = norm(B)
+    b = B / B_norm
+    E_paral = E ⋅ b
+    E_perp = eperp(E, b, E_paral)
+    E_ratio = iszero(E_perp) & iszero(E_paral) ? 0.0 : E_paral / E_perp
+    return E_ratio
 end
