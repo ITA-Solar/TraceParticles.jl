@@ -20,11 +20,12 @@ Prints some statistics about the current batch.
 """
 function print_batch_statistics(batch)
     println("")
-    println("Timestamp:                   $(now())")
+    println("Timestamp:                   $(now())\n")
     println("                  Summary statistics")
     println("Number of particles:         $(size(batch)[1])")
     @printf "Average number of timesteps: %.1f\n" mean(batch.nt)
     @printf "Average end time:            %.3f\n" mean(batch.tf)
+    @printf "Initial time:                %.3f\n" batch.t0[1]
     println("Number of maxiters:          $(sum(batch.retcode .== 4))")
     println("Number of OutofDomain:       $(sum(batch.terminationcode .== 1))")
     println("Number of MagneticGradient:  $(sum(batch.terminationcode .== 2))")
@@ -54,7 +55,7 @@ mutable struct SaveBatchAsHDF5
     batchnr::Int
     batchsize::Int
     nbatches::Int
-    metadata::Dict{<:String, <:Any}
+    metadata::Dict{<:String,<:Any}
     verbose::Bool
     function SaveBatchAsHDF5(
         expdir::String,
@@ -62,7 +63,7 @@ mutable struct SaveBatchAsHDF5
         batchsize::Int,
         nbatches::Int;
         suffix::String="",
-        metadata::Dict{<:String, <:Any}=Dict{String, Any}(),
+        metadata::Dict{<:String,<:Any}=Dict{String,Any}(),
         verbose::Bool=true
     )
         batchnr = 0
@@ -128,7 +129,7 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
         try
             CSV.write("./tp_panic.csv", df)
             @info "Error writing batch to HDF5-file. The batch has been written " *
-                "as a `DataFrame` in 'tp_panic.csv'."
+                  "as a `DataFrame` in 'tp_panic.csv'."
         catch e2
             @warn "Writing panic-file failed: $e2"
         finally
