@@ -42,7 +42,9 @@ end
         electricfield = SA[1.0, 0.0, 0.0]
         charge = 1.0
         mass = 0.5
-        u, mu = get_guidingcentre(pos, vel, magneticfield, electricfield, charge, mass)
+        R, vparal, mu = get_guidingcentre(pos, vel, magneticfield, electricfield, charge, mass)
+        u[1:3] .= R
+        u[4] = vparal
         @test isapprox(u[1:3], [2.0, 0.0, 0.0], atol=1e-6)
         @test isapprox(u[4], 1.0, atol=1e-6)
         @test isapprox(mu, 1.0, atol=1e-6)

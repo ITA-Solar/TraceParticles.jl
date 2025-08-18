@@ -920,6 +920,29 @@ function cosineof_pitchangle(
     return sqrt(1 / (2B * magneticmoment / (mass * parallel_velocity^2) + 1))
 end
 
+function pitchangle(
+    magneticfield::AbstractVector,
+    parallel_velocity::Real,
+    mass::Real,
+    magneticmoment::Real,
+)
+    return acos(cosineof_pitchangle(
+        magneticfield,
+        parallel_velocity,
+        mass,
+        magneticmoment
+    ))
+end
+function pitchangle(
+    velocity::AbstractVector,
+    magneticfield::AbstractVector,
+)
+    B = norm(magneticfield)
+    v = norm(velocity)
+    β = velocity ⋅ magneticfield / (v * B)
+    return acos(β)
+end
+
 """
     lorentzfactor(speed::Real)
 The relativistic Lorentz factor in SI units.
