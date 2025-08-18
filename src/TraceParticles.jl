@@ -27,6 +27,7 @@ using Printf
 using Random
 using StaticArrays
 using StatsBase
+using Statistics
 
 
 #_______________________________________________________________________________
