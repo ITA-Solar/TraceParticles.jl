@@ -41,8 +41,17 @@ function get_br_var_interpolator(
     end
     var = stack(var)
     var = dropdims(var)
-    br_axes = get_axes(brxp, units=units)
-    br_axes = dropdims(br_axes)
+    xaxis, yaxis, zaxis = get_axes(brxp, units=units)
+    if haskey(kwargs, :slicex)
+        xaxis = xaxis[kwargs[:slicex]]
+    end
+    if haskey(kwargs, :slicey)
+        yaxis = yaxis[kwargs[:slicey]]
+    end
+    if haskey(kwargs, :slicez)
+        zaxis = zaxis[kwargs[:slicez]]
+    end
+    br_axes = dropdims( (xaxis, yaxis, zaxis) )
     if snaps isa AbstractVector
         times = get_var(brxp, snaps, "t"; units=units)
         br_axes = (br_axes..., times)

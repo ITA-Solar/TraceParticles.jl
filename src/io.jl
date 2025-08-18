@@ -359,6 +359,7 @@ function create_bifrost_itps(
     normalise=fill(false, length(variables)),
     destagger=fill(false, length(variables)),
     xzinterpolation=false,
+    kwargs...
 )
     if length(variables) != length(normalise) != length(destagger)
         throw(ArgumentError(
@@ -382,11 +383,12 @@ function create_bifrost_itps(
     if "BE" ∈ variables
         interpolator = get_br_emfield_vecof_interpolators(
             brxp,
-            snaps,
+            snaps;
             itp_type=itp_type,
             itp_bc=itp_bc,
             units=units,
             destagger=true,
+            kwargs...
         )
         if !isnothing(wrapper)
             interpolator = [wrapper(itp) for itp in interpolator]
@@ -404,12 +406,13 @@ function create_bifrost_itps(
         interpolator, _ = get_br_var_interpolator(
             brxp,
             snaps,
-            var,
+            var;
             itp_type=itp_type,
             itp_bc=itp_bc,
             units=units,
             normalise=norm,
             destagger=dstgr,
+            kwargs...
         )
         if !isnothing(wrapper)
             interpolator = wrapper(interpolator)
