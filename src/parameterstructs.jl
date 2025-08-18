@@ -18,7 +18,14 @@ mutable struct ParticleParams{T1<:Real,T2}
     end
 end
 
-
+"""
+    GCAParams
+A container for the parameters used in a guiding centre approximation
+simulation where the initial state of the particles are drawn using rejection
+sampling and they have a statistical weight. The struct also contains a
+`terminationcode` that indicates what kind of callback terminated the particle
+trajectory.
+"""
 mutable struct GCAParams{T1<:Real,T2,T3<:Int,T4}
     charge::T1
     mass::T1
@@ -52,7 +59,7 @@ end
 
 """
     HybridParams
-Parameter container for a hybrid GCA/FO particle simulation. The `switch`
+Parameter container for a hybrid GCA/FO particle simulation. The `eomid`
 determines which EoM to use and the random number generator `rng` is used to
 determine the particle phase when switching from GCA to full orbit integration.
 """

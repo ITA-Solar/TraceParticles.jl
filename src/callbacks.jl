@@ -10,9 +10,15 @@ DifferentialEquations.jl.
 # -----------------------------------------------------------------------------
 
 """
-    OutOfBoundsCondition
-        bounds::NTuple{N, Tuple{Real, Real} where N
-        u_idxs::AbstractVector
+    struct OutOfBoundsCondition{
+        T1<:NTuple{N,Tuple{Real,Real}} where {N},
+        T2<:AbstractVector,
+    }
+
+## Fields
+- `bounds::T1`
+- `u_idxs::T2`
+
 Returns true if the particle's statevector variable `u_idxs[i]` is outside the
 bounds given by `bounds[i]`.
 
@@ -217,12 +223,12 @@ end
 # Callback affects
 #-------------------------------------------------------------------------------
 """
-    switchaffect!(integrator)
+    hybridswitchaffect!(integrator)
 Callback affect that checks the `switch` parameter and switches the EoM, either
 from full orbit integration to the guiding centre approximation or the
 opposite.
 """
-function switchaffect!(integrator)
+function hybridswitchaffect!(integrator)
     if integrator.p.eomid == 1
         switch2fo_affect!(integrator)
     elseif integrator.p.eomid == 2

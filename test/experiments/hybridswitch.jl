@@ -119,7 +119,7 @@ cb = PresetTimeCallback(
         12period,
         16period,
     ],
-    switchaffect!
+    hybridswitchaffect!
 )
 #cb = PresetTimeCallback(
 #    [

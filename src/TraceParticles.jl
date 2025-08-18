@@ -100,7 +100,7 @@ export
     magneticcurvatureaffect!,
     parallelelectricfieldaffect!,
     relativisticaffect!,
-    switchaffect!,
+    hybridswitchaffect!,
     TerminationCode
 # problem_functions.jl
 export

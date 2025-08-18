@@ -36,7 +36,7 @@ function fieldlinetracing_backward!(du, u, p, _)
 end
 
 """
-    lorentzforce!(du, u, p, _)
+    lorentzforce!(du, u, p, t)
 Equations of motion described by the Lorentz Force in 3 dimensions. The 
 parameters `p` contains the charge and mass of the particle, and an 
 interpolation functor giving the magnetic and electric field by passing the 
@@ -53,7 +53,7 @@ end
 
 
 """
-    guidingcentreapproximation!(du, u, p, _)
+    guidingcentreapproximation!(du, u, p, t)
 The equations of motion of a charged particle in collisionless plasma under 
 the guiding centre approximation (GCA). Compared to the full motion (described 
 by the Lorentz force), the statevector `u` is reduced from 6 DoF to 4, namely 
@@ -88,7 +88,7 @@ end
 
 
 """
-    hybridgcafo!(du, u, p, _)
+    hybridgcafo!(du, u, p, t)
 A hybrid EoM. Runs either the guiding centre approximation or full orbit
 integration depending on the parameter `switch`.
 """

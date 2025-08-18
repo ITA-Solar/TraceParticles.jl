@@ -2,23 +2,11 @@
 CollapsedDocStrings = true
 ```
 
-# Functions
-```@docs
-rerun_nonthermals
-rerun_maxiters
-rerun_idxs
-```
-
 ## Equations of motion
 ```@docs
 guidingcentreapproximation!
 lorentzforce!
-```
-
-## Statistics
-```@docs
-maxwellianvelocitysample
-rejectionsample
+hybridgcafo!
 ```
 
 ## Callbacks
@@ -33,6 +21,8 @@ magneticgradientaffect!
 magneticcurvatureaffect!
 parallelelectricfieldaffect!
 relativisticaffect!
+HybridSwitchCondition
+hybridswitchaffect!
 TerminationCode
 ```
 
@@ -48,10 +38,16 @@ output_func_max_lightweight
 output_func_lightweight
 ```
 
-# Reduction functions
+## Reduction functions
 ```@docs
 SaveBatchAsHDF5
 get_filename
+```
+
+## Parameter structs
+```@docs
+GCAParams
+HybridParams
 ```
 
 ## I/O
@@ -61,16 +57,27 @@ h5_getbatch
 h5_getdataset
 h5_getenergies
 h5_getinitialstate
+h5_getfinalstate
 save_gcastates
+create_bifrost_itps
 ```
 
 ## Dataprocessing
 ```@docs
 GCAState
 get_observable
+initialstate_idxs
+initialstate_terminationcode
+finalstate_terminationcode
+initialstate_maxiters
+particlemaskfunction
+particlemask
+generate_probdistr
+replaceparticles
+rerun
 ```
 
-# Physics
+## Physics
 ```@docs
 get_fullorbit
 get_fullorbit!
@@ -82,4 +89,19 @@ larmorradius
 characteristicfieldlength
 scalesratio
 magneticmoment
+```
+
+## Statistics
+```@docs
+maxwellianvelocitysample
+rejectionsample
+binmap
+```
+
+## Utilities
+```@docs
+ElectromagneticFieldInterpolator
+StaticInterpolation
+StaticXZInterpolation
+XZInterpolation
 ```
