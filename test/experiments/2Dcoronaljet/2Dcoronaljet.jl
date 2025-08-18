@@ -138,7 +138,7 @@ u0 = [
 ]
 mu = [4.1e-11, 4.1e-11]
 ensembleprob_kwargs = Dict(
-    :prob_func => PposPvel(u0, mu, [tspan for _ in 1:2])
+    :prob_func => PposPvel(u0, mu, [tspan for _ in 1:2], GCAParams)
 )
 prob2 = EnsembleProblem(odeprob; ensembleprob_kwargs...)
 solve_kwargs[:trajectories] = 2
