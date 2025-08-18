@@ -8,6 +8,7 @@ using Interpolations
 using Random
 using JLD2
 using StaticArrays
+using Statistics
 
 if !isdefined(Main, :verbose)
     verbose = 3
