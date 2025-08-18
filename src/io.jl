@@ -130,19 +130,21 @@ end
 Returns dataset `dataset` from all batches, the HDF5-group `h5group`,
 `batchnr` or range of `batches`.
 """
-function h5_getdataset(filename::String, dataset::String, h5_group::String)
+function h5_getdataset(filename::String, dataset, h5_group::String)
+    dataset = string(dataset)
     h5open(filename, "r") do h5_file
         read(h5_file[h5_group][dataset])
     end
 end
-function h5_getdataset(filename::String, dataset::String, batchnr::Int)
+function h5_getdataset(filename::String, dataset, batchnr::Int)
     h5_getdataset(filename, dataset, "batch_$batchnr")
 end
-function h5_getdataset(filename::String, dataset::String)
+function h5_getdataset(filename::String, dataset)
     batches, _ = h5_nbatches(filename)
     h5_getdataset(filename, dataset, batches)
 end
 function h5_getdataset(filename, dataset, batches::AbstractVector)
+    dataset = string(dataset)
     nbatches = length(batches)
     groupnames = ["batch_$i/" for i in batches]
     data = reduce(vcat,
@@ -158,7 +160,13 @@ function h5_getdataset(filename, dataset, batches::AbstractVector)
         end
     )
 end
-
+function h5_getdataset(filename::String, datasets::AbstractVector, args...)
+    df = DataFrame()
+    for var in datasets
+        df[!, var] = h5_getdataset(filename, var, args...)
+    end
+    return df
+end
 
 """
     h5_getall(filename)
