@@ -31,6 +31,7 @@ using StatsBase
 
 #_______________________________________________________________________________
 
+include("enums.jl")
 include("utils.jl")
 include("constants.jl")
 include("statistics.jl")

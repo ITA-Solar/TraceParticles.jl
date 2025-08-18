@@ -284,21 +284,6 @@ end
 # Callback affects that terminate
 #-------------------------------------------------------------------------------
 """
-An EnumX module containing termination codes. The codes are set by callback
-affects that terminate the solver. E.g. the callback affect `outofboundsaffect!`
-will terminate the integration and set the parameter `terminationcode` to
-`TerminationCode.OutOfBounds`.
-"""
-@enumx TerminationCode begin
-    NotTerminated
-    OutOfBounds
-    MagneticGradient
-    MagneticCurvature
-    ParallelElectricField
-    Relativistic
-end
-
-"""
     outofboundsnaffect!(integrator)
 Callback affect which terminates the integration and sets the termination
 message to `TerminationCode.OutOfBounds`.
