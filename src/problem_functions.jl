@@ -14,7 +14,7 @@ struct PposPvel
     u0::Vector{<:Vector{<:Real}}
     mu0::Vector{<:Real}
     tspan::Vector{<:Tuple{Real,Real}}
-    paramstruct::DataType
+    paramstruct::Any
 end
 function (self::PposPvel)(prob, i, repeat)
     remake(
@@ -101,8 +101,8 @@ function (self::DposMBvel)(prob, i, repeat)
     # This remaking allocates memory when creating the new params, which
     # still points to the same actual values, but it is thread-safe because
     # as long as the parameters that points to `prob.p` is not mutated.
-    hybrid = prob.f == guidingcentreapproximation!
-    paramstruct, u0 = hybrid ?
+    gca = prob.f.f == guidingcentreapproximation!
+    paramstruct, u0 = gca ?
         (GCAParams, [R[1], R[2], R[3], vparal]) :
         (HybridParams, [R[1], R[2], R[3], vparal, 0.0, 0.0])
     return remake(

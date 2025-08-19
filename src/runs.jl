@@ -149,10 +149,17 @@ function rerun(
             magneticmoment=mu0[1],
         )
     )
+    if eom == guidingcentreapproximation!
+        paramstruct = GCAParams
+    elseif eom == hybridgcafo!
+        paramstruct = HybridParams
+    else
+        @error "Don't know which parameter-struct to use."
+    end
     ensemble_prob = EnsembleProblem(
         prob
         ;
-        prob_func=PposPvel(u0, mu0, tspans),
+        prob_func=PposPvel(u0, mu0, tspans, paramstruct),
         ensemble_prob_kwargs...
     )
 
