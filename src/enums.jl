@@ -11,6 +11,7 @@ will terminate the integration and set the parameter `terminationcode` to
     MagneticCurvature
     ParallelElectricField
     Relativistic
+    MaxSwitches
 end
 
 

@@ -103,6 +103,7 @@ export
     parallelelectricfieldaffect!,
     relativisticaffect!,
     hybridswitchaffect!,
+    hybridswitchaffect_withdetection!,
     TerminationCode
 # problem_functions.jl
 export
@@ -122,7 +123,8 @@ export
 export
     GCAParams,
     ParticleParams,
-    HybridParams
+    HybridParams,
+    HybridParamsWithDetection
 # io.jl
 export
     h5_getall,

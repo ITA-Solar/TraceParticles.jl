@@ -237,8 +237,35 @@ function hybridswitchaffect!(integrator)
         @warn """Trying to switch EoM, but switch paramer is neither 1 nor 2.
 Current value: $(integrator.p.eomid)."""
     end
+    integrator.p.nswitches += 1
 end
 
+"""
+    hybridswitchaffect_withdetection!(integrator)
+Callback affect that checks the `switch` parameter and switches the EoM, either
+from full orbit integration to the guiding centre approximation or the
+opposite. Also records the time of the switch and the new EoM ID in the
+`switchtimes` and `neweomid` arrays, respectively.
+"""
+function hybridswitchaffect_withdetection!(integrator)
+    integrator.p.timeatswitch[integrator.p.nswitches] = integrator.t
+    if integrator.p.eomid == 1
+        integrator.p.eomafterswitch[integrator.p.nswitches] = 2
+        switch2fo_affect!(integrator)
+    elseif integrator.p.eomid == 2
+        integrator.p.eomafterswitch[integrator.p.nswitches] = 1
+        switch2gca_affect!(integrator)
+    else
+        @warn """Trying to switch EoM, but switch paramer is neither 1 nor 2.
+Current value: $(integrator.p.eomid)."""
+    end
+    integrator.p.nswitches += 1
+    if integrator.p.nswitches == integrator.p.maxswitches
+        @warn "Maximum number of switches reached: $(integrator.p.maxswitches)."
+        integrator.p.terminationcode = TerminationCode.MaxSwitches
+        terminate!(integrator)
+    end
+end
 
 """
     switch2gca_affect!(integrator)
@@ -254,7 +281,6 @@ function switch2gca_affect!(integrator)
         integrator.p.mass
     )
     # Set switch to full orbit case
-    integrator.p.nswitches += 1
     integrator.p.eomid = 1
 end
 
@@ -276,7 +302,6 @@ function switch2fo_affect!(integrator)
         phaseangle
     )
     # Set switch to full orbit case
-    integrator.p.nswitches += 1
     integrator.p.eomid = 2
 end
 
