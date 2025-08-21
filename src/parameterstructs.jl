@@ -92,7 +92,7 @@ mutable struct HybridParams{
         charge::T1,
         mass::T1,
         electromagneticfield::T2,
-        magneticmoment::T1,
+        magneticmoment::T1=0.0,
         weight::T1=1.0,
         nrejections::T3=0,
         terminationcode::T4=TerminationCode.NotTerminated,
@@ -100,7 +100,6 @@ mutable struct HybridParams{
         getphase::T6=(integrator) -> rand(
             integrator.p.rng, 0.0, Float64(pi)
         ),
-        eomid::T3=1,
         nswitches::T3=0,
         #maxswitches::T3=100,
     ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}

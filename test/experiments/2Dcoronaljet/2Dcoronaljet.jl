@@ -61,7 +61,7 @@ fname = joinpath(expdir, expname, expname * ".h5")
 datadir = expdir
 # Define Callbacks
 out_cb = DiscreteCallback(
-    OutOfBoundsCondition( (xbounds, zbounds), 1:2:3 ),
+    OutOfBoundsCondition((xbounds, zbounds), 1:2:3),
     outofboundsaffect!
 )
 rel_cb = DiscreteCallback(
@@ -94,7 +94,7 @@ ensembleprob_kwargs = Dict(
     ),
     :safetycopy => false,
     # How to choose initial condition of the particle
-    :prob_func => DposMBvel(
+    :prob_func => DposMBvelGCA(
         rng, r_itp, r_itp, tg_itp, [xbounds, zbounds], maxval
     )
 )

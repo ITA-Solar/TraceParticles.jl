@@ -106,11 +106,13 @@ export
     TerminationCode
 # problem_functions.jl
 export
-    DposMBvel,
+    DposMBvelGCA,
+    DposMBvelHybrid,
     PposPvel
 # output_functions.jl
 export
     output_func_lightweight,
+    output_func_lightweight_hybrid,
     output_func_max_lightweight
 # reduction_functions.jl
 export

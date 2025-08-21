@@ -28,7 +28,8 @@ TerminationCode
 
 ## Problem functions
 ```@docs
-DposMBvel
+DposMBvelGCA
+DposMBvelHybrid
 PposPvel
 ```
 
