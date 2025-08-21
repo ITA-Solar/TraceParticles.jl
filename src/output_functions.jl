@@ -87,11 +87,11 @@ function output_func_lightweight(sol, i)
     false
 end
 function output_func_lightweight_hybrid(sol, i)
-    x0, y0, z0, vparal0 = first(sol)
-    xf, yf, zf, vparalf = last(sol)
+    x0, y0, z0, vx0, vy0, vz0 = first(sol)
+    xf, yf, zf, vxf, vyf, vzf = last(sol)
     return (
-        x0=x0, y0=y0, z0=z0, vparal0=vparal0,
-        xf=xf, yf=yf, zf=zf, vparalf=vparalf,
+        x0=x0, y0=y0, z0=z0, vx0=vx0, vy0=vy0, vz0=vz0,
+        xf=xf, yf=yf, zf=zf, vxf=vxf, vyf=vyf, vzf=vzf,
         nt=length(sol.t),
         t0=first(sol.t),
         tf=last(sol.t),
@@ -102,7 +102,8 @@ function output_func_lightweight_hybrid(sol, i)
         nrejections=sol.prob.p.nrejections,
         retcode=Int(sol.retcode),
         terminationcode=Int(sol.prob.p.terminationcode),
-        nswitches=sol.prob.p.nswitches
+        nswitches=sol.prob.p.nswitches,
+        eomid=sol.prob.p.eomid
     ),
     false
 end
