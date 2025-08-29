@@ -131,17 +131,20 @@ export
     h5_getbatch,
     h5_getdataset,
     h5_getenergies,
+    h5_getenergies_gca,
     h5_getinitialstate,
     h5_getfinalstate,
     save_gcastates,
+    save_energy,
     create_bifrost_itps
 # dataprosessing.jl
 export
     initialstate_terminationcode,
     finalstate_terminationcode,
-    initialstate_nonthermal,
+    initialstate_nonthermals,
     initialstate_maxiters,
     initialstate_idxs,
+    finalstate_idxs,
     particlemaskfunction,
     particlemask,
     replaceparticles,

@@ -90,6 +90,117 @@ function save_gcastates(
     end
 end
 
+"""
+    save_energy(filename, fields_itp)
+Calculates the GCAStates of the initial and final states of an ensamble of
+test particles.
+"""
+function save_energy(
+    filename::String,
+    electromagneticfield::Any;
+    components="all",
+    verbose=false,
+)
+    name, extension = splitext(filename)
+    if extension == ".h5"
+        _, nbatches = h5_nbatches(filename)
+        h5_sol = h5open(filename, "r")
+        name0 = name * "_e0.h5"
+        namef = name * "_ef.h5"
+        h5_e0 = h5open(name0, "w")
+        h5_ef = h5open(namef, "w")
+        try
+            for i in 1:nbatches
+                batchname = "batch_$i"
+                batch = read(h5_sol[batchname])
+                df = DataFrame(batch)
+                if verbose
+                    @info "Calculating energy states for batch $i"
+                end
+                npart = nrow(df)
+                e0 = Vector{Float64}(undef, npart)
+                ef = Vector{Float64}(undef, npart)
+                for i in 1:npart
+                    if df[i, :initialeomid] == 1
+                        e0[i] = kineticenergy(
+                            [
+                                df[i, :x0],
+                                df[i, :y0],
+                                df[i, :z0],
+                                df[i, :vx0],
+                            ],
+                            df[i, :charge],
+                            df[i, :mass],
+                            df[i, :magneticmoment],
+                            electromagneticfield,
+                            df[i, :t0],
+                        )
+                    elseif df[i, :initialeomid] == 2
+                        e0[i] = kineticenergy(
+                            [
+                                df[i, :vx0],
+                                df[i, :vy0],
+                                df[i, :vz0],
+                            ],
+                            df[i, :mass],
+                        )
+                    end
+                    if df[i, :eomid] == 1
+                        ef[i] = kineticenergy(
+                            [
+                                df[i, :xf],
+                                df[i, :yf],
+                                df[i, :zf],
+                                df[i, :vxf],
+                            ],
+                            df[i, :charge],
+                            df[i, :mass],
+                            df[i, :magneticmoment],
+                            electromagneticfield,
+                            df[i, :tf],
+                        )
+                    elseif df[i, :eomid] == 2
+                        ef[i] = kineticenergy(
+                            [
+                                df[i, :vxf],
+                                df[i, :vyf],
+                                df[i, :vzf],
+                            ],
+                            df[i, :mass],
+                        )
+                    end
+                end
+                group0 = create_group(h5_e0, batchname)
+                groupf = create_group(h5_ef, batchname)
+                write_dataset(group0, "energy", e0)
+                write_dataset(groupf, "energy", ef)
+            end
+        catch e
+            rm(name0)
+            rm(namef)
+            @error "While saving GCA states:" exeption = (e, catch_backtrace())
+        end
+        try
+            groupname = "metadata"
+            metadata = read(h5_sol[groupname])
+            metagroup0 = create_group(h5_e0, groupname)
+            metagroupf = create_group(h5_ef, groupname)
+            write_dict(metagroup0, metadata)
+            write_dict(metagroupf, metadata)
+        catch e
+            @warn "While copying metadata:" exeption = (e, catch_backtrace())
+        end
+        close(h5_sol)
+        close(h5_e0)
+        close(h5_ef)
+    elseif extension == ""
+        error("Filname must include extension.")
+    else
+        error("File extension not supported.")
+    end
+end
+
+
 
 #____/\_____/\_________________________________________________________________
 #
@@ -203,11 +314,11 @@ end
 
 
 """
-    h5_getenergies(filename, args...; units="eV")
+    h5_getenergies_gca(filename, args...; units="eV")
 Returns the initial and final energies of a set of batches in a HDF5-file.
 If `batches` is not specified, the data from all batches are returned.
 """
-function h5_getenergies(filename, args...; units="eV")
+function h5_getenergies_gca(filename, args...; units="eV")
     expname, _ = splitext(filename)
     filename0 = expname * "_gcastates0.h5"
     filenamef = expname * "_gcastatesf.h5"
@@ -220,13 +331,46 @@ function h5_getenergies(filename, args...; units="eV")
     return e0, ef
 end
 
+"""
+    h5_getenergies(filename, args...; units="eV")
+Returns the initial and final energies of a set of batches in a HDF5-file.
+If `batches` is not specified, the data from all batches are returned.
+"""
+function h5_getenergies(filename, args...; units="eV")
+    expname, _ = splitext(filename)
+    filename0 = expname * "_e0.h5"
+    filenamef = expname * "_ef.h5"
+    e0 = h5_getdataset(filename0, "energy", args...)
+    ef = h5_getdataset(filenamef, "energy", args...)
+    if units == "eV"
+        e0 *= J2eV
+        ef *= J2eV
+    end
+    return e0, ef
+end
 
 """
     h5_getinitialstate(filename, args...)
-Returns `x0`, `y0`, `z0`, `vparal0`, and `magneticmoment` from a test particle
-ensemble stored in a HDF5-file.
+Returns `x0`, `y0`, `z0`, `vx0`, `vy0`, `vz0`, and `magneticmoment` from a test
+particle ensemble stored in a HDF5-file.
 """
 function h5_getinitialstate(filename, args...)
+    x0 = h5_getdataset(filename, "x0", args...)
+    y0 = h5_getdataset(filename, "y0", args...)
+    z0 = h5_getdataset(filename, "z0", args...)
+    vx0 = h5_getdataset(filename, "vx0", args...)
+    vy0 = h5_getdataset(filename, "vy0", args...)
+    vz0 = h5_getdataset(filename, "vz0", args...)
+    mu0 = h5_getdataset(filename, "magneticmoment", args...)
+    return x0, y0, z0, vx0, vy0, vz0, mu0
+end
+
+"""
+    h5_getinitialstate_gca(filename, args...)
+Returns `x0`, `y0`, `z0`, `vparal0`, and `magneticmoment` from a test particle
+ensemble using GCA, stored in a HDF5-file.
+"""
+function h5_getinitialstate_gca(filename, args...)
     x0 = h5_getdataset(filename, "x0", args...)
     y0 = h5_getdataset(filename, "y0", args...)
     z0 = h5_getdataset(filename, "z0", args...)
@@ -235,13 +379,28 @@ function h5_getinitialstate(filename, args...)
     return x0, y0, z0, vparal0, mu0
 end
 
-
 """
     h5_getfinalstate(filename, args...)
-Returns `xf`, `yf`, `zf`, `vparalf`, and `magneticmoment` from a test particle
-ensemble stored in a HDF5-file.
+Returns `xf`, `yf`, `zf`, `vxf`, `vyf`, `vzf`, and `magneticmoment` from a test
+particle ensemble stored in a HDF5-file.
 """
 function h5_getfinalstate(filename, args...)
+    xf = h5_getdataset(filename, "xf", args...)
+    yf = h5_getdataset(filename, "yf", args...)
+    zf = h5_getdataset(filename, "zf", args...)
+    vxf = h5_getdataset(filename, "vxf", args...)
+    vyf = h5_getdataset(filename, "vyf", args...)
+    vzf = h5_getdataset(filename, "vzf", args...)
+    mu = h5_getdataset(filename, "magneticmoment", args...)
+    return xf, yf, zf, vxf, vyf, vzf, mu
+end
+
+"""
+    h5_getfinalstate_gca(filename, args...)
+Returns `xf`, `yf`, `zf`, `vparalf`, and `magneticmoment` from a test particle
+ensemble using GCA, stored in a HDF5-file.
+"""
+function h5_getfinalstate_gca(filename, args...)
     xf = h5_getdataset(filename, "xf", args...)
     yf = h5_getdataset(filename, "yf", args...)
     zf = h5_getdataset(filename, "zf", args...)

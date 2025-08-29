@@ -28,7 +28,7 @@ function initialstate_nonthermals(
     relativegain::Bool=false,
 )
     expname, _ = splitext(fname)
-    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate_gca(fname)
     e0, ef = h5_getenergies(expname)
 
     sortby = relativegain ? (ef .- e0) ./ e0 : ef
@@ -46,7 +46,7 @@ Find the initial state of the `nparticles` particles with most timesteps from
 the test particle ensemble stored as HDF5 files with the filename `fname`.
 """
 function initialstate_maxiters(fname::String, nparticles::Int)
-    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate_gca(fname)
     nt = h5_getdataset(fname, "nt")
     sortby = nt
     idxs = sortperm(sortby)[end-nparticles+1:end]
@@ -62,7 +62,7 @@ Find the initial state of the particles with a certain `terminationcode` from
 the test particle ensemble stored as HDF5 with the filename `fname`.
 """
 function initialstate_terminationcode(fname::String, terminationcode::String)
-    x0, y0, z0, vparal0, mu = h5_getinitialstate(fname)
+    x0, y0, z0, vparal0, mu = h5_getinitialstate_gca(fname)
     idxs = findall(x -> x == terminationcode, h5_getdataset(fname, "terminationcode"))
     u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
     mu = mu[idxs]
@@ -85,12 +85,12 @@ end
 
 
 """
-    initialstate_idxs(fname, idxs)
-Find the initial state of the particles with the indices `idxs` from the test
-particle ensemble stored as HDF5 with the filename `fname`.
+    initialstate_idxs_gca(fname, idxs)
+Find the initial state of the GCA particles with the indices `idxs` from the
+test particle ensemble stored as HDF5 with the filename `fname`.
 """
-function initialstate_idxs(fname::String, idxs::AbstractVector; mask=nothing)
-    x0, y0, z0, vparal0, mu0 = h5_getinitialstate(fname)
+function initialstate_idxs_gca(fname::String, idxs::AbstractVector; mask=nothing)
+    x0, y0, z0, vparal0, mu0 = h5_getinitialstate_gca(fname)
     if !isnothing(mask)
         x0 = x0[mask]
         y0 = y0[mask]
@@ -103,6 +103,74 @@ function initialstate_idxs(fname::String, idxs::AbstractVector; mask=nothing)
     return u0, mu0
 end
 
+"""
+    initialstate_idxs(fname, idxs)
+Find the initial state of the particles with the indices `idxs` from the test
+particle ensemble stored as HDF5 with the filename `fname`.
+"""
+function initialstate_idxs(
+    fname::String,
+    idxs::AbstractVector;
+    mask=nothing
+)
+    x0, y0, z0, vx0, vy0, vz0, mu0 = h5_getinitialstate(fname)
+    if !isnothing(mask)
+        x0 = x0[mask]
+        y0 = y0[mask]
+        z0 = z0[mask]
+        vx0 = vx0[mask]
+        vy0 = vy0[mask]
+        vz0 = vz0[mask]
+        mu0 = mu0[mask]
+    end
+    u0 = [[x0[i], y0[i], z0[i], vx0[i], vy0[i], vz0[i]] for i in idxs]
+    mu0 = mu0[idxs]
+    return u0, mu0
+end
+
+"""
+    finalstate_idxs_gca(fname, idxs)
+Find the final state of the GCA particles with the indices `idxs` from the
+test particle ensemble stored as HDF5 with the filename `fname`.
+"""
+function finalstate_idxs_gca(fname::String, idxs::AbstractVector; mask=nothing)
+    xf, yf, zf, vparalf, muf = h5_getfinalstate_gca(fname)
+    if !isnothing(mask)
+        xf = xf[mask]
+        yf = yf[mask]
+        zf = zf[mask]
+        vparalf = vparalf[mask]
+        muf = muf[mask]
+    end
+    uf = [[xf[i], yf[i], zf[i], vparalf[i]] for i in idxs]
+    muf = muf[idxs]
+    return uf, muf
+end
+
+"""
+   finalstate_idxs(fname, idxs)
+Find the initial state of the particles with the indices `idxs` from the test
+particle ensemble stored as HDF5 with the filename `fname`.
+"""
+function finalstate_idxs(
+    fname::String,
+    idxs::AbstractVector;
+    mask=nothing
+)
+    xf, yf, zf, vxf, vyf, vzf, muf = h5_getfinalstate(fname)
+    if !isnothing(mask)
+        xf = xf[mask]
+        yf = yf[mask]
+        zf = zf[mask]
+        vxf = vxf[mask]
+        vyf = vyf[mask]
+        vzf = vzf[mask]
+        muf = muf[mask]
+    end
+    uf = [[xf[i], yf[i], zf[i], vxf[i], vyf[i], vzf[i]] for i in idxs]
+    muf = muf[idxs]
+    return uf, muf
+end
 
 """
     replace_finalstates(fname_original, fname_replacement, original_idxs)

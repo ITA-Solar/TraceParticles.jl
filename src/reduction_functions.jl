@@ -19,28 +19,45 @@ end
 Prints some statistics about the current batch.
 """
 function print_batch_statistics(batch)
+    npart = nrow(batch)
+    c1 = 100 / npart
+    nhybrid = sum(batch.nswitches .> 0)
+    maxhyb = sum(@. (batch.nswitches > 0) & (batch.retcode == 4))
+    nmaxiters = sum(batch.retcode .== 4)
+    noob = sum(batch.terminationcode .== 1)
+    ngradient = sum(batch.terminationcode .== 2)
+    ncurvature = sum(batch.terminationcode .== 3)
+    neratio = sum(batch.terminationcode .== 4)
+    nrel = sum(batch.terminationcode .== 5)
+
     println("")
     println("Timestamp:                   $(now())\n")
     println("                  Summary statistics")
-    println("Number of particles:         $(size(batch)[1])")
+    println("Number of particles:         $npart")
     @printf "Average number of timesteps: %.1f\n" mean(batch.nt)
-    @printf "Average end time:            %.3f\n" mean(batch.tf)
-    @printf "Initial time:                %.3f\n" batch.t0[1]
+    @printf "Median number of timesteps:  %.1f\n" median(batch.nt)
+    @printf "Standard deviation of steps: %.1f\n" std(batch.nt)
+    @printf "Fewest number of steps:      %i\n" minimum(batch.nt)
+    @printf "Most number of steps:        %i\n" maximum(batch.nt)
+    @printf "Initial time:                %.5f\n" batch.t0[1]
+    @printf "Oldest particle:             %.5f\n" maximum(batch.tf)
+    @printf "Average end time:            %.5f\n" mean(batch.tf)
     if hasproperty(batch, :nswitches)
         println("Hybrid switch statistics")
-        println("  Amount that switched:      $(sum(batch.nswitches .> 0))")
-        @printf "  Average nof. switches:     %.4f\n" std(batch.nswitches)
+        @printf "  Amount that switched:      %i (%.0f%%)\n" nhybrid nhybrid * c1
+        @printf "  Average nof. switches:     %.4f\n" mean(batch.nswitches)
         @printf "  Standard deviation:        %.4f\n" std(batch.nswitches)
         println("  Most nof. switches:        $(maximum(batch.nswitches))")
         println("  Least nof. switches:       $(minimum(batch.nswitches))")
+        @printf "  MaxIters & switched:       %i (%.0f%% of %i)\n" maxhyb maxhyb / nhybrid * 100 nhybrid
     end
     println("Termination statistics")
-    println("  Nof. maxiters:             $(sum(batch.retcode .== 4))")
-    println("  Nof. OutofDomain:          $(sum(batch.terminationcode .== 1))")
-    println("  Nof. MagneticGradient:     $(sum(batch.terminationcode .== 2))")
-    println("  Nof. MagneticCurvature:    $(sum(batch.terminationcode .== 3))")
-    println("  Nof. ParallelEfield:       $(sum(batch.terminationcode .== 4))")
-    println("  Nof. Relativistic:         $(sum(batch.terminationcode .== 5))")
+    @printf "  Nof. maxiters:             %i (%.0f%%)\n" nmaxiters nmaxiters * c1
+    @printf "  Nof. OutofBounds:          %i (%.0f%%)\n" noob noob * c1
+    @printf "  Nof. MagneticGradient:     %i (%.0f%%)\n" ngradient ngradient * c1
+    @printf "  Nof. MagneticCurvature:    %i (%.0f%%)\n" ncurvature ncurvature * c1
+    @printf "  Nof. ParallelEfield:       %i (%.0f%%)\n" neratio neratio * c1
+    @printf "  Nof. Relativistic:         %i (%.0f%%)\n" nrel nrel * c1
     println("=================================================================",
         "===============")
 end

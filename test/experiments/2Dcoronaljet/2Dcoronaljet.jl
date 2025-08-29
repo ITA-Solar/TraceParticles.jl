@@ -219,7 +219,7 @@ end
 select!(answersol1_df, Not(:retmsg))
 answersol1_df[!, :terminationcode] = newcol
 # Get the results
-e0, ef = h5_getenergies(fname)
+e0, ef = h5_getenergies_gca(fname)
 df = h5_getall(fname)
 
 # The particles that have larger errors
