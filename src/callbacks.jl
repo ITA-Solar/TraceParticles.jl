@@ -125,9 +125,9 @@ function (self::HybridSwitchCondition)(u, t, integrator)
             integrator.p.electromagneticfield
         )
 
-        c1 = gratio > self.tol_gradient
-        c2 = kratio > self.tol_curvature
-        c3 = Eratio > self.tol_efield
+        c1 = abs(gratio) > self.tol_gradient
+        c2 = abs(kratio) > self.tol_curvature
+        c3 = abs(Eratio) > self.tol_efield
         if c1 || c2 || c3
             return true
         else
@@ -143,9 +143,9 @@ function (self::HybridSwitchCondition)(u, t, integrator)
             pos, vel, t, m, q,
             integrator.p.electromagneticfield
         )
-        c1 = gratio < self.tol_gradient * self.switchback_tol
-        c2 = kratio < self.tol_curvature * self.switchback_tol
-        c3 = Eratio < self.tol_efield * self.switchback_tol
+        c1 = abs(gratio) < self.tol_gradient * self.switchback_tol
+        c2 = abs(kratio) < self.tol_curvature * self.switchback_tol
+        c3 = abs(Eratio) < self.tol_efield * self.switchback_tol
         if c1 && c2 && c3
             return true
         else

@@ -95,6 +95,7 @@ integration depending on the parameter `switch`.
 function hybridgcafo!(du, u, p, t)
     if p.eomid == 1
         guidingcentreapproximation!(du, u, p, t)
+        du[5:6] .= 0.0
     elseif p.eomid == 2
         lorentzforce!(du, u, p, t)
     end
