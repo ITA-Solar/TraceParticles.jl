@@ -248,18 +248,18 @@ opposite. Also records the time of the switch and the new EoM ID in the
 `switchtimes` and `neweomid` arrays, respectively.
 """
 function hybridswitchaffect_withdetection!(integrator)
+    integrator.p.nswitches += 1
     integrator.p.timeatswitch[integrator.p.nswitches] = integrator.t
     if integrator.p.eomid == 1
-        integrator.p.eomafterswitch[integrator.p.nswitches] = 2
+        integrator.p.eomidafterswitch[integrator.p.nswitches] = 2
         switch2fo_affect!(integrator)
     elseif integrator.p.eomid == 2
-        integrator.p.eomafterswitch[integrator.p.nswitches] = 1
+        integrator.p.eomidafterswitch[integrator.p.nswitches] = 1
         switch2gca_affect!(integrator)
     else
         @warn """Trying to switch EoM, but switch paramer is neither 1 nor 2.
 Current value: $(integrator.p.eomid)."""
     end
-    integrator.p.nswitches += 1
     if integrator.p.nswitches == integrator.p.maxswitches
         @warn "Maximum number of switches reached: $(integrator.p.maxswitches)."
         integrator.p.terminationcode = TerminationCode.MaxSwitches
@@ -273,6 +273,7 @@ Callback affect which switches to the guiding centre approximation by setting
 the parameter `switch` to `1` and transforming `u` to the guiding centre state.
 """
 function switch2gca_affect!(integrator)
+    integrator.p.eomid = 1
     integrator.p.magneticmoment = get_guidingcentre!(
         integrator.u,
         integrator.t,
@@ -280,8 +281,6 @@ function switch2gca_affect!(integrator)
         integrator.p.charge,
         integrator.p.mass
     )
-    # Set switch to full orbit case
-    integrator.p.eomid = 1
 end
 
 
@@ -291,6 +290,7 @@ Callback affect which switches to full orbit integration by setting
 the parameter `switch` to `2` and transforming `u` to a full orbit state.
 """
 function switch2fo_affect!(integrator)
+    integrator.p.eomid = 2
     phaseangle = integrator.p.getphase(integrator)
     get_fullorbit!(
         integrator.u,
@@ -301,8 +301,6 @@ function switch2fo_affect!(integrator)
         integrator.p.mass,
         phaseangle
     )
-    # Set switch to full orbit case
-    integrator.p.eomid = 2
 end
 
 #-------------------------------------------------------------------------------

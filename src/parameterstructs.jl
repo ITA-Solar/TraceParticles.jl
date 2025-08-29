@@ -70,7 +70,6 @@ mutable struct HybridParams{
     T4,
     T5<:AbstractRNG,
     T6<:Function,
-    #T7<:AbstractArray
 }
     charge::T1
     mass::T1
@@ -83,9 +82,7 @@ mutable struct HybridParams{
     getphase::T6
     eomid::T3
     nswitches::T3
-    #maxswitches::T3
-    #timeatswitch::T7
-    #eomidafterswitch::T7
+    initialeomid::T3
 
     function HybridParams(
         ;
@@ -98,13 +95,11 @@ mutable struct HybridParams{
         terminationcode::T4=TerminationCode.NotTerminated,
         rng::T5=Xoshiro(1),
         getphase::T6=(integrator) -> rand(
-            integrator.p.rng, 0.0, Float64(pi)
+            integrator.p.rng, 0.0, Float64(2pi)
         ),
         nswitches::T3=0,
-        #maxswitches::T3=100,
+        initialeomid::T3=2,
     ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
-        #timeatswitch = Vector{Float64}(undef, maxswitches),
-        #eomidafterswitch = Vector{Int32}(undef, maxswitches),
         new{T1,T2,T3,T4,T5,T6}(
             charge,
             mass,
@@ -115,8 +110,9 @@ mutable struct HybridParams{
             terminationcode,
             rng,
             getphase,
-            eomid,
-            nswitches
+            initialeomid,
+            nswitches,
+            initialeomid,
         )
     end
 end
@@ -148,11 +144,12 @@ mutable struct HybridParamsWithDetection{
     getphase::T6
     eomid::T3
     nswitches::T3
+    initialeomid::T3
     maxswitches::T3
     timeatswitch::T7
     eomidafterswitch::T8
 
-    function HybridParams(
+    function HybridParamsWithDetection(
         ;
         charge::T1,
         mass::T1,
@@ -165,12 +162,12 @@ mutable struct HybridParamsWithDetection{
         getphase::T6=(integrator) -> rand(
             integrator.p.rng, 0.0, Float64(pi)
         ),
-        eomid::T3=1,
         nswitches::T3=0,
+        initialeomid::T3=2,
         maxswitches::T3=100,
     ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
-        timeatswitch = Vector{Float64}(undef, maxswitches)
-        eomidafterswitch = Vector{Int32}(undef, maxswitches)
+        timeatswitch = zeros(Float64, maxswitches)
+        eomidafterswitch = zeros(Int32, maxswitches)
         new{T1,T2,T3,T4,T5,T6,Vector{Float64},Vector{Int32}}(
             charge,
             mass,
@@ -181,8 +178,9 @@ mutable struct HybridParamsWithDetection{
             terminationcode,
             rng,
             getphase,
-            eomid,
+            initialeomid,
             nswitches,
+            initialeomid,
             maxswitches,
             timeatswitch,
             eomidafterswitch,

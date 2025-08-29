@@ -104,7 +104,7 @@ params = (
     magneticmoment=ones(4) * μ,
     rng=[Xoshiro(1), Xoshiro(2), Xoshiro(1), Xoshiro(1)],
     getphase=(integrator) -> π / 2,
-    eomid=[2, 1, 0, 0]
+    initialeomid=[2, 1, 0, 0]
 )
 
 #-------------------------------------------------------------------------------
@@ -149,7 +149,7 @@ prob_func(prob, i, _) = remake(
         nrejections=0,
         terminationcode=TerminationCode.NotTerminated,
         rng=params.rng[i],
-        eomid=params.eomid[i],
+        initialeomid=params.initialeomid[i],
         getphase=prob.p.getphase,
         nswitches=0
     )

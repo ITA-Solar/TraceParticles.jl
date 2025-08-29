@@ -103,7 +103,8 @@ function output_func_lightweight_hybrid(sol, i)
         retcode=Int(sol.retcode),
         terminationcode=Int(sol.prob.p.terminationcode),
         nswitches=sol.prob.p.nswitches,
-        eomid=sol.prob.p.eomid
+        eomid=sol.prob.p.eomid,
+        initialeomid=sol.prob.p.initialeomid,
     ),
     false
 end

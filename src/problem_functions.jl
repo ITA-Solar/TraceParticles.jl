@@ -148,7 +148,9 @@ with a temperature given by `tg_itp(x,y,z)`. Evaluates the statistical weight of
 the particle using the `target_distr`ibution. Remakes the problem with
 `HybridParams`.
 """
-struct DposMBvelHybrid{T1<:AbstractRNG,T2,T3,T4<:AbstractVector,T5<:Number}
+struct DposMBvelHybrid{
+    T1<:AbstractRNG,T2,T3,T4<:Tuple{Real,Real},T5<:Number,T6<:Int
+}
     rng::T1
     proposal_distr::T2
     target_distr::T3
@@ -157,6 +159,7 @@ struct DposMBvelHybrid{T1<:AbstractRNG,T2,T3,T4<:AbstractVector,T5<:Number}
     ybounds::T4
     zbounds::T4
     max_value::T5
+    initialeomid::T6
 end
 function (self::DposMBvelHybrid)(prob, _, _)
     x, y, z, nrejections = rejectionsample(
@@ -178,20 +181,38 @@ function (self::DposMBvelHybrid)(prob, _, _)
         maxwellianvelocitysample(self.rng, temperature, prob.p.mass)
         for _ in 1:3
     ]
+    if self.initialeomid == 1
+        efield_at_pos, bfield_at_pos = prob.p.electromagneticfield(x, y, z)
+        R, vparal, magneticmoment = get_guidingcentre(
+            SVector(x, y, z),
+            vel,
+            bfield_at_pos,
+            efield_at_pos,
+            prob.p.charge,
+            prob.p.mass
+        )
+        u0 = [R[1], R[2], R[3], vparal, 0.0, 0.0]
+    elseif self.initialeomid == 2
+        magneticmoment = 0.0
+        u0 = [x, y, z, vel[1], vel[2], vel[3]]
+    else
+        error("Invalid initialeomid: $(self.initialeomid). Must be 1 or 2.")
+    end
     # This remaking allocates memory when creating the new params, which
     # still points to the same actual values, but it is thread-safe because
     # as long as the parameters that points to `prob.p` is not mutated.
     return remake(
         prob;
-        u0=[x, y, z, vel[1], vel[2], vel[3]],
+        u0=u0,
         p=HybridParams(
             charge=prob.p.charge,
             mass=prob.p.mass,
             electromagneticfield=prob.p.electromagneticfield,
+            magneticmoment=magneticmoment,
             weight=weight,
             nrejections=nrejections,
             terminationcode=TerminationCode.NotTerminated,
-            eomid=2 # initialised with the EoM `lorentzforce!`
+            initialeomid=self.initialeomid # initialised with the EoM `lorentzforce!`
         )
     )
 end
