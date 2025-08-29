@@ -893,7 +893,7 @@ function get_fullorbit!(
     mass::Real,
     phaseangle::Real
 )
-    Rx, Ry, Rz, vparal = u
+    Rx, Ry, Rz, vparal = u[1], u[2], u[3], u[4]
     R = SVector(Rx, Ry, Rz)
     E, B = electromagneticfield(Rx, Ry, Rz, time)
     u[1:6] .= get_fullorbit(B, E, R, vparal, μ, charge, mass, phaseangle)
