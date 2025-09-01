@@ -57,6 +57,7 @@ struct DposMBvelGCA{T1<:AbstractRNG,T2,T3,T4<:AbstractVector,T5<:Number}
     tg_itp::T3
     domain::T4
     max_value::T5
+    time::T5
 end
 function (self::DposMBvelGCA)(prob, _, _)
     if length(self.domain) == 2
@@ -92,7 +93,9 @@ function (self::DposMBvelGCA)(prob, _, _)
     vel = @SVector [
         maxwellianvelocitysample(self.rng, temperature, mass) for _ in 1:3
     ]
-    efield_at_pos, bfield_at_pos = prob.p.electromagneticfield(x, y, z)
+    efield_at_pos, bfield_at_pos = prob.p.electromagneticfield(
+        x, y, z, self.time
+    )
     R, vparal, magneticmoment = get_guidingcentre(
         SVector(x, y, z),
         vel,
@@ -159,6 +162,7 @@ struct DposMBvelHybrid{
     ybounds::T4
     zbounds::T4
     max_value::T5
+    time::T5
     initialeomid::T6
 end
 function (self::DposMBvelHybrid)(prob, _, _)
@@ -173,7 +177,9 @@ function (self::DposMBvelHybrid)(prob, _, _)
         self.zbounds[1],
         self.zbounds[2],
     )
-    weight = self.target_distr(x, y, z) / self.proposal_distr(x, y, z)
+    weight = eltype(prob.p.mass)(
+        self.target_distr(x, y, z) / self.proposal_distr(x, y, z)
+    )
 
     # Velocity
     temperature = self.tg_itp(x, y, z)
@@ -182,7 +188,9 @@ function (self::DposMBvelHybrid)(prob, _, _)
         for _ in 1:3
     ]
     if self.initialeomid == 1
-        efield_at_pos, bfield_at_pos = prob.p.electromagneticfield(x, y, z)
+        efield_at_pos, bfield_at_pos = prob.p.electromagneticfield(
+            x, y, z, self.time
+        )
         R, vparal, magneticmoment = get_guidingcentre(
             SVector(x, y, z),
             vel,
