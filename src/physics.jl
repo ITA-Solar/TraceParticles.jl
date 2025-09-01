@@ -795,14 +795,14 @@ In-place version of `get_guidingcentre`.
 function get_guidingcentre!(
     u::AbstractVector,
     time::Real,
-    electromagnticfield,
+    electromagneticfield,
     charge::Real,
     mass::Real,
 )
     x, y, z, vx, vy, vz = u
     pos = SVector(x, y, z)
     vel = SVector(vx, vy, vz)
-    E, B = electromagnticfield(x, y, z, time)
+    E, B = electromagneticfield(x, y, z, time)
     R, vparal, mu = get_guidingcentre(pos, vel, B, E, charge, mass)
     u[1:3] .= R
     u[4] = vparal
