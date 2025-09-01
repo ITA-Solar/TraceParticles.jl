@@ -235,12 +235,12 @@ function magneticcurvatureratio(
     emfields,
 )
     ∇b = ForwardDiff.jacobian(R) do x
-        B = emfields(x[1], x[2], x[3], t)[2]
-        return B / norm(B)
+        _, Bvecfd = emfields(x[1], x[2], x[3], t)
+        return Bvecfd / norm(Bvecfd)
     end
-    B = norm(emfields(R[1], R[2], R[3], t)[2])
+    _, Bvec = emfields(R[1], R[2], R[3], t)
+    B = norm(Bvec)
     vperp = perpendicular_velocity(magneticmoment, mass, B)
-    Bvec = emfields(R[1], R[2], R[3], t)[2]
     return magneticcurvatureratio(Bvec, ∇b, mass, charge, vperp)
 end
 function magneticcurvatureratio(
@@ -252,8 +252,8 @@ function magneticcurvatureratio(
     emfields,
 )
     ∇b = ForwardDiff.jacobian(pos) do x
-        B = emfields(x[1], x[2], x[3], t)[2]
-        return B / norm(B)
+        _, Bvecfd = emfields(x[1], x[2], x[3], t)
+        return Bvecfd / norm(Bvecfd)
     end
     Evec, Bvec = emfields(pos[1], pos[2], pos[3], t)
     vperp = norm(perpendicular_velocity(

@@ -69,7 +69,7 @@ mutable struct RelativisticConditionGCA{T<:Real}
     end
 end
 function (self::RelativisticConditionGCA)(u, t, integrator)
-    Rx, Ry, Rz, vparal = u[1:4]
+    Rx, Ry, Rz, vparal = u[1], u[2], u[3], u[4]
     μ = integrator.p.magneticmoment
     mass = integrator.p.mass
 
