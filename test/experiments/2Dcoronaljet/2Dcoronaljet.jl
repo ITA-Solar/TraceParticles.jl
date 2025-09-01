@@ -95,7 +95,7 @@ ensembleprob_kwargs = Dict(
     :safetycopy => false,
     # How to choose initial condition of the particle
     :prob_func => DposMBvelGCA(
-        rng, r_itp, r_itp, tg_itp, [xbounds, zbounds], maxval
+        rng, r_itp, r_itp, tg_itp, [xbounds, zbounds], maxval, eltype(maxval)(0.0)
     )
 )
 
