@@ -21,14 +21,13 @@ Prints some statistics about the current batch.
 function print_batch_statistics(batch)
     npart = nrow(batch)
     c1 = 100 / npart
-    nhybrid = sum(batch.nswitches .> 0)
-    maxhyb = sum(@. (batch.nswitches > 0) & (batch.retcode == 4))
     nmaxiters = sum(batch.retcode .== 4)
     noob = sum(batch.terminationcode .== 1)
     ngradient = sum(batch.terminationcode .== 2)
     ncurvature = sum(batch.terminationcode .== 3)
     neratio = sum(batch.terminationcode .== 4)
     nrel = sum(batch.terminationcode .== 5)
+    hybswitches = batch.nswitches[batch.nswitches .> 0]
 
     println("")
     println("Timestamp:                   $(now())\n")
@@ -42,22 +41,26 @@ function print_batch_statistics(batch)
     @printf "Initial time:                %.5f\n" batch.t0[1]
     @printf "Oldest particle:             %.5f\n" maximum(batch.tf)
     @printf "Average end time:            %.5f\n" mean(batch.tf)
-    if hasproperty(batch, :nswitches)
-        println("Hybrid switch statistics")
-        @printf "  Amount that switched:      %i (%.0f%%)\n" nhybrid nhybrid * c1
-        @printf "  Average nof. switches:     %.4f\n" mean(batch.nswitches)
-        @printf "  Standard deviation:        %.4f\n" std(batch.nswitches)
-        println("  Most nof. switches:        $(maximum(batch.nswitches))")
-        println("  Least nof. switches:       $(minimum(batch.nswitches))")
-        @printf "  MaxIters & switched:       %i (%.0f%% of %i)\n" maxhyb maxhyb / nhybrid * 100 nhybrid
-    end
     println("Termination statistics")
-    @printf "  Nof. maxiters:             %i (%.0f%%)\n" nmaxiters nmaxiters * c1
-    @printf "  Nof. OutofBounds:          %i (%.0f%%)\n" noob noob * c1
-    @printf "  Nof. MagneticGradient:     %i (%.0f%%)\n" ngradient ngradient * c1
-    @printf "  Nof. MagneticCurvature:    %i (%.0f%%)\n" ncurvature ncurvature * c1
-    @printf "  Nof. ParallelEfield:       %i (%.0f%%)\n" neratio neratio * c1
-    @printf "  Nof. Relativistic:         %i (%.0f%%)\n" nrel nrel * c1
+    @printf "  Nof. maxiters:             %i (%.2f%%)\n" nmaxiters nmaxiters * c1
+    @printf "  Nof. OutofBounds:          %i (%.2f%%)\n" noob noob * c1
+    @printf "  Nof. Relativistic:         %i (%.2f%%)\n" nrel nrel * c1
+    if hasproperty(batch, :nswitches)
+        nhybrid = sum(batch.nswitches .> 0)
+        maxhyb = sum(@. (batch.nswitches > 0) & (batch.retcode == 4))
+        println("Hybrid switch statistics")
+        @printf "  Amount that switched:      %i (%.2f%%)\n" nhybrid nhybrid * c1
+        @printf "  Average nof. switches:     %.4f\n" mean(hybswitches)
+        @printf "  Median:                    %i\n" median(hybswitches)
+        @printf "  Standard deviation:        %.4f\n" std(hybswitches)
+        println("  Most nof. switches:        $(maximum(hybswitches))")
+        println("  Least nof. switches:       $(minimum(hybswitches))")
+        @printf "  MaxIters & switched:       %i (%.0f%% of %i, %.0f%% of MaxIters)\n" maxhyb maxhyb / nhybrid * 100 nhybrid maxhyb / nmaxiters * 100
+    else
+        @printf "  Nof. MagneticGradient:     %i (%.0f%%)\n" ngradient ngradient * c1
+        @printf "  Nof. MagneticCurvature:    %i (%.0f%%)\n" ncurvature ncurvature * c1
+        @printf "  Nof. ParallelEfield:       %i (%.0f%%)\n" neratio neratio * c1
+    end
     println("=================================================================",
         "===============")
 end

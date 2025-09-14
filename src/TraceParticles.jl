@@ -118,7 +118,8 @@ export
 # reduction_functions.jl
 export
     SaveBatchAsHDF5,
-    get_filename
+    get_filename,
+    print_batch_statistics
 # parameterstructs.jl
 export
     GCAParams,
