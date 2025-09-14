@@ -152,7 +152,7 @@ the particle using the `target_distr`ibution. Remakes the problem with
 `HybridParams`.
 """
 struct DposMBvelHybrid{
-    T1<:AbstractRNG,T2,T3,T4<:Tuple{Real,Real},T5<:Number,T6<:Int
+    T1<:AbstractRNG,T2,T3,T4<:Tuple{Real,Real},T5<:Real,T6<:Real,T7<:Int
 }
     rng::T1
     proposal_distr::T2
@@ -162,8 +162,8 @@ struct DposMBvelHybrid{
     ybounds::T4
     zbounds::T4
     max_value::T5
-    time::T5
-    initialeomid::T6
+    time::T6
+    initialeomid::T7
 end
 function (self::DposMBvelHybrid)(prob, _, _)
     x, y, z, nrejections = rejectionsample(
