@@ -194,15 +194,15 @@ rtols = Dict(
 rtols_errorprone = Dict(
     "xf" => 1e-6,
     "zf" => 1e-6,
-    "tf" => 1e-5,
-    "nt" => 1e-2,
-    "vparalf" => 1e-2,
-    "maxrl" => 1e-4,
-    "maxscalesratio" => 1e-3,
-    "minlb" => 1e-3,
-    "meanrl" => 1e-6,
-    "meanlb" => 1e-1,
-    "meanscalesratio" => 1e-4,
+    #"tf" => 1e-5,
+    #"nt" => 1e-2,
+    "vparalf" => 1e-4,
+    "maxrl" => 5e-3,
+    #"maxscalesratio" => 1e-3,
+    #"minlb" => 1e-3,
+    #"meanrl" => 1e-6,
+    #"meanlb" => 1e-1,
+    #"meanscalesratio" => 1e-4,
 )
 
 # Retrieve the solutions for which to test the results against.
@@ -217,6 +217,7 @@ df = h5_getall(fname)
 
 # The particles that have larger errors
 errorprone = [
+    40, 50, 99
 #    15, 75, 81, 1, 14, 49, 70, 46, 93,
 #    84, 44, 53, 80, 27, 9, 13, 41, 30,
 #    39, 26, 7

@@ -280,6 +280,38 @@ function rejectionsample(
     return x, y, z, numrejections
 end
 
+function rejectionsample(
+    rng::AbstractRNG,
+    target::Any,
+    maxvalue::Real,
+    x0::Real,
+    xf::Real,
+    y0::Real,
+    yf::Real,
+    z0::Real,
+    zf::Real,
+    t0::Real,
+    tf::Real,
+)
+    numrejections = 0
+    x = rand(rng, x0, xf)
+    y = rand(rng, y0, yf)
+    z = rand(rng, z0, zf)
+    t = rand(rng, t0, tf)
+    u = rand(rng, 0.0, maxvalue)
+    v = target(x, y, z, t)
+    while u > v
+        numrejections += 1
+        x = rand(rng, x0, xf)
+        y = rand(rng, y0, yf)
+        z = rand(rng, z0, zf)
+        t = rand(rng, t0, tf)
+        u = rand(rng, 0.0, maxvalue)
+        v = target(x, y, z, t)
+    end
+    return x, y, z, t, numrejections
+end
+
 """
     rejectionsample(
         target    ::Function,

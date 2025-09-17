@@ -107,8 +107,8 @@ export
     TerminationCode
 # problem_functions.jl
 export
-    DposMBvelGCA,
-    DposMBvelHybrid,
+    MHDSamplingGCA,
+    MHDSamplingHybrid,
     PposPvel
 # output_functions.jl
 export
