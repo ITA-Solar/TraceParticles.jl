@@ -32,17 +32,103 @@ function (self::PposPvel)(prob, i, repeat)
     )
 end
 
+function mhdsampling(
+    mass::Real,
+    rng::AbstractRNG,
+    proposal_distr,
+    target_distr,
+    tg_itp,
+    xbounds::T,
+    ybounds::T,
+    zbounds::T,
+    temporalbounds::T,
+    max_value::Real,
+) where {T<:Tuple{Real,Real}}
+    # Extract spatial and temporal limits
+    x0, xf = xbounds
+    y0, yf = ybounds
+    z0, zf = zbounds
+    tmin, tmax = temporalbounds
+    # Sample osition and time from the proposal distrubution using rejection
+    # sampling.
+    x, y, z, t, nrejections = rejectionsample(
+        rng,
+        proposal_distr,
+        max_value,
+        x0, xf,
+        y0, yf,
+        z0, zf,
+        tmin, tmax,
+    )
+    weight = eltype(mass)(
+        target_distr(x, y, z, t) / proposal_distr(x, y, z, t)
+    )
+    # Sample velocity components from a Maxwell-Boltzmann distribution.
+    temperature = tg_itp(x, y, z, t)
+    vx = maxwellianvelocitysample(rng, temperature, mass)
+    vy = maxwellianvelocitysample(rng, temperature, mass)
+    vz = maxwellianvelocitysample(rng, temperature, mass)
+    return x, y, z, vx, vy, vz, t, weight, nrejections
+end
+
+function getu0_guidingcentre!(
+    u0::AbstractVector,
+    x::Real,
+    y::Real,
+    z::Real,
+    vx::Real,
+    vy::Real,
+    vz::Real,
+    t::Real,
+    mass::Real,
+    charge::Real,
+    electromagneticfield,
+)
+    efield_at_pos, bfield_at_pos = electromagneticfield(x, y, z, t)
+    R, vparal, magneticmoment = get_guidingcentre(
+        SVector(x, y, z),
+        SVector(vx, vy, vz),
+        bfield_at_pos,
+        efield_at_pos,
+        charge,
+        mass
+    )
+    u0[1:4] .= [R[1], R[2], R[3], vparal]
+    return magneticmoment
+end
+
+function getu0_fullorbit!(
+    u0::AbstractVector,
+    x::Real,
+    y::Real,
+    z::Real,
+    vx::Real,
+    vy::Real,
+    vz::Real,
+    _::Real,
+    _::Real,
+    _::Real,
+    _,
+)
+    u0 .= [x, y, z, vx, vy, vz]
+    return 0.0
+end
+
 """
-    struct DposMBvelGCA
+    struct MHDSamplingGCA
         rng
         proposal_distr
         target_distr
         tg_itp
-        domain
+        xbounds
+        ybounds
+        zbounds
+        t0bounds
+        tf
         max_value
 
 # Methods
-    (::DposMBvelGCA)(prob, _, _)
+    (::MHDSamplingGCA)(prob, _, _)
 Draw `x`, `y`, and `z` positions from a given `proposal_distr`ibution using
 rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
 with a temperature given by `tg_itp(x,y,z)`. Evaluates the statistical weight of
@@ -50,59 +136,37 @@ the particle using the `target_distr`ibution. Calculates the corresponding
 guiding centre, magnetic moment, and parallel velocity and remakes the problem
 with `GCAParams`.
 """
-struct DposMBvelGCA{T1<:AbstractRNG,T2,T3,T4<:AbstractVector,T5<:Number}
+struct MHDSamplingGCA{
+    T1<:AbstractRNG,T2,T3,T4,T5<:Tuple{Real,Real},T6<:Real,T7<:Real,
+}
     rng::T1
     proposal_distr::T2
     target_distr::T3
-    tg_itp::T3
-    domain::T4
-    max_value::T5
-    time::T5
+    tg_itp::T4
+    xbounds::T5
+    ybounds::T5
+    zbounds::T5
+    t0bounds::T5
+    tf::T6
+    max_value::T7
 end
-function (self::DposMBvelGCA)(prob, _, _)
-    if length(self.domain) == 2
-        x, z, nrejections = rejectionsample(
-            self.rng,
-            self.proposal_distr,
-            self.max_value,
-            self.domain[1][1],
-            self.domain[1][2],
-            self.domain[2][1],
-            self.domain[2][2],
-        )
-        y = 1e6 # !!! Hardcoded y-value
-    else
-        x, y, z, nrejections = rejectionsample(
-            self.rng,
-            self.proposal_distr,
-            self.max_value,
-            self.domain[1][1],
-            self.domain[1][2],
-            self.domain[2][1],
-            self.domain[2][2],
-            self.domain[3][1],
-            self.domain[3][2],
-        )
-    end
-    weight = self.target_distr(x, y, z) / self.proposal_distr(x, y, z)
-
-    # Velocity
-    charge = prob.p.charge
-    mass = prob.p.mass
-    temperature = self.tg_itp(x, y, z)
-    vel = @SVector [
-        maxwellianvelocitysample(self.rng, temperature, mass) for _ in 1:3
-    ]
-    efield_at_pos, bfield_at_pos = prob.p.electromagneticfield(
-        x, y, z, self.time
+function (self::MHDSamplingGCA)(prob, _, _)
+    x, y, z, vx, vy, vz, t, weight, nrejections = mhdsampling(
+        prob.p.mass,
+        self.rng,
+        self.proposal_distr,
+        self.target_distr,
+        self.tg_itp,
+        self.xbounds,
+        self.ybounds,
+        self.zbounds,
+        self.t0bounds,
+        self.max_value,
     )
-    R, vparal, magneticmoment = get_guidingcentre(
-        SVector(x, y, z),
-        vel,
-        bfield_at_pos,
-        efield_at_pos,
-        charge,
-        mass
+    u0 = Vector{Float64}(undef, 4)
+    magneticmoment = getu0_guidingcentre!(
+        u0, x, y, z, vx, vy, vz, t,
+        prob.p.mass, prob.p.charge, prob.p.electromagneticfield
     )
     #=
     # This is not thread-safe if `safetycopy=false`
@@ -121,7 +185,8 @@ function (self::DposMBvelGCA)(prob, _, _)
     # as long as the parameters that points to `prob.p` is not mutated.
     return remake(
         prob;
-        u0=[R[1], R[2], R[3], vparal],
+        u0=u0,
+        tspan=(t, self.tf),
         p=GCAParams(
             charge=prob.p.charge,
             mass=prob.p.mass,
@@ -135,74 +200,66 @@ function (self::DposMBvelGCA)(prob, _, _)
 end
 
 """
-    struct DposMBvelHybrid
+    struct MHDSamplingHybrid
         rng
         proposal_distr
         target_distr
         tg_itp
-        domain
+        xbounds
+        ybounds
+        zbounds
+        t0bounds
+        tf
         max_value
+        initialeomid
 
 # Methods
-    (::DposMBvelHybrid)(prob, _, _)
+    (::MHDSamplingHybrid)(prob, _, _)
 Draw `x`, `y`, and `z` positions from a given `proposal_distr`ibution using
 rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
 with a temperature given by `tg_itp(x,y,z)`. Evaluates the statistical weight of
 the particle using the `target_distr`ibution. Remakes the problem with
 `HybridParams`.
 """
-struct DposMBvelHybrid{
-    T1<:AbstractRNG,T2,T3,T4<:Tuple{Real,Real},T5<:Real,T6<:Real,T7<:Int
+struct MHDSamplingHybrid{
+    T1<:AbstractRNG,T2,T3,T4,T5<:Tuple{Real,Real},T6<:Real,T7<:Real,T8<:Int
 }
     rng::T1
     proposal_distr::T2
     target_distr::T3
-    tg_itp::T3
-    xbounds::T4
-    ybounds::T4
-    zbounds::T4
-    max_value::T5
-    time::T6
-    initialeomid::T7
+    tg_itp::T4
+    xbounds::T5
+    ybounds::T5
+    zbounds::T5
+    t0bounds::T5
+    tf::T6
+    max_value::T7
+    initialeomid::T8
 end
-function (self::DposMBvelHybrid)(prob, _, _)
-    x, y, z, nrejections = rejectionsample(
+function (self::MHDSamplingHybrid)(prob, _, _)
+    x, y, z, vx, vy, vz, t, weight, nrejections = mhdsampling(
+        prob.p.mass,
         self.rng,
         self.proposal_distr,
+        self.target_distr,
+        self.tg_itp,
+        self.xbounds,
+        self.ybounds,
+        self.zbounds,
+        self.t0bounds,
         self.max_value,
-        self.xbounds[1],
-        self.xbounds[2],
-        self.ybounds[1],
-        self.ybounds[2],
-        self.zbounds[1],
-        self.zbounds[2],
     )
-    weight = eltype(prob.p.mass)(
-        self.target_distr(x, y, z) / self.proposal_distr(x, y, z)
-    )
-
-    # Velocity
-    temperature = self.tg_itp(x, y, z)
-    vel = @SVector [
-        maxwellianvelocitysample(self.rng, temperature, prob.p.mass)
-        for _ in 1:3
-    ]
+    u0 = Vector{Float64}(undef, 6)
     if self.initialeomid == 1
-        efield_at_pos, bfield_at_pos = prob.p.electromagneticfield(
-            x, y, z, self.time
+        magneticmoment = getu0_guidingcentre!(
+            u0, x, y, z, vx, vy, vz, t,
+            prob.p.mass, prob.p.charge, prob.p.electromagneticfield
         )
-        R, vparal, magneticmoment = get_guidingcentre(
-            SVector(x, y, z),
-            vel,
-            bfield_at_pos,
-            efield_at_pos,
-            prob.p.charge,
-            prob.p.mass
-        )
-        u0 = [R[1], R[2], R[3], vparal, 0.0, 0.0]
     elseif self.initialeomid == 2
-        magneticmoment = 0.0
-        u0 = [x, y, z, vel[1], vel[2], vel[3]]
+        magneticmoment = getu0_fullorbit!(
+            u0, x, y, z, vx, vy, vz, t,
+            prob.p.mass, prob.p.charge, prob.p.electromagneticfield
+        )
     else
         error("Invalid initialeomid: $(self.initialeomid). Must be 1 or 2.")
     end
@@ -212,6 +269,7 @@ function (self::DposMBvelHybrid)(prob, _, _)
     return remake(
         prob;
         u0=u0,
+        tspan=(t, self.tf),
         p=HybridParams(
             charge=prob.p.charge,
             mass=prob.p.mass,

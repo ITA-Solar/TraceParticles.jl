@@ -33,12 +33,12 @@ fields_itp = load_object(expdir * "/cs_t1_BE.jld2")
 tg_itp = load_object(expdir * "/cs_t1_tg_normfalse.jld2")
 r_itp = load_object(expdir * "/cs_t1_r_normfalse.jld2")
 
-fields_itp = ElectromagneticFieldInterpolator(
-    [StaticInterpolation(itp) for itp in fields_itp]
-)
+fields_itp = ElectromagneticFieldInterpolator(fields_itp)
 
 dtsnap = 1e-2 # in code units (hs)
-tspan = (0.0, dtsnap * 100)   # Simulation time-span
+t0 = 0.0
+t0bounds = (t0, t0)
+tf = dtsnap * 100
 #xbounds = (14.527344e6, 18.824219e6) # Bounds of of initial position in x
 # x bounds for the whole simulation snapshot
 # The whole snapshot except a 40km edge on both sides.
@@ -94,8 +94,17 @@ ensembleprob_kwargs = Dict(
     ),
     :safetycopy => false,
     # How to choose initial condition of the particle
-    :prob_func => DposMBvelGCA(
-        rng, r_itp, r_itp, tg_itp, [xbounds, zbounds], maxval, eltype(maxval)(0.0)
+    :prob_func => MHDSamplingGCA(
+        rng,
+        r_itp,
+        r_itp,
+        tg_itp,
+        xbounds,
+        ybounds,
+        zbounds,
+        t0bounds,
+        tf,
+        maxval,
     )
 )
 
@@ -119,7 +128,7 @@ solve_kwargs = Dict(
 odeprob = ODEProblem(
     eom,
     zeros(4),
-    tspan,
+    (t0, tf),
     (
         charge=charge,
         mass=mass,
@@ -138,7 +147,7 @@ u0 = [
 ]
 mu = [4.1e-11, 4.1e-11]
 ensembleprob_kwargs = Dict(
-    :prob_func => PposPvel(u0, mu, [tspan for _ in 1:2], GCAParams)
+    :prob_func => PposPvel(u0, mu, [(t0, tf) for _ in 1:2], GCAParams)
 )
 prob2 = EnsembleProblem(odeprob; ensembleprob_kwargs...)
 solve_kwargs[:trajectories] = 2
@@ -202,31 +211,15 @@ answersol1_df = load_object(expdir * "/testresults/answersol1_df.jld2")
 answersol1_e0, answersol1_ef = load_object(
     expdir * "/testresults/answersol1_energies.jld2"
 )
-n = size(answersol1_df)[1]
-newcol = Vector{Any}(undef, n)
-for i in 1:n
-    j = answersol1_df[i, :retmsg]
-    if j == 0
-        newcol[i] = Int(TerminationCode.NotTerminated)
-    elseif j == 1
-        newcol[i] = Int(TerminationCode.OutOfBounds)
-    elseif j == 2
-        newcol[i] = Int(TerminationCode.MagneticGradient)
-    elseif j == 3
-        newcol[i] = Int(TerminationCode.Relativistic)
-    end
-end
-select!(answersol1_df, Not(:retmsg))
-answersol1_df[!, :terminationcode] = newcol
 # Get the results
 e0, ef = h5_getenergies_gca(fname)
 df = h5_getall(fname)
 
 # The particles that have larger errors
 errorprone = [
-    15, 75, 81, 1, 14, 49, 70, 46, 93,
-    84, 44, 53, 80, 27, 9, 13, 41, 30,
-    39, 26, 7
+#    15, 75, 81, 1, 14, 49, 70, 46, 93,
+#    84, 44, 53, 80, 27, 9, 13, 41, 30,
+#    39, 26, 7
 ]
 # Create a filter for masking out the errorprone particles
 totest = BitVector(undef, 100)
@@ -297,7 +290,7 @@ for i in eachindex(testres)
     global str
     str *= "$(testres[i]): $(syms[i])\n"
 end
-#@warn str
+@warn str
 str2 = ""
 for i in eachindex(testres)
     global str2
@@ -308,7 +301,7 @@ for i in eachindex(testres)
         str2 *= "  $j : $(reldiff[j])\n"
     end
 end
-#@warn str2
+@warn str2
 @test all(testres)
 # Test the initial energy of all particles
 @test all(isapprox.(e0, answersol1_e0; rtol=minrtol))
