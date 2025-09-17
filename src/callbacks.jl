@@ -253,9 +253,12 @@ function hybridswitchaffect_withdetection!(integrator)
     if integrator.p.eomid == 1
         integrator.p.eomidafterswitch[integrator.p.nswitches] = 2
         switch2fo_affect!(integrator)
+        integrator.p.magneticmomentafterswitch[integrator.p.nswitches] = NaN
     elseif integrator.p.eomid == 2
         integrator.p.eomidafterswitch[integrator.p.nswitches] = 1
         switch2gca_affect!(integrator)
+        integrator.p.magneticmomentafterswitch[integrator.p.nswitches] =
+            integrator.p.magneticmoment
     else
         @warn """Trying to switch EoM, but switch paramer is neither 1 nor 2.
 Current value: $(integrator.p.eomid)."""

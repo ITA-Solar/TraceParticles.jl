@@ -145,9 +145,11 @@ mutable struct HybridParamsWithDetection{
     eomid::T3
     nswitches::T3
     initialeomid::T3
+    initialmagneticmoment::T1
     maxswitches::T3
     timeatswitch::T7
     eomidafterswitch::T8
+    magneticmomentafterswitch::T7
 
     function HybridParamsWithDetection(
         ;
@@ -164,10 +166,12 @@ mutable struct HybridParamsWithDetection{
         ),
         nswitches::T3=0,
         initialeomid::T3=2,
+        initialmagneticmoment::T1=magneticmoment,
         maxswitches::T3=100,
     ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
         timeatswitch = zeros(Float64, maxswitches)
         eomidafterswitch = zeros(Int32, maxswitches)
+        magneticmomentafterswitch = zeros(Int32, maxswitches)
         new{T1,T2,T3,T4,T5,T6,Vector{Float64},Vector{Int32}}(
             charge,
             mass,
@@ -181,9 +185,11 @@ mutable struct HybridParamsWithDetection{
             initialeomid,
             nswitches,
             initialeomid,
+            initialmagneticmoment,
             maxswitches,
             timeatswitch,
             eomidafterswitch,
+            magneticmomentafterswitch
         )
     end
 end
