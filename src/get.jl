@@ -120,28 +120,60 @@ function get_observable(
     component=nothing,
     EoM=nothing
 )
-    # Check if the solution is using a hybrid GCA/FO scheme with storage
-    # of switch times and the EoMs used after each switch. Construct an
-    # array of strings that identify the EoM used at each time step. If
-    # the solution is not using a hybrid scheme, we just use the EoM
-    # specified by the `EoM` keyword argument.
-    eomidmap = Dict(
-        1 => "GCA",
-        2 => "FO",
-    )
-    if hasproperty(sol.prob.p, :eomidafterswitch) &&
-       hasproperty(sol.prob.p, :timeatswitch)
-        eomids = [get_eomid(sol, t) for t in times]
-        EoMs = [eomidmap[eomid] for eomid in eomids]
-    elseif EoM == "GCA"
-        EoMs = fill("GCA", length(times))
-    elseif EoM == "FO"
-        EoMs = fill("FO", length(times))
-    else
-        error("EoM $EoM is uknown to `get_observable`.")
-    end
-    zipper = zip(times, EoMs)
 
+
+    observables = Dict{Symbol,Function}([
+        :vperp => get_vperp;
+        [:larmorradius, :r_L] .=> get_larmorradius;
+        [:scalesratio, :mgr] .=> get_scalesratio;
+        [:magneticcurvatureratio, :mcr] .=> get_mcratio;
+        :pitchangle => get_pitchangle;
+        :energy => get_energy;
+        [:magneticmoment, :mu] .=>
+            (sol, t; kwargs...) -> get_magneticmoment(sol, t)
+        :gyrofrequency => (sol, t, kwargs...) -> get_gyrofrequency(sol, t);
+        :gyroperiod => (sol, t, kwargs...) -> get_gyroperiod(sol, t)
+    ])
+    gcaobservable = Dict{Symbol,Function}(
+        :fermi => get_fermi,
+        :betatron => get_betatron,
+        :polarisationacc => get_polarisationacc,
+        :parallelpower => get_parallelpower,
+        :driftenergy => get_driftenergy,
+        :parallelenergy => get_parallelenergy,
+        :perpenergy => get_perpenergy,
+    )
+    fieldquantities = Dict{Symbol,Function}([
+        :eparal => get_eparal;
+        :eperp => get_eperp;
+        :efield => (sol, t) -> begin
+            sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[1]
+        end
+        :bfield => (sol, t) -> begin
+            sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]
+        end
+        :b => (sol, t) -> begin
+            bfield = sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]
+            bfield / norm(bfield)
+        end
+        [:efieldratio, :epr] .=> (sol, t) -> begin
+            eparal = get_eparal(sol, t)
+            eperp = norm(get_eperp(sol, t))
+            eparal / eperp
+        end
+        :exbdrift => (sol, t) -> begin
+            exbdrift(
+                sol(t, idxs=1:3), t, sol.prob.p.electromagneticfield
+            )
+        end
+        [:characteristicfieldlength, :L_B] .=> (sol, t) -> begin
+            characteristicfieldlength(
+                sol(t, idxs=1:3), t, sol.prob.p.electromagneticfield
+            )
+        end
+    ])
+
+    # First, check if user is requesting a primary variable
     if sym == :x
         obs = [sol(t)[1] for t in times]
     elseif sym == :y
@@ -158,90 +190,65 @@ function get_observable(
         obs = [sol(t)[6] for t in times]
     elseif sym == :t
         obs = times
-    elseif sym == :vperp
-        obs = [get_vperp(sol, t, EoM=e) for (t, e) in zipper]
-    elseif sym == :r_L
-        obs = [get_larmorradius(sol, t, EoM=e) for (t, e) in zipper]
-    elseif sym == :scalesratio || sym == :mgr
-        obs = [get_scalesratio(sol, t, EoM=e) for (t, e) in zipper]
-    elseif sym == :magneticcurvatureratio || sym == :mcr
-        obs = [get_mcratio(sol, t, EoM=e) for (t, e) in zipper]
     elseif sym == :eomid
         obs = [get_eomid(sol, t) for t in times]
-    elseif sym == :pitchangle
-        obs = [get_pitchangle(sol, t, EoM=e) for (t, e) in zipper]
-    elseif sym == :energy
-        obs = [get_energy(sol, t; EoM=e) for (t, e) in zipper]
-    elseif sym == :fermi
-        obs = [get_fermi(sol, t) for t in times]
-    elseif sym == :betatron
-        obs = [get_betatron(sol, t) for t in times]
-    elseif sym == :polarisationacc
-        obs = [get_polarisationacc(sol, t) for t in times]
-    elseif sym == :parallelpower
-        obs = [get_parallelpower(sol, t) for t in times]
-    elseif sym == :driftenergy
-        obs = [get_driftenergy(sol, t) for t in times]
-    elseif sym == :parallelenergy
-        obs = [get_parallelenergy(sol, t) for t in times]
-    elseif sym == :perpenergy
-        obs = [get_perpenergy(sol, t) for t in times]
-    elseif sym == :eparal
-        obs = [get_eparal(sol, t) for t in times]
-    elseif sym == :eperp
-        obs = [get_eperp(sol, t) for t in times]
-    elseif sym == :efieldratio || sym == :epr
-        eparal = [get_eparal(sol, t) for t in times]
-        eperp = [norm(get_eperp(sol, t)) for t in times]
-        obs = eparal ./ eperp
-    elseif sym == :efield
+        # Next, check if user is requesting a standard observable
+    elseif haskey(observables, sym)
+        func = observables[sym]
+        # These observables requires knowledge of the EoM and possibly
+        # magnetic moment.
+        # Check if the solution is using a hybrid GCA/FO scheme with storage
+        # of switch times and the EoMs used after each switch. Construct an
+        # array of strings that identify the EoM used at each time step. If
+        # the solution is not using a hybrid scheme, we just use the EoM
+        # specified by the `EoM` keyword argument.
+        eomidmap = Dict(
+            1 => "GCA",
+            2 => "FO",
+        )
+        if (
+            hasproperty(sol.prob.p, :eomidafterswitch) &&
+            hasproperty(sol.prob.p, :timeatswitch) &&
+            hasproperty(sol.prob.p, :magneticmomentafterswitch)
+        )
+            eomids = [get_eomid(sol, t) for t in times]
+            EoMs = [eomidmap[eomid] for eomid in eomids]
+            magneticmoments = [
+                get_magneticmoment(sol, t; EoM=e) for (t, e) in zip(times, EoMs)
+            ]
+        elseif EoM == "GCA"
+            EoMs = fill("GCA", length(times))
+            magneticmoments = fill(sol.prob.p.magneticmoment, length(times))
+        elseif EoM == "FO"
+            EoMs = fill("FO", length(times))
+            magneticmoments = [
+                magneticmoment(
+                    sol(t, idxs=1:3),
+                    sol(t, idxs=4:6),
+                    t,
+                    sol.prob.p.mass,
+                    sol.prob.p.electromagneticfield
+                ) for t in times
+            ]
+        else
+            error("EoM $EoM is uknown to `get_observable`.")
+        end
+        zipper = zip(times, EoMs, magneticmoments)
         obs = [
-            sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[1]
-            for t in times
+            func(sol, t, EoM=e, magneticmoment=mu)
+            for (t, e, mu) in zipper
         ]
-    elseif sym == :bfield
+        # Next, check if user is requesting a GCA-only observable
+    elseif haskey(gcaobservable, sym)
+        @warn "Observable $sym assumes a GCA solution."
+        func = gcaobservable[sym]
         obs = [
-            sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]
-            for t in times
+            func(sol, t) for t in times
         ]
-    elseif sym == :b
-        bfield = [
-            sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]
-            for t in times
-        ]
-        obs = [b / norm(b) for b in bfield]
-    elseif sym == :exbdrift
-        obs = [
-            exbdrift(
-                sol(t, idxs=1:3), t, sol.prob.p.electromagneticfield
-            ) for t in times
-        ]
-    elseif sym == :L_B
-        obs = [
-            characteristicfieldlength(
-                sol(t, idxs=1:3), t, sol.prob.p.electromagneticfield
-            ) for t in times
-        ]
-    elseif sym == :mu || sym == :magneticmoment
-        obs = [
-            magneticmoment(
-                sol(t, idxs=1:3),
-                sol(t, idxs=4:6),
-                t,
-                sol.prob.p.mass,
-                sol.prob.p.electromagneticfield
-            ) for t in times
-        ]
-    elseif sym == :gyrofrequency
-        obs = [norm(sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]) *
-               sol.prob.p.charge / sol.prob.p.mass for t in times]
-    elseif sym == :gyroperiod
-        factor = 2π * sol.prob.p.mass /
-                 sol.prob.p.charge
-        obs = factor / [
-            norm(sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2])
-            for t in times
-        ]
+        # Next, check if user is requesting a field quantity
+    elseif haskey(fieldquantities, sym)
+        func = fieldquantities[sym]
+        obs = [func(sol, t) for t in times]
     else
         error("Observable $sym is not implemented.")
     end
@@ -389,6 +396,7 @@ function get_energy(
     ;
     units="eV",
     EoM="GCA",
+    magneticmoment=nothing,
 )
     if EoM == "FO" # Full orbit
         energy = kineticenergy(
@@ -401,7 +409,7 @@ function get_energy(
             t,
             sol.prob.p.charge,
             sol.prob.p.mass,
-            sol.prob.p.magneticmoment,
+            magneticmoment,
             sol.prob.p.electromagneticfield,
         ))
     end
@@ -500,13 +508,9 @@ function get_eperp(
     return efield - (efield ⋅ b) * b
 end
 
-function get_eomid(
-    sol::ODESolution,
-    t::Real;
-)
+function findswitchidx(sol::ODESolution, t::Real)
     mask = sol.prob.p.timeatswitch .!= 0
     timeatswitch = sol.prob.p.timeatswitch[mask]
-    eomidafterswitch = sol.prob.p.eomidafterswitch[mask]
     if length(timeatswitch) != sol.prob.p.nswitches
         error(
             "Switch times do not match the number of switches. Is there" *
@@ -517,6 +521,15 @@ function get_eomid(
         x -> x >= t,
         vcat(timeatswitch, last(sol.t)),
     )
+    return mask, i
+end
+
+function get_eomid(
+    sol::ODESolution,
+    t::Real;
+)
+    mask, i = findswitchidx(sol, t)
+    eomidafterswitch = sol.prob.p.eomidafterswitch[mask]
     if i == 1
         return sol.prob.p.initialeomid
     else
@@ -528,12 +541,13 @@ function get_vperp(
     sol::ODESolution,
     t::Real;
     EoM="GCA",
+    magneticmoment=nothing
 )
     if EoM == "GCA"
         return perpendicular_velocity(
             sol(t, idxs=1:3),
             t,
-            sol.prob.p.magneticmoment,
+            magneticmoment,
             sol.prob.p.mass,
             sol.prob.p.electromagneticfield
         )
@@ -551,12 +565,13 @@ function get_larmorradius(
     sol::ODESolution,
     t::Real;
     EoM="GCA",
+    magneticmoment=nothing
 )
     if EoM == "GCA"
         return larmorradius(
             sol(t, idxs=1:3),
             t,
-            sol.prob.p.magneticmoment,
+            magneticmoment,
             sol.prob.p.charge,
             sol.prob.p.mass,
             sol.prob.p.electromagneticfield,
@@ -577,6 +592,7 @@ function get_scalesratio(
     sol::ODESolution,
     t::Real;
     EoM="GCA",
+    magneticmoment=nothing,
 )
     if EoM == "GCA"
         return scalesratio(
@@ -584,7 +600,7 @@ function get_scalesratio(
             t,
             sol.prob.p.mass,
             sol.prob.p.charge,
-            sol.prob.p.magneticmoment,
+            magneticmoment,
             sol.prob.p.electromagneticfield,
         )
     elseif EoM == "FO"
@@ -603,6 +619,7 @@ function get_mcratio(
     sol::ODESolution,
     t::Real;
     EoM="GCA",
+    magneticmoment=nothing
 )
     if EoM == "GCA"
         return magneticcurvatureratio(
@@ -610,7 +627,7 @@ function get_mcratio(
             t,
             sol.prob.p.mass,
             sol.prob.p.charge,
-            sol.prob.p.magneticmoment,
+            magneticmoment,
             sol.prob.p.electromagneticfield,
         )
     elseif EoM == "FO"
@@ -629,17 +646,59 @@ function get_pitchangle(
     sol::ODESolution,
     t::Real;
     EoM="GCA",
+    magneticmoment=nothing
 )
     if EoM == "GCA"
         return pitchangle(
             sol.prob.p.electromagneticfield(sol(t, idxs=1:3)..., t)[2],
             sol(t, idxs=4),
             sol.prob.p.mass,
-            sol.prob.p.magneticmoment,
+            magneticmoment,
         )
     elseif EoM == "FO"
         B = sol.prob.p.electromagneticfield(sol(t, idxs=1:3)..., t)[2]
         vel = sol(t, idxs=4:6)
         return pitchangle(vel, B)
+    end
+end
+
+function get_gyrofrequency(
+    sol::ODESolution,
+    t::Real;
+)
+    return norm(sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]) *
+           sol.prob.p.charge / sol.prob.p.mass
+end
+
+function get_gyroperiod(
+    sol::ODESolution,
+    t::Real;
+)
+    return 2π * sol.prob.p.mass /
+           (norm(sol.prob.p.electromagneticfield(sol(t)[1:3]..., t)[2]) *
+            sol.prob.p.charge)
+end
+
+function get_magneticmoment(
+    sol::ODESolution,
+    t::Real;
+    EoM="GCA",
+)
+    if EoM == "FO"
+        return magneticmoment(
+            sol(t, idxs=1:3),
+            sol(t, idxs=4:6),
+            t,
+            sol.prob.p.mass,
+            sol.prob.p.electromagneticfield
+        )
+    elseif EoM == "GCA"
+        mask, i = findswitchidx(sol, t)
+        magneticmomentafterswitch = sol.prob.p.magneticmomentafterswitch[mask]
+        if i == 1
+            return sol.prob.p.initialmagneticmoment
+        else
+            return magneticmomentafterswitch[i-1]
+        end
     end
 end
