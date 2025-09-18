@@ -34,6 +34,10 @@
             include("experiments/hybridswitch.jl")
         end # testset Hybrid switch
 
+        @testset verbose = verbose ≥ 4 "Speiser (1965) w/ hybrid" begin
+            include("experiments/speiser1965_hybrid.jl")
+        end # testset Hybrid switch
+
     end # testset Experiments
 
 end # testset All test
