@@ -109,7 +109,7 @@ export
 export
     MHDSamplingGCA,
     MHDSamplingHybrid,
-    PposPvel
+    PredefinedICs
 # output_functions.jl
 export
     output_func_lightweight,

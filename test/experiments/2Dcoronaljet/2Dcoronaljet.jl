@@ -147,7 +147,7 @@ u0 = [
 ]
 mu = [4.1e-11, 4.1e-11]
 ensembleprob_kwargs = Dict(
-    :prob_func => PposPvel(u0, mu, [(t0, tf) for _ in 1:2], GCAParams)
+    :prob_func => PredefinedICs(u0, mu, [(t0, tf) for _ in 1:2], GCAParams)
 )
 prob2 = EnsembleProblem(odeprob; ensembleprob_kwargs...)
 solve_kwargs[:trajectories] = 2
@@ -194,15 +194,8 @@ rtols = Dict(
 rtols_errorprone = Dict(
     "xf" => 1e-6,
     "zf" => 1e-6,
-    #"tf" => 1e-5,
-    #"nt" => 1e-2,
     "vparalf" => 2e-4,
     "maxrl" => 5e-3,
-    #"maxscalesratio" => 1e-3,
-    #"minlb" => 1e-3,
-    #"meanrl" => 1e-6,
-    #"meanlb" => 1e-1,
-    #"meanscalesratio" => 1e-4,
 )
 
 # Retrieve the solutions for which to test the results against.
@@ -218,9 +211,6 @@ df = h5_getall(fname)
 # The particles that have larger errors
 errorprone = [
     25, 40, 50, 99
-#    15, 75, 81, 1, 14, 49, 70, 46, 93,
-#    84, 44, 53, 80, 27, 9, 13, 41, 30,
-#    39, 26, 7
 ]
 # Create a filter for masking out the errorprone particles
 totest = BitVector(undef, 100)
@@ -248,7 +238,6 @@ for i in 1:nsyms
 end
 
 # Compare the results of the particles that are errorprone
-#syms_errorpron = names(answersol1_df)
 syms_errorprone = unique([exactsyms..., keys(rtols)..., keys(rtols_errorprone)...])
 nsyms_errorprone = length(syms)
 testres_errorprone = BitVector(undef, nsyms_errorprone)
@@ -291,7 +280,7 @@ for i in eachindex(testres)
     global str
     str *= "$(testres[i]): $(syms[i])\n"
 end
-@warn str
+#@warn str
 str2 = ""
 for i in eachindex(testres)
     global str2
@@ -302,7 +291,7 @@ for i in eachindex(testres)
         str2 *= "  $j : $(reldiff[j])\n"
     end
 end
-@warn str2
+#@warn str2
 @test all(testres)
 # Test the initial energy of all particles
 @test all(isapprox.(e0, answersol1_e0; rtol=minrtol))

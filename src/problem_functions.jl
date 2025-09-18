@@ -8,15 +8,41 @@
 #-------------------------------------------------------------------------------
 
 """
-Draw initial conditions from an array.
+    struct PredefinedICs
+        u0
+        mu0
+        tspan
+        paramstruct
+        kwargs...
+# Methods
+    (::PredefinedICs)(prob, i, _)
+Remakes the problem with predefined initial conditions `u0[i]`, magnetic
+moment `mu0[i]`, and time span `tspan[i]`. The `paramstruct` is called with
+the keyword arguments in `kwargs...` to create the parameter struct for the
+new problem.
 """
-struct PposPvel
-    u0::Vector{<:Vector{<:Real}}
-    mu0::Vector{<:Real}
-    tspan::Vector{<:Tuple{Real,Real}}
-    paramstruct::Any
+struct PredefinedICs{T1<:AbstractVector,T2<:AbstractVector,T3<:AbstractVector,T4,T5}
+    u0::T1
+    mu0::T2
+    tspan::T3
+    paramstruct::T4
+    kwargs::T5
+
+    function PredefinedICs(
+        u0::T1,
+        mu0::T2,
+        tspan::T3,
+        paramstruct::T4;
+        kwargs...
+    ) where {T1<:AbstractVector,T2<:AbstractVector,T3<:AbstractVector,T4}
+        if length(u0) == length(mu0) == length(tspan)
+            new{T1,T2,T3,T4,typeof(kwargs)}(u0, mu0, tspan, paramstruct, kwargs)
+        else
+            error("u0, mu0, and tspan must have the same length.")
+        end
+    end
 end
-function (self::PposPvel)(prob, i, repeat)
+function (self::PredefinedICs)(prob, i, _)
     remake(
         prob,
         f=prob.f,
@@ -27,7 +53,8 @@ function (self::PposPvel)(prob, i, repeat)
             mass=prob.p.mass,
             magneticmoment=self.mu0[i],
             electromagneticfield=prob.p.electromagneticfield,
-            terminationcode=TerminationCode.NotTerminated
+            terminationcode=TerminationCode.NotTerminated,
+            self.kwargs...
         )
     )
 end
