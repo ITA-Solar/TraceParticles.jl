@@ -109,7 +109,8 @@ export
 export
     MHDSamplingGCA,
     MHDSamplingHybrid,
-    PredefinedICs
+    PredefinedICs,
+    initialconditions_mhdsampling
 # output_functions.jl
 export
     output_func_lightweight,

@@ -309,3 +309,56 @@ function (self::MHDSamplingHybrid)(prob, _, _)
         )
     )
 end
+
+"""
+    initialconditions_mhdsampling(
+        npart::Int,
+        electromagneticfield,
+        EoM::Function,
+        mass::Real,
+        charge::Real,
+        args...;
+        initialeomid::Int=1
+    )
+Generate initial conditions for `npart` particles using `mhdsampling`.
+Determines whether to calculate the initial conditions as a guiding centre or
+full orbit based on the provided `EoM` function and `initialeomid`.
+"""
+function initialconditions_mhdsampling(
+    npart::Int,
+    electromagneticfield,
+    EoM::Function,
+    mass::Real,
+    charge::Real,
+    args...;
+    initialeomid::Int=1
+)
+    u0s = [zeros(6) for _ in 1:npart]
+    magneticmoments = Vector{Float64}(undef, npart)
+    t0s = Vector{Float64}(undef, npart)
+    weights = Vector{Float64}(undef, npart)
+    nrejections = Vector{Int}(undef, npart)
+
+    if (
+        EoM == lorentzforce! ||
+        (EoM == hybridgcafo! && initialeomid == 2)
+    )
+        u0func! = getu0_fullorbit!
+    elseif (
+        EoM == guidingcentreapproximation! ||
+        (EoM == hybridgcafo! && initialeomid == 1)
+    )
+        u0func! = getu0_guidingcentre!
+    end
+    Threads.@threads for i in 1:npart
+        x, y, z, vx, vy, vz, t, weights[i], nrejections[i] = mhdsampling(
+            mass, args...
+        )
+        magneticmoments[i] = u0func!(
+            u0s[i], x, y, z, vx, vy, vz, t,
+            mass, charge, electromagneticfield
+        )
+        t0s[i] = t
+    end
+    return u0s, magneticmoments, t0s, weights, nrejections
+end
