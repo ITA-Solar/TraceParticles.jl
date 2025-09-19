@@ -131,7 +131,7 @@ function save_energy(
                             ],
                             df[i, :charge],
                             df[i, :mass],
-                            df[i, :magneticmoment],
+                            df[i, :initialmagneticmoment],
                             electromagneticfield,
                             df[i, :t0],
                         )

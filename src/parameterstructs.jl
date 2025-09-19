@@ -74,6 +74,7 @@ mutable struct HybridParams{
     charge::T1
     mass::T1
     electromagneticfield::T2
+    initialmagneticmoment::T1
     magneticmoment::T1
     weight::T1
     nrejections::T3
@@ -104,6 +105,7 @@ mutable struct HybridParams{
             charge,
             mass,
             electromagneticfield,
+            magneticmoment,
             magneticmoment,
             weight,
             nrejections,
@@ -136,6 +138,7 @@ mutable struct HybridParamsWithDetection{
     charge::T1
     mass::T1
     electromagneticfield::T2
+    initialmagneticmoment::T1
     magneticmoment::T1
     weight::T1
     nrejections::T3
@@ -145,7 +148,6 @@ mutable struct HybridParamsWithDetection{
     eomid::T3
     nswitches::T3
     initialeomid::T3
-    initialmagneticmoment::T1
     maxswitches::T3
     timeatswitch::T7
     eomidafterswitch::T8
@@ -166,7 +168,6 @@ mutable struct HybridParamsWithDetection{
         ),
         nswitches::T3=0,
         initialeomid::T3=2,
-        initialmagneticmoment::T1=magneticmoment,
         maxswitches::T3=100,
     ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
         timeatswitch = zeros(Float64, maxswitches)
@@ -177,6 +178,7 @@ mutable struct HybridParamsWithDetection{
             mass,
             electromagneticfield,
             magneticmoment,
+            magneticmoment,
             weight,
             nrejections,
             terminationcode,
@@ -185,7 +187,6 @@ mutable struct HybridParamsWithDetection{
             initialeomid,
             nswitches,
             initialeomid,
-            initialmagneticmoment,
             maxswitches,
             timeatswitch,
             eomidafterswitch,
