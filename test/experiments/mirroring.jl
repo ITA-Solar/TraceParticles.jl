@@ -20,7 +20,30 @@ using StaticArrays
 using Test
 using TraceParticles
 
-include(joinpath(Base.source_dir(), "../testfields.jl"))
+"""
+    magneticmirrorfield(
+        x::Real,
+        y::Real,
+        z::Real,
+        B0::Real,
+        L ::Real
+        )
+Return the magnetic field at (`x`, `y`, `z`) in a magnetic mirror/bottle with
+length `L` and strength `B0`.
+
+B⃗(x, y, z) = -xzB₀/L² x̂  - yzB₀/L² ŷ  + (B₀ + zB₀/L²)ẑ
+"""
+function magneticmirrorfield(
+    x::Real,
+    y::Real,
+    z::Real,
+    B0::Real,
+    L::Real,
+)
+    a = B0 * z / L^2
+    return [-x * a, -y * a, B0 + z * a]
+end # mirroringfield
+
 
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS

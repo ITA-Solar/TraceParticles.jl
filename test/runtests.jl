@@ -14,8 +14,6 @@ if !isdefined(Main, :verbose)
     verbose = 3
 end
 
-include("testfields.jl")
-
 if "fast_tests" in ARGS
     include("fast_tests.jl")
 else

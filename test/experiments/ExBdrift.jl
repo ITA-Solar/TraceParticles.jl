@@ -29,7 +29,6 @@ using Interpolations
 using Test
 
 expdir = Base.source_dir()
-include(expdir * "/../testfields.jl")
 
 #-------------------------------------------------------------------------------
 # EXPERIMENT PARAMTERS
@@ -144,7 +143,9 @@ emfields = eachslice(vcat(B, E), dims=(2, 3, 4))
 emfields_itp = linear_interpolation((xx, yy, zz), emfields,
     extrapolation_bc=Flat()
 )
-emfields_itp = EMField1(emfields_itp)
+emfields_itp = ElectromagneticFieldInterpolator(
+    StaticInterpolation(emfields_itp)
+)
 
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION

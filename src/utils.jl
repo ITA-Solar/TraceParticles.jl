@@ -17,10 +17,12 @@ vector of components that are stored as a JLD2 object [bx, by, bz, ex, ey, ez].
 Calling an instance of this struct with spatial coordinates returns the electric
 and magnetic fields at that point as two `SVector{3}` vectors.
 """
-struct ElectromagneticFieldInterpolator{T<:AbstractVector}
+struct ElectromagneticFieldInterpolator{T}
     interpolator::T
 end
-function (self::ElectromagneticFieldInterpolator{T})(x, y, z, t) where {T}
+function (self::ElectromagneticFieldInterpolator{T})(
+    x, y, z, t
+) where {T<:AbstractVector}
     ex = self.interpolator[4](x, y, z, t)
     ey = self.interpolator[5](x, y, z, t)
     ez = self.interpolator[6](x, y, z, t)
@@ -29,7 +31,9 @@ function (self::ElectromagneticFieldInterpolator{T})(x, y, z, t) where {T}
     bz = self.interpolator[3](x, y, z, t)
     return SVector{3}(ex, ey, ez), SVector{3}(bx, by, bz)
 end
-function (self::ElectromagneticFieldInterpolator{T})(x, y, z) where {T}
+function (self::ElectromagneticFieldInterpolator{T})(
+    x, y, z
+) where {T<:AbstractVector}
     ex = self.interpolator[4](x, y, z)
     ey = self.interpolator[5](x, y, z)
     ez = self.interpolator[6](x, y, z)
@@ -38,7 +42,9 @@ function (self::ElectromagneticFieldInterpolator{T})(x, y, z) where {T}
     bz = self.interpolator[3](x, y, z)
     return SVector{3}(ex, ey, ez), SVector{3}(bx, by, bz)
 end
-function (self::ElectromagneticFieldInterpolator{T})(x, y) where {T}
+function (self::ElectromagneticFieldInterpolator{T})(
+    x, y
+) where {T<:AbstractVector}
     ex = self.interpolator[4](x, y)
     ey = self.interpolator[5](x, y)
     ez = self.interpolator[6](x, y)
@@ -46,6 +52,24 @@ function (self::ElectromagneticFieldInterpolator{T})(x, y) where {T}
     by = self.interpolator[2](x, y)
     bz = self.interpolator[3](x, y)
     return SVector{3}(ex, ey, ez), SVector{3}(bx, by, bz)
+end
+function (self::ElectromagneticFieldInterpolator{T})(
+    x, y, z, t
+) where {T}
+    bx, by, bz, ex, ey, ez = self.interpolator(x, y, z, t)
+    return SVector(ex, ey, ez), SVector(bx, by, bz)
+end
+function (self::ElectromagneticFieldInterpolator{T})(
+    x, y, z
+) where {T}
+    bx, by, bz, ex, ey, ez = self.interpolator(x, y, z)
+    return SVector(ex, ey, ez), SVector(bx, by, bz)
+end
+function (self::ElectromagneticFieldInterpolator{T})(
+    x, y
+) where {T}
+    bx, by, bz, ex, ey, ez = self.interpolator(x, y)
+    return SVector(ex, ey, ez), SVector(bx, by, bz)
 end
 
 """

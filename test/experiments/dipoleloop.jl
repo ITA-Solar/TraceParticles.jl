@@ -10,6 +10,30 @@
 # with. The previous result was empirically validated by making a plot of
 # 'phisNew' and comparing it with fig 19. 
 #-------------------------------------------------------------------------------
+#
+"""
+    magneticdipolefield(
+        x::Real,
+        y::Real,
+        z::Real,
+        M ::Real
+        )
+Return the magnetic field at (`x`, `y`, `z`) in a magnetic dipole field with
+mangetic moment `M`.
+
+B⃗(x, y, z) = 3αzx x̂  + 3αzy ŷ  + α(2z² - x² - y²)ẑ,
+where
+α = M/(x² + y² + z²)^(2.5).
+"""
+function magneticdipolefield(
+    x::Real,
+    y::Real,
+    z::Real,
+    M::Real,
+)
+    a = M / (x^2 + y^2 + z^2)^(5 / 2)
+    return [3a * z * x, 3a * z * y, a * (2z^2 - x^2 - y^2)]
+end
 
 qMmvec = collect(1:10) * 10.0
 phis = zeros(3, length(qMmvec))

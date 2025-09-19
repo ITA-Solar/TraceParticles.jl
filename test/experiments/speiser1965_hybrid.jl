@@ -23,8 +23,6 @@ using Interpolations
 using StaticArrays
 using Test
 
-src_dir = Base.source_dir()
-include(joinpath(src_dir, "../testfields.jl"))
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS
 #
@@ -101,7 +99,9 @@ emfields = eachslice(vcat(Bfield, Efield), dims=(2, 3, 4))
 emfields_itp = linear_interpolation((xx, yy, zz), emfields,
     extrapolation_bc=Flat()
 )
-emfields_itp = EMField1(emfields_itp)
+emfields_itp = ElectromagneticFieldInterpolator(
+    StaticInterpolation(emfields_itp)
+)
 
 #-------------------------------------------------------------------------------
 # SIMULATION DURATION
@@ -125,7 +125,7 @@ hprob = ODEProblem(
         charge=charge,
         mass=mass,
         electromagneticfield=emfields_itp,
-        getphase=(integrator) -> π/2,
+        getphase=(integrator) -> π / 2,
     )
 )
 R, vparal, mu = get_guidingcentre(
@@ -182,20 +182,20 @@ foef = get_observable(fosol, :energy, tf, EoM="FO")
 hef = get_observable(hsol, :energy, tf)
 
 @testset "Speiser 1965 - Hybrid solver" begin
-@testset verbose = true "Full orbit: Ejection-time" begin
-    @test isapprox(velysimτ, velyτ, atol=abs(5 * velyτ))
-end # testset Full orbit: RK4
+    @testset verbose = true "Full orbit: Ejection-time" begin
+        @test isapprox(velysimτ, velyτ, atol=abs(5 * velyτ))
+    end # testset Full orbit: RK4
 
-@testset verbose = true "Hybrid: Ejection time and Nof. switches" begin
-    @test isapprox(hvelysimτ, velyτ, atol=abs(5 * velyτ))
-    @test hsol.prob.p.nswitches == 3
-end
-@testset verbose = true "Hybrid vs full orbit" begin
-    @test isapprox(hsolendR[1], foendR[1], rtol=1e-3)
-    @test isapprox(hsolendR[2], foendR[2], rtol=1e-6)
-    @test isapprox(hsolendR[3], foendR[3], rtol=1e-5)
-    @test isapprox(hsol.u[end][4], foendvparal, rtol=1e-2)
-    @test isapprox(hsol.prob.p.magneticmoment, foendmu, rtol=5)
-    @test isapprox(hef, foef, rtol=1e-5)
-end
+    @testset verbose = true "Hybrid: Ejection time and Nof. switches" begin
+        @test isapprox(hvelysimτ, velyτ, atol=abs(5 * velyτ))
+        @test hsol.prob.p.nswitches == 3
+    end
+    @testset verbose = true "Hybrid vs full orbit" begin
+        @test isapprox(hsolendR[1], foendR[1], rtol=1e-3)
+        @test isapprox(hsolendR[2], foendR[2], rtol=1e-6)
+        @test isapprox(hsolendR[3], foendR[3], rtol=1e-5)
+        @test isapprox(hsol.u[end][4], foendvparal, rtol=1e-2)
+        @test isapprox(hsol.prob.p.magneticmoment, foendmu, rtol=5)
+        @test isapprox(hef, foef, rtol=1e-5)
+    end
 end

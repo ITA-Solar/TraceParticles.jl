@@ -92,7 +92,9 @@ emfields = eachslice(vcat(Bfield, Efield), dims=(2, 3, 4))
 emfields_itp = linear_interpolation((xx, yy, zz), emfields,
     extrapolation_bc=Flat()
 )
-emfields_itp = EMField1(emfields_itp)
+emfields_itp = ElectromagneticFieldInterpolator(
+    StaticInterpolation(emfields_itp)
+)
 
 #-------------------------------------------------------------------------------
 # SIMULATION DURATION
