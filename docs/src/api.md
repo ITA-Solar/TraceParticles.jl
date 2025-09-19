@@ -28,9 +28,11 @@ TerminationCode
 
 ## Problem functions
 ```@docs
-DposMBvelGCA
-DposMBvelHybrid
-PposPvel
+MHDSamplingGCA
+MHDSamplingHybrid
+PredefinedICs
+mhdsampling
+initialconditions_mhdsampling
 ```
 
 ## Output functions

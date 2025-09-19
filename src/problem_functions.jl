@@ -59,6 +59,24 @@ function (self::PredefinedICs)(prob, i, _)
     )
 end
 
+"""
+    mhdsampling(
+        mass::Real,
+        rng::AbstractRNG,
+        proposal_distr,
+        target_distr,
+        tg_itp,
+        xbounds::Tuple{Real,Real},
+        ybounds::Tuple{Real,Real},
+        zbounds::Tuple{Real,Real},
+        temporalbounds::Tuple{Real,Real},
+        max_value::Real,
+    )
+Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
+rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
+with a temperature given by `tg_itp(x,y,z)`. Evaluates the statistical
+importance weight of the particle using the `target_distr`ibution.
+"""
 function mhdsampling(
     mass::Real,
     rng::AbstractRNG,
@@ -98,6 +116,23 @@ function mhdsampling(
     return x, y, z, vx, vy, vz, t, weight, nrejections
 end
 
+"""
+    getu0_guidingcentre!(
+        u0::AbstractVector,
+        x::Real,
+        y::Real,
+        z::Real,
+        vx::Real,
+        vy::Real,
+        vz::Real,
+        t::Real,
+        mass::Real,
+        charge::Real,
+        electromagneticfield,
+    )
+Calculate the guiding centre position and parallel velocity from the full
+orbit coordinates and store them in `u0`. Returns the magnetic moment.
+"""
 function getu0_guidingcentre!(
     u0::AbstractVector,
     x::Real,
@@ -124,6 +159,23 @@ function getu0_guidingcentre!(
     return magneticmoment
 end
 
+"""
+    getu0_fullorbit!(
+        u0::AbstractVector,
+        x::Real,
+        y::Real,
+        z::Real,
+        vx::Real,
+        vy::Real,
+        vz::Real,
+        t::Real,
+        mass::Real,
+        charge::Real,
+        electromagneticfield,
+    )
+Store the full orbit position and velocity in `u0`. Returns 0.0 as a dummy-
+magnetic moment.
+"""
 function getu0_fullorbit!(
     u0::AbstractVector,
     x::Real,
@@ -156,9 +208,9 @@ end
 
 # Methods
     (::MHDSamplingGCA)(prob, _, _)
-Draw `x`, `y`, and `z` positions from a given `proposal_distr`ibution using
+Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
 rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
-with a temperature given by `tg_itp(x,y,z)`. Evaluates the statistical weight of
+with a temperature given by `tg_itp(x,y,z)`. Evaluates the importance weight of
 the particle using the `target_distr`ibution. Calculates the corresponding
 guiding centre, magnetic moment, and parallel velocity and remakes the problem
 with `GCAParams`.
@@ -242,9 +294,9 @@ end
 
 # Methods
     (::MHDSamplingHybrid)(prob, _, _)
-Draw `x`, `y`, and `z` positions from a given `proposal_distr`ibution using
+Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
 rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
-with a temperature given by `tg_itp(x,y,z)`. Evaluates the statistical weight of
+with a temperature given by `tg_itp(x,y,z)`. Evaluates the importance weight of
 the particle using the `target_distr`ibution. Remakes the problem with
 `HybridParams`.
 """

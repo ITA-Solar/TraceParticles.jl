@@ -130,7 +130,7 @@ struct GCAState
         ∂ExB = SVector{3}(J[25], J[26], J[27])
         ∂B = J[28]
 
-        # Total time derivatives. Assumes ∂/∂t = 0,
+        # Total time derivatives.
         dbdt = vparal * (∇b * b) + ∇b * ExBdrift + ∂b
         dExBdt = vparal * (∇ExB * b) + ∇ExB * ExBdrift + ∂ExB
 
