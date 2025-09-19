@@ -27,17 +27,18 @@ function print_batch_statistics(batch)
     ncurvature = sum(batch.terminationcode .== 3)
     neratio = sum(batch.terminationcode .== 4)
     nrel = sum(batch.terminationcode .== 5)
-    hybswitches = batch.nswitches[batch.nswitches .> 0]
+    hybswitches = batch.nswitches[batch.nswitches.>0]
 
     println("")
     println("Timestamp:                   $(now())\n")
     println("                  Summary statistics")
-    println("Number of particles:         $npart")
+    @printf "Number of particles:         %.1E\n" npart
     @printf "Average number of timesteps: %.1f\n" mean(batch.nt)
     @printf "Median number of timesteps:  %.1f\n" median(batch.nt)
     @printf "Standard deviation of steps: %.1f\n" std(batch.nt)
     @printf "Fewest number of steps:      %i\n" minimum(batch.nt)
     @printf "Most number of steps:        %i\n" maximum(batch.nt)
+    @printf "Total number of timesteps:   %.2E\n" sum(batch.nt)
     @printf "Initial time:                %.5f\n" batch.t0[1]
     @printf "Oldest particle:             %.5f\n" maximum(batch.tf)
     @printf "Average end time:            %.5f\n" mean(batch.tf)
@@ -55,7 +56,10 @@ function print_batch_statistics(batch)
         @printf "  Standard deviation:        %.4f\n" std(hybswitches)
         println("  Most nof. switches:        $(maximum(hybswitches))")
         println("  Least nof. switches:       $(minimum(hybswitches))")
-        @printf "  MaxIters & switched:       %i (%.0f%% of %i, %.0f%% of MaxIters)\n" maxhyb maxhyb / nhybrid * 100 nhybrid maxhyb / nmaxiters * 100
+        @printf(
+            "  MaxIters & switched:       %i (%.0f%% of %i, %.0f%% of MaxIters)\n",
+            maxhyb, maxhyb / nhybrid * 100, nhybrid, maxhyb / nmaxiters * 100
+        )
     else
         @printf "  Nof. MagneticGradient:     %i (%.0f%%)\n" ngradient ngradient * c1
         @printf "  Nof. MagneticCurvature:    %i (%.0f%%)\n" ncurvature ncurvature * c1
