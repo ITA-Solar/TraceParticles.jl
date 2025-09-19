@@ -287,21 +287,21 @@ end
 Return all datasets in the HDF5-file `filename` as a `DataFrame`.
 """
 function h5_getall(filename::String, group::String)
-    h5open(filename, "r") do h5_file
+    return h5open(filename, "r") do h5_file
         DataFrame(read(h5_file[group]))
     end
 end
 function h5_getall(filename::String, batchnr::Int)
-    h5_getall(filename, "batch_$batchnr")
+    return h5_getall(filename, "batch_$batchnr")
 end
 function h5_getall(filename)
     batches, _ = h5_nbatches(filename)
-    h5_getall(filename, batches)
+    return h5_getall(filename, batches)
 end
 function h5_getall(filename, batches::AbstractVector)
     nbatches = length(batches)
     groupnames = ["batch_$i" for i in batches]
-    df = reduce(vcat,
+    return reduce(vcat,
         h5open(filename, "r") do h5_file
             dfvec = Vector{DataFrame}(undef, nbatches)
             for i in 1:nbatches
@@ -587,5 +587,27 @@ function create_bifrost_itps(
         @save string(
             filename, tstamp, "_$(var)_norm$(norm).jld2"
         ) interpolator
+    end
+end
+
+"""
+    h5_adddataset!(fname, dataset, key)
+Adds a dataset to all batches in a HDF5-file.
+"""
+function h5_adddataset!(
+    fname::String,
+    dataset::AbstractVector,
+    key::String,
+)
+    h5open(fname, "r+") do fid
+        batches, _ = h5_nbatches(fname)
+        i = 1
+        for b in batches
+            group = fid["batch_$b"]
+            n = length(first(group))
+            write(group, key,
+                dataset[i:i+n-1])
+            i += n
+        end
     end
 end
