@@ -97,6 +97,7 @@ function output_func_lightweight_hybrid(sol, i)
         tf=last(sol.t),
         charge=sol.prob.p.charge,
         mass=sol.prob.p.mass,
+        initialmagneticmoment=sol.prob.p.initialmagneticmoment,
         magneticmoment=sol.prob.p.magneticmoment,
         weight=sol.prob.p.weight,
         nrejections=sol.prob.p.nrejections,
