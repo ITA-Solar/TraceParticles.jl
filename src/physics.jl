@@ -1001,6 +1001,10 @@ end
 Calculate the collisional time in SI-units of a particle in a plasma due to
 Coulomb collisions.
 Source: Somov 2012 "Plasma Astrophysics, Part I, section 8.3.1, page 158.
+
+Note that the electron charge cubed in SI-units is lower than
+the smallest normal number representable by Float32 (`floatmin(Float32)`).
+So use double precision otherwise the results would be wrong.
 """
 function spitzercollisionaltime(q, m, T, n; coulomb_logarithm=20)
     # From Somov 2012 "Plasma Astrophysics, Part I, section 8.3.1, page 158
@@ -1014,12 +1018,16 @@ end
 calculate the collisional time in cgs-units of a particle in a plasma due to
 coulomb collisions.
 source: Somov 2012 "plasma astrophysics, part i, section 8.3.1, page 158.
+
+Note that the electron charge^4 in CGS-units is lower than
+the smallest normal number representable by Float32 (`floatmin(Float32)`).
+So use double precision otherwise the results would be wrong.
 """
 function spitzercollisionaltime_cgs(q, m, T, n; coulomb_logarithm=20)
     # From Somov 2012 "Plasma Astrophysics, Part I, section 8.3.1, page 158
     # in CGS units
     numerator = m^2 * (3 * TraceParticles.k_B_cgs * T / m)^(3 / 2)
-    denominator = (π * n * e^4 * 8 * coulomb_logarithm) * 0.714
+    denominator = (π * n * q^4 * 8 * coulomb_logarithm) * 0.714
     return numerator / denominator
 end
 
@@ -1028,6 +1036,10 @@ end
 calculate the collisional time in SI-units of a particle in a plasma due to
 coulomb collisions.
 source: Chen 2016 "Introduction to Plasma Physics and Controlled Fusion,
+
+Note that the electron charge cubed in SI-units is lower than
+the smallest normal number representable by Float32 (`floatmin(Float32)`).
+So use double precision otherwise the results would be wrong.
 """
 function spitzercollisionaltime_chen(q, m, T, n; coulomb_logarithm=20)
     # From Somov 2012 "Plasma Astrophysics, Part I, section 8.3.1, page 158
@@ -1040,10 +1052,24 @@ end
     dreicerfield_cgs(n, T; coulomb_logarithm=20)
 Calculate the Dreicer field in CGS units.
 """
-function dreicerfield_cgs(n, T; coulomb_logarithm=20)
-    nominator = 4π * TraceParticles.e_cgs^3 * coulomb_logarithm * n
+function dreicerfield_cgs(q, T, n; coulomb_logarithm=20)
+    nominator = 4π * q^3 * coulomb_logarithm * n
     denominator = TraceParticles.k_B_cgs * T
     return nominator / denominator
+end
+
+"""
+    dreicerfield(n, T; coulomb_logarithm=20)
+Calculate the Dreicer field in SI units.
+"""
+function dreicerfield(q, T, n; coulomb_logarithm=20)
+    q_cgs = q * TraceParticles.si2cgs_charge
+    n_cgs = n * TraceParticles.si2cgs_numberdensity
+    E_d_cgs = dreicerfield_cgs(
+        q_cgs, T, n_cgs;
+        coulomb_logarithm=coulomb_logarithm
+    )
+    return E_d_cgs * TraceParticles.cgs2si_electricfield
 end
 
 """
@@ -1054,10 +1080,29 @@ is equal to the electric field `E`, or the velocity at which the frictional
 drag from Coulomb collisions (of thermal like-particle targets) is equal to
 the acceleration from the parallel electric field.
 """
-function criticalvelocity_cgs(n, T, E, m; coulomb_logarithm=20)
-    E_D = dreicerfield_cgs(n, T; coulomb_logarithm=coulomb_logarithm)
+function criticalvelocity_cgs(q, T, n, E, m; coulomb_logarithm=20)
+    E_D = dreicerfield_cgs(q, T, n; coulomb_logarithm=coulomb_logarithm)
     v_th = sqrt(TraceParticles.k_B_cgs * T / m)
-    return v_th * sqrt(E_D / E)
+    return convert(eltype(n), v_th * sqrt(E_D / E))
+end
+
+"""
+    criticalvelocity(n, T, E, m; coulomb_logarithm=20)
+Calculate the critical velocity of particles with mass `m` in SI units.
+The critical velocity is the velocity at which the Dreicer field
+is equal to the electric field `E`, or the velocity at which the frictional
+drag from Coulomb collisions (of thermal like-particle targets) is equal to
+the acceleration from the parallel electric field.
+"""
+function criticalvelocity(q, T, n, E, m; coulomb_logarithm=20)
+    q_cgs = q * TraceParticles.si2cgs_charge
+    m_cgs = m * TraceParticles.si2cgs_mass
+    n_cgs = n * TraceParticles.si2cgs_numberdensity
+    E_cgs = E * TraceParticles.si2cgs_electricfield
+    v_crit_cgs = criticalvelocity_cgs(
+        q_cgs, T, n_cgs, E_cgs, m_cgs, coulomb_logarithm=coulomb_logarithm
+    )
+    return v_crit_cgs * TraceParticles.cgs2si_velocity
 end
 
 function eperp(
