@@ -503,55 +503,54 @@ function energyfraction(
 end
 
 """
-    localcollisiontime(particledata, densityitp, temperatureitp)
+    localcollisionaltime(
+        x0, y0, z0, charge, mass,
+        n_itp,
+        T_itp;
+        coulomb_logarithm=20
+    )
 Calculate the Coulomb collision time for an ensemble of particles, where
 the local density and temperature at the particle's initial position is used.
 """
-function localcollisiontime(particledata, densityitp, temperatureitp)
-    x0 = h5_getdataset(particledata, "x0")
-    y0 = h5_getdataset(particledata, "y0")
-    z0 = h5_getdataset(particledata, "z0")
-    charge = h5_getdataset(particledata, "charge")
-    mass = h5_getdataset(particledata, "mass")
-    n_itp = load_object(densityitp)
-    T_itp = load_object(temperatureitp)
-    n = [n_itp(x0[i], y0[i], z0[i]) / TraceParticles.m_p for i in eachindex(x0)]
+function localcollisionaltime(
+    x0, y0, z0, charge, mass,
+    n_itp,
+    T_itp,
+    coulomb_logarithm=20
+)
+    n = [n_itp(x0[i], y0[i], z0[i]) for i in eachindex(x0)]
     T = [T_itp(x0[i], y0[i], z0[i]) for i in eachindex(x0)]
     # Assuming the like-particle collisions are the most frequent
-    return spitzercollisionaltime.(charge, mass, T, n)
+    return spitzercollisionaltime.(
+        charge, mass, T, n, coulomb_logarithm=coulomb_logarithm
+    )
 end
 
 """
-    localcriticalvelocity_cgs(
-        particledata,
-        densityitp,
-        temperatureitp,
-        electricfielditp;
+    localcriticalvelocity(
+        x0, y0, z0, mass,
+        r_itp,
+        T_itp,
+        E_itp;
         coulomb_logarithm=20
     )
-Calculate the critical velocity of an ensemble of particles in CGS units,
+Calculate the critical velocity of an ensemble of particles
 using the local density, temperature and parallel electric field at the
-particle's initial position.
+particle's initial position. The input units are assumed to be SI. The
+formula uses CGS units, but the results are returned in SI units (m/s).
 """
-function localcriticalvelocity_cgs(
-    particledata,
-    densityitp,
-    temperatureitp,
-    electricfielditp;
+function localcriticalvelocity(
+    x0, y0, z0, charge, mass,
+    n_itp,
+    T_itp,
+    Eparal_itp;
     coulomb_logarithm=20
 )
-    x0 = h5_getdataset(particledata, "x0")
-    y0 = h5_getdataset(particledata, "y0")
-    z0 = h5_getdataset(particledata, "z0")
-    mass = h5_getdataset(particledata, "mass")
-    n_itp = load_object(densityitp)
-    T_itp = load_object(temperatureitp)
-    E_itp = load_object(electricfielditp)
-    n = [n_itp(x0[i], y0[i], z0[i]) * 1e-3 / TraceParticles.m_p_cgs for i in eachindex(x0)]
+    n = [n_itp(x0[i], y0[i], z0[i]) for i in eachindex(x0)]
     T = [T_itp(x0[i], y0[i], z0[i]) for i in eachindex(x0)]
-    E = [abs(E_itp(1e2x0[i], 1e2y0[i], 1e2z0[i])) for i in eachindex(x0)]
-    return criticalvelocity_cgs.(
-        n, T, E, mass;
+    E = [abs(Eparal_itp(x0[i], y0[i], z0[i])) for i in eachindex(x0)]
+    return criticalvelocity.(
+        charge, T, n, E, mass;
         coulomb_logarithm=coulomb_logarithm
     )
 end
