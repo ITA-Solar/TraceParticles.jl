@@ -328,7 +328,7 @@ function (self::MHDSamplingHybrid)(prob, _, _)
         self.t0bounds,
         self.max_value,
     )
-    u0 = Vector{Float64}(undef, 6)
+    u0 = zeros(Float64, 6)
     if self.initialeomid == 1
         magneticmoment = getu0_guidingcentre!(
             u0, x, y, z, vx, vy, vz, t,
