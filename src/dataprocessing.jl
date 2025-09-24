@@ -550,7 +550,7 @@ function localcriticalvelocity(
     T = [T_itp(x0[i], y0[i], z0[i]) for i in eachindex(x0)]
     E = [abs(Eparal_itp(x0[i], y0[i], z0[i])) for i in eachindex(x0)]
     return criticalvelocity.(
-        charge, T, n, E, mass;
+        charge, mass, T, n, E;
         coulomb_logarithm=coulomb_logarithm
     )
 end

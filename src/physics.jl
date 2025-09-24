@@ -1080,7 +1080,7 @@ is equal to the electric field `E`, or the velocity at which the frictional
 drag from Coulomb collisions (of thermal like-particle targets) is equal to
 the acceleration from the parallel electric field.
 """
-function criticalvelocity_cgs(q, T, n, E, m; coulomb_logarithm=20)
+function criticalvelocity_cgs(q, m, T, n, E; coulomb_logarithm=20)
     E_D = dreicerfield_cgs(q, T, n; coulomb_logarithm=coulomb_logarithm)
     v_th = sqrt(TraceParticles.k_B_cgs * T / m)
     return convert(eltype(n), v_th * sqrt(E_D / E))
@@ -1094,13 +1094,13 @@ is equal to the electric field `E`, or the velocity at which the frictional
 drag from Coulomb collisions (of thermal like-particle targets) is equal to
 the acceleration from the parallel electric field.
 """
-function criticalvelocity(q, T, n, E, m; coulomb_logarithm=20)
+function criticalvelocity(q, m, T, n, E; coulomb_logarithm=20)
     q_cgs = q * TraceParticles.si2cgs_charge
     m_cgs = m * TraceParticles.si2cgs_mass
     n_cgs = n * TraceParticles.si2cgs_numberdensity
     E_cgs = E * TraceParticles.si2cgs_electricfield
     v_crit_cgs = criticalvelocity_cgs(
-        q_cgs, T, n_cgs, E_cgs, m_cgs, coulomb_logarithm=coulomb_logarithm
+        q_cgs, m_cgs, T, n_cgs, E_cgs, coulomb_logarithm=coulomb_logarithm
     )
     return v_crit_cgs * TraceParticles.cgs2si_velocity
 end
