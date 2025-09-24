@@ -7,6 +7,11 @@
 # ensembles stored as DataFrames.
 #
 #____/\_____/\_________________________________________________________________
+#
+const eomidmap = Dict(
+    1 => "GCA",
+    2 => "FO",
+)
 
 """
     getinitialstate(df::DataFrame)
@@ -88,6 +93,8 @@ function get_observable(
         return [length(u.t) for u in sol]
     elseif sym == :terminationcode
         return [u.prob.p.userdata.terminationcode for u in sol]
+    elseif sym == :pitchanglef
+        return [get_pitchangle(u, last(u.t); kwargs...) for u in sol]
     elseif isnothing(t)
         throw(ArgumentError(
             "Observable $sym is not implemented without a specified time." *
@@ -107,6 +114,51 @@ function get_observable(
     else
         error("Observable $sym is not implemented.")
     end
+end
+
+function get_observable(
+    df::DataFrame, # particledata
+    sym::Symbol;
+    emfield=nothing
+)
+    npart = nrow(df)
+    result = Vector{Float64}(undef, npart)
+    EoMsf = [eomidmap[eomid] for eomid in df.eomid]
+    if sym == :pitchanglef
+        if isnothing(emfield)
+            error("`emfield` must be provided to calculate pitch angle.")
+        end
+        for i in 1:npart
+            _, Bvec = emfield(df.xf[i], df.yf[i], df.zf[i], df.tf[i])
+            if EoMsf[i] == "GCA"
+                vparal = df.vxf[i]
+                mass = df.mass[i]
+                magneticmoment = df.magneticmoment[i]
+                result[i] = pitchangle(Bvec, vparal, mass, magneticmoment)
+            elseif EoMsf[i] == "FO"
+                vel = [df.vxf[i], df.vyf[i], df.vzf[i]]
+                result[i] = pitchangle(vel, Bvec)
+            end
+        end
+    elseif sym == :pitchangle0
+        if isnothing(emfield)
+            error("`emfield` must be provided to calculate pitch angle.")
+        end
+        for i in 1:npart
+            _, Bvec = emfield(df.x0[i], df.y0[i], df.z0[i], df.t0[i])
+            if EoMsf[i] == "GCA"
+                vparal = df.vx0[i]
+                mass = df.mass[i]
+                magneticmoment = df.initialmagneticmoment[i]
+                result[i] = pitchangle(Bvec, vparal, mass, magneticmoment)
+            elseif EoMsf[i] == "FO"
+                vel = [df.vx0[i], df.vy0[i], df.vz0[i]]
+                result[i] = pitchangle(vel, Bvec)
+            end
+        end
+
+    end
+    return result
 end
 
 
@@ -202,10 +254,6 @@ function get_observable(
         # array of strings that identify the EoM used at each time step. If
         # the solution is not using a hybrid scheme, we just use the EoM
         # specified by the `EoM` keyword argument.
-        eomidmap = Dict(
-            1 => "GCA",
-            2 => "FO",
-        )
         if (
             hasproperty(sol.prob.p, :eomidafterswitch) &&
             hasproperty(sol.prob.p, :timeatswitch) &&
