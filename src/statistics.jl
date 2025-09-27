@@ -533,7 +533,7 @@ function binmap(
     gdf = groupby(df, [:binindex_x, :binindex_y])
     #giddf = select(gdf, groupindices => :gid)
 
-    binvalues = missings(eltype(data), nbinsx, nbinsy)
+    binvalues = missings(Any, nbinsx, nbinsy)
     k = keys(gdf)
     Threads.@threads for i in eachindex(k)
         if !ismissing(k[i].binindex_x) && !ismissing(k[i].binindex_y)
@@ -592,7 +592,7 @@ function binmap(
     else
         minx = minimum(xvalues)
         maxx = maximum(xvalues)
-        xedges = LinRange(minx, maxx, nbinsx + 1)
+        xedges = range(minx, maxx, length=nbinsx + 1)
     end
     if logy
         log10data = log10.(yvalues)
@@ -602,7 +602,7 @@ function binmap(
     else
         miny = minimum(yvalues)
         maxy = maximum(yvalues)
-        yedges = LinRange(miny, maxy, nbinsy + 1)
+        yedges = range(miny, maxy, length=nbinsy + 1)
     end
     if logz
         log10data = log10.(zvalues)
@@ -612,7 +612,7 @@ function binmap(
     else
         minz = minimum(zvalues)
         maxz = maximum(zvalues)
-        zedges = LinRange(minz, maxz, nbinsz + 1)
+        zedges = range(minz, maxz, length=nbinsz + 1)
     end
 
     binindex_x = binindex(xvalues, xedges)
@@ -631,7 +631,7 @@ function binmap(
     gdf = groupby(df, [:binindex_x, :binindex_y, :binindex_z])
     #giddf = select(gdf, groupindices => :gid)
 
-    binvalues = missings(eltype(eltype(data)), nbinsx, nbinsy, nbinsz)
+    binvalues = missings(Any, nbinsx, nbinsy, nbinsz)
     k = keys(gdf)
     Threads.@threads for i in eachindex(k)
         if !ismissing(k[i].binindex_x) &&
