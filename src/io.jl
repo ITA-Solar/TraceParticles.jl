@@ -526,6 +526,7 @@ function create_bifrost_itps(
     normalise=fill(false, length(variables)),
     destagger=fill(false, length(variables)),
     xzinterpolation=false,
+    deallocatafterwritten=false,
     kwargs...
 )
     if length(variables) != length(normalise) != length(destagger)
@@ -561,14 +562,22 @@ function create_bifrost_itps(
             interpolator = [wrapper(itp) for itp in interpolator]
         end
         @save string(filename, tstamp, "_BE.jld2") interpolator
+        # Remove "BE" from the variables
+        mask = variables .!= "BE"
+        variables = variables[mask]
+        normalise = normalise[mask]
+        destagger = destagger[mask]
+        # For very large snapshots, it is a good idea to deallocate the
+        # `interpolator` variable after loading the electromangetic field.
+        # In this way, we do not eat up more memory when loading more
+        # variables.
+        if deallocateafterwritten
+            interpolator = nothing
+            GC.gc()
+        end
     end
-    mask = variables .!= "BE"
 
-
-    # Create interpolators for the auxiliary variables
-    variables = variables[mask]
-    normalise = normalise[mask]
-    destagger = destagger[mask]
+    # Create interpolators for the variables
     for (var, norm, dstgr) in zip(variables, normalise, destagger)
         interpolator, _ = get_br_var_interpolator(
             brxp,
@@ -587,6 +596,10 @@ function create_bifrost_itps(
         @save string(
             filename, tstamp, "_$(var)_norm$(norm).jld2"
         ) interpolator
+        if deallocateafterwritten
+            interpolator = nothing
+            GC.gc()
+        end
     end
 end
 
