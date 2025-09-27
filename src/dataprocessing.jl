@@ -554,3 +554,117 @@ function localcriticalvelocity(
         coulomb_logarithm=coulomb_logarithm
     )
 end
+
+"""
+    save_observables(
+        observables::AbstractVector,
+        fname_particles::String,
+        fname_emfield::String,
+        fname_r::String,
+        fname_tg::String;
+        static=true,
+        xz=false,
+    )
+Load field quantitites `fname_emfield`, `fname_r`, `fname_tg` and calculate
+observables of the test particle results stored in `fname_particles`.
+"""
+function save_observables(
+    observables::AbstractVector,
+    fname_particles::String,
+    fname_emfield::String,
+    fname_r::String,
+    fname_tg::String;
+    static=true,
+    xz=false,
+)
+    emfield = load_object(fname_emfield)
+    r_itp = load_object(fname_r)
+    tg_itp = load_object(fname_tg)
+    if static
+        emfield = ElectromagneticFieldInterpolator(
+            [StaticInterpolation(itp) for itp in emfield]
+        )
+        r_itp = StaticInterpolation(r_itp)
+        tg_itp = StaticInterpolation(tg_itp)
+    elseif static && xz
+        emfield = ElectromagneticFieldInterpolator(
+            [StaticXZInterpolation(itp) for itp in emfield]
+        )
+        r_itp = StaticXZInterpolation(r_itp)
+        tg_itp = StaticXZInterpolation(tg_itp)
+    elseif !static && xz
+        emfield = ElectromagneticFieldInterpolator(
+            [XZInterpolation(itp) for itp in emfield]
+        )
+        r_itp = XZInterpolation(r_itp)
+        tg_itp = XZInterpolation(tg_itp)
+    else
+        emfield = ElectromagneticFieldInterpolator(emfield)
+    end
+    particledata = h5_getall(fname_particles)
+    # Create number density itp. Assumes a gas dominated in mass by protons,
+    # and that the number of electrons is the same as the number of protons.
+    n_itp(args...) = r_itp(args...) / TraceParticles.m_p
+    # Create function for evaluating the parallel electric field at an
+    # arbitrary position
+    eparal(args...) = begin
+            E, B = emfield(args...)
+            return dot(E, B) / norm(B)
+    end
+    # Evaluate the number density, temperature and parallel electric field at
+    # the particle positions
+    syms_demanding_n_tg_E = [
+        :vcrit,
+        :critivalvelocity,
+        :collisionaltime,
+        :spitzercollisionaltime,
+    ]
+    x0, y0, z0 = particledata.x0, particledata.y0, particledata.z0
+    t0 = particledata.t0
+    if any(in.(
+        observables, [syms_demanding_n_tg_E for _ in eachindex(observables)])
+    )
+        n = [n_itp(x0[i], y0[i], z0[i], t0[i]) for i in eachindex(x0)]
+        tg = [tg_itp(x0[i], y0[i], z0[i], t0[i]) for i in eachindex(x0)]
+        E = [abs(eparal(x0[i], y0[i], z0[i], t0[i])) for i in eachindex(x0)]
+    end
+    # Decleare the dict containing the observables
+    observables_dict = Dict{Symbol, Vector{Float64}}()
+    # Calculate the local critical velocity and collisional time
+    for sym in observables
+        try
+            if sym == :vcrit || sym == :criticalvelocity
+                observables_dict[:criticalvelocity] = criticalvelocity.(
+                    abs.(particledata.charge),
+                    particledata.mass,
+                    tg, n, E
+                )
+            elseif sym == :collisionaltime || sym == :spitzercollisionaltime
+                observables_dict[:spitzercollisionaltime] = spitzercollisionaltime.(
+                    abs.(particledata.charge),
+                    particledata.mass,
+                    tg, n,
+                )
+            else
+                observables_dict[sym] = get_observable(
+                    particledata, sym; emfield=emfield
+                )
+            end
+        catch e
+            @warn e
+        end
+    end
+    h5open(
+        joinpath(splitdir(fname_particles)[1], "observables.h5"),
+        "cw"
+    ) do fid
+        for (key, data) in observables_dict
+            try
+                write_dataset(fid, string(key), data)
+            catch e
+                @warn e
+            end
+        end
+    end
+    return nothing
+end
