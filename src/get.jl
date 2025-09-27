@@ -124,7 +124,14 @@ function get_observable(
     npart = nrow(df)
     result = Vector{Float64}(undef, npart)
     EoMsf = [eomidmap[eomid] for eomid in df.eomid]
-    if sym == :pitchanglef
+    EoMs0 = [eomidmap[eomid] for eomid in df.initialeomid]
+    if sym == :displacement
+        result .= norm.([[
+        df.xf[i] - df.x0[i],
+        df.yf[i] - df.y0[i],
+        df.zf[i] - df.z0[i],
+        ] for i in 1:npart])
+    elseif sym == :pitchanglef
         if isnothing(emfield)
             error("`emfield` must be provided to calculate pitch angle.")
         end
@@ -146,17 +153,18 @@ function get_observable(
         end
         for i in 1:npart
             _, Bvec = emfield(df.x0[i], df.y0[i], df.z0[i], df.t0[i])
-            if EoMsf[i] == "GCA"
+            if EoMs0[i] == "GCA"
                 vparal = df.vx0[i]
                 mass = df.mass[i]
                 magneticmoment = df.initialmagneticmoment[i]
                 result[i] = pitchangle(Bvec, vparal, mass, magneticmoment)
-            elseif EoMsf[i] == "FO"
+            elseif EoMs0[i] == "FO"
                 vel = [df.vx0[i], df.vy0[i], df.vz0[i]]
                 result[i] = pitchangle(vel, Bvec)
             end
         end
-
+    else
+        throw(ArgumentError("Observable $sym not implemented"))
     end
     return result
 end
