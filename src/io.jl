@@ -624,3 +624,19 @@ function h5_adddataset!(
         end
     end
 end
+
+"""
+    h5_getobservables(
+        fname::String;
+        obs_fname = joinpath(splitdir(fname, "observables.h5"))
+    )
+Load and return observables as a `DataFrame`.
+"""
+function h5_getobservables(
+    fname::String;
+    obs_fname = joinpath(splitdir(fname, "observables.h5"))
+)
+    h5open(obs_fname) do fid
+        return DataFrame(read(fid))
+    end
+end
