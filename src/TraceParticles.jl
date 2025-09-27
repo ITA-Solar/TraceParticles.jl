@@ -13,6 +13,7 @@ module TraceParticles
 
 using BifrostTools
 using CSV
+using CurveFit
 using DataFrames
 using Dates
 using DifferentialEquations

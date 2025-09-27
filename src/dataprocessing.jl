@@ -668,3 +668,46 @@ function save_observables(
     end
     return nothing
 end
+
+function hist(
+    data,
+    weight;
+    nbins=20,
+    logx=false,
+    maxval=nothing,
+    minval=nothing,
+    histmode=:pdf
+)
+    loweredge = isnothing(minval) ? minimum(data) : minval
+    upperedge = isnothing(maxval) ? maximum(data) : maxval
+    if logx
+        binedges = 10.0 .^ range(
+            log10(loweredge),
+            log10(upperedge),
+            length=nbins + 1
+        )
+    else
+        binedges = range(loweredge, upperedge, length=nbins + 1)
+    end
+    histcounts = StatsBase.fit(Histogram, data, weights(weight), binedges)
+    histcounts = StatsBase.normalize(histcounts, mode=histmode)
+    x = histcounts.edges[1]
+    y = histcounts.weights
+    return x, y
+end
+
+function powerlawslope(energy, weight; nbins=20)
+    if length(energy) < 20
+        return missing
+    end
+    x, y = hist(energy, weight; logx=true, nbins=nbins)
+    x = midpoints(x)
+    mask = y .> 0
+    if sum(mask) < 3
+        return missing
+    end
+    x = x[mask]
+    y = y[mask]
+    _, b = power_fit(x, y)
+    return b
+end
