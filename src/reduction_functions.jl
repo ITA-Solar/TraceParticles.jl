@@ -52,7 +52,9 @@ function print_batch_statistics(batch)
         println("Hybrid switch statistics")
         @printf "  Amount that switched:      %i (%.2f%%)\n" nhybrid nhybrid * c1
         @printf "  Average nof. switches:     %.4f\n" mean(hybswitches)
-        @printf "  Median:                    %i\n" median(hybswitches)
+        if length(hybswitches) > 0
+            @printf "  Median:                    %i\n" median(hybswitches)
+        end
         @printf "  Standard deviation:        %.4f\n" std(hybswitches)
         println("  Most nof. switches:        $(maximum(hybswitches))")
         println("  Least nof. switches:       $(minimum(hybswitches))")
