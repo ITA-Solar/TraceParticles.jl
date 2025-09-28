@@ -526,7 +526,7 @@ function create_bifrost_itps(
     normalise=fill(false, length(variables)),
     destagger=fill(false, length(variables)),
     xzinterpolation=false,
-    deallocatafterwritten=false,
+    deallocateafterwritten=false,
     kwargs...
 )
     if length(variables) != length(normalise) != length(destagger)
