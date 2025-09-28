@@ -265,7 +265,6 @@ function (self::MHDSamplingGCA)(prob, _, _)
             magneticmoment=magneticmoment,
             weight=weight,
             nrejections=nrejections,
-            terminationcode=TerminationCode.NotTerminated
         )
     )
 end
@@ -348,7 +347,6 @@ function (self::MHDSamplingHybrid)(prob, _, _)
             magneticmoment=magneticmoment,
             weight=weight,
             nrejections=nrejections,
-            terminationcode=TerminationCode.NotTerminated,
             initialeomid=self.initialeomid # initialised with the EoM `lorentzforce!`
         )
     )
@@ -405,4 +403,53 @@ function initialconditions_mhdsampling(
         t0s[i] = t
     end
     return u0s, magneticmoments, t0s, weights, nrejections
+end
+
+"""
+    get_ics_hybrid(icsfile::string, tf, emfield)
+Load precomputed initial conditions from file and construct `u0`, `tspan`, and
+a `HybridParams` instance as parameters.
+"""
+function get_ics_hybrid(icfile::String, tf, emfield)
+    return h5open(icfile) do fid
+        x0 = read(fid, "x0")
+        y0 = read(fid, "y0")
+        z0 = read(fid, "z0")
+        vx0 = read(fid, "vx0")
+        vy0 = read(fid, "vy0")
+        vz0 = read(fid, "vz0")
+        t0 = read(fid, "t0")
+        charge = read(fid, "charge")
+        mass = read(fid, "mass")
+        eomid = read(fid, "eomid")
+        magneticmoment = read(fid, "magneticmoment")
+        weight = read(fid, "weight")
+        nrejections = read(fid, "nrejections")
+        npart = length(x0)
+        t_precision = eltype(tf)
+        u0 = Vector{Vector{Float64}}(undef, npart)
+        tspan = Vector{Tuple{t_precision, t_precision}}(undef, npart)
+        params = Vector{HybridParams}(undef, npart)
+        for i in 1:npart
+            u0[i] = [
+                x0[i],
+                y0[i],
+                z0[i],
+                vx0[i],
+                vy0[i],
+                vz0[i]
+            ]
+            tspan[i] = (t0[i], tf)
+            params[i] = HybridParams(
+                charge=charge[i],
+                mass=mass[i],
+                electromagneticfield=emfield,
+                magneticmoment=magneticmoment[i],
+                weight=weight[i],
+                nrejections=nrejections[i],
+                eomid=eomid[i]
+            )
+        end
+        return u0, tspan, params
+    end
 end
