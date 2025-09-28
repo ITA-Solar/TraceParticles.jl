@@ -99,7 +99,7 @@ mutable struct HybridParams{
             integrator.p.rng, 0.0, Float64(2pi)
         ),
         nswitches::T3=0,
-        initialeomid::T3=2,
+        eomid::T3=2,
     ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
         new{T1,T2,T3,T4,T5,T6}(
             charge,
@@ -112,9 +112,9 @@ mutable struct HybridParams{
             terminationcode,
             rng,
             getphase,
-            initialeomid,
+            eomid,
             nswitches,
-            initialeomid,
+            eomid,
         )
     end
 end

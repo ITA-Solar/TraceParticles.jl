@@ -146,13 +146,10 @@ prob_func(prob, i, _) = remake(
         mass=prob.p.mass,
         electromagneticfield=prob.p.electromagneticfield,
         magneticmoment=params.magneticmoment[i],
-        weight=1.0,
-        nrejections=0,
         terminationcode=TerminationCode.NotTerminated,
         rng=params.rng[i],
-        initialeomid=params.initialeomid[i],
+        eomid=params.initialeomid[i],
         getphase=prob.p.getphase,
-        nswitches=0
     )
 )
 

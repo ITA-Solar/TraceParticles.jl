@@ -69,9 +69,6 @@ end
             charge=charge,
             magneticmoment=magneticmoment,
             electromagneticfield=emfield,
-            nrejections=0,
-            weight=1.0,
-            terminationcode=TerminationCode.NotTerminated
             )
         )
     @test !out_cb.condition(u1, t, integrator)
