@@ -12,50 +12,42 @@
         u0
         mu0
         tspan
-        paramstruct
-        kwargs...
+        params
 # Methods
     (::PredefinedICs)(prob, i, _)
-Remakes the problem with predefined initial conditions `u0[i]`, magnetic
-moment `mu0[i]`, and time span `tspan[i]`. The `paramstruct` is called with
-the keyword arguments in `kwargs...` to create the parameter struct for the
-new problem.
+Remakes the problem with predefined initial conditions `u0[i]`, time span
+`tspan[i]`, and parameters `params[i]`.
 """
-struct PredefinedICs{T1<:AbstractVector,T2<:AbstractVector,T3<:AbstractVector,T4,T5}
+struct PredefinedICs{
+    T1<:AbstractVector,
+    T2<:AbstractVector,
+    T3<:AbstractVector,
+}
     u0::T1
-    mu0::T2
-    tspan::T3
-    paramstruct::T4
-    kwargs::T5
-
+    tspan::T2
+    params::T3
     function PredefinedICs(
         u0::T1,
-        mu0::T2,
-        tspan::T3,
-        paramstruct::T4;
-        kwargs...
-    ) where {T1<:AbstractVector,T2<:AbstractVector,T3<:AbstractVector,T4}
-        if length(u0) == length(mu0) == length(tspan)
-            new{T1,T2,T3,T4,typeof(kwargs)}(u0, mu0, tspan, paramstruct, kwargs)
+        tspan::T2,
+        params::T3
+    ) where {
+        T1<:AbstractVector,
+        T2<:AbstractVector,
+        T3<:AbstractVector,
+    }
+        if length(u0) == length(tspan) == length(params)
+            new{T1,T2,T3}(u0, tspan, params)
         else
-            error("u0, mu0, and tspan must have the same length.")
+            error("u0, tspan and params must have the same length.")
         end
     end
 end
 function (self::PredefinedICs)(prob, i, _)
     remake(
         prob,
-        f=prob.f,
         u0=self.u0[i],
         tspan=self.tspan[i],
-        p=self.paramstruct(
-            charge=prob.p.charge,
-            mass=prob.p.mass,
-            magneticmoment=self.mu0[i],
-            electromagneticfield=prob.p.electromagneticfield,
-            terminationcode=TerminationCode.NotTerminated,
-            self.kwargs...
-        )
+        p=self.params[i],
     )
 end
 

@@ -146,8 +146,17 @@ u0 = [
     [1.63e7, 1e6, -6.3e6, -1e6],
 ]
 mu = [4.1e-11, 4.1e-11]
+tspan = [(t0, tf) for _ in 1:2]
+params = [
+    GCAParams(
+        charge=charge,
+        mass=mass,
+        magneticmoment=mu[i],
+        electromagneticfield=fields_itp
+    ) for i in 1:2
+]
 ensembleprob_kwargs = Dict(
-    :prob_func => PredefinedICs(u0, mu, [(t0, tf) for _ in 1:2], GCAParams)
+    :prob_func => PredefinedICs(u0, tspan, params)
 )
 prob2 = EnsembleProblem(odeprob; ensembleprob_kwargs...)
 solve_kwargs[:trajectories] = 2
