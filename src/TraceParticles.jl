@@ -138,6 +138,7 @@ export
     h5_getenergies_gca,
     h5_getinitialstate,
     h5_getfinalstate,
+    h5_getobservables,
     save_gcastates,
     save_energy,
     create_bifrost_itps
