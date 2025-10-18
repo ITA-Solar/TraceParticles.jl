@@ -438,11 +438,11 @@ end
 Calculate the fraction of the total energy in the specified range of energies.
 """
 function energyfraction(
-    energies::Vector{<:Real},
+    energies::AbstractArray,
     fractionlimits::Tuple{Any,Any};
     weights=ones(length(energies)),
     logx=true,
-    nbins=200,
+    nbins=100,
 )
     # Create the bin edges
     if logx
@@ -608,8 +608,8 @@ function save_observables(
     # Create function for evaluating the parallel electric field at an
     # arbitrary position
     eparal(args...) = begin
-            E, B = emfield(args...)
-            return dot(E, B) / norm(B)
+        E, B = emfield(args...)
+        return dot(E, B) / norm(B)
     end
     # Evaluate the number density, temperature and parallel electric field at
     # the particle positions
@@ -629,7 +629,7 @@ function save_observables(
         E = [abs(eparal(x0[i], y0[i], z0[i], t0[i])) for i in eachindex(x0)]
     end
     # Decleare the dict containing the observables
-    observables_dict = Dict{Symbol, Vector{Float64}}()
+    observables_dict = Dict{Symbol,Vector{Float64}}()
     # Calculate the local critical velocity and collisional time
     for sym in observables
         try
