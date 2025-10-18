@@ -668,3 +668,18 @@ function save_observables(
     end
     return nothing
 end
+
+"""
+    ef_thermalised(e0, ef, vcrit, v0, tf, tau)
+Calculate a modified final energy array `ef_th` where particles with
+- initial velocity `v0` above the critical velocity `vcrit`, or
+- final time `tf` below the collisional time `tau`,
+are assigned their initial energy `e0` as final energy. These particles
+represent particles that are considered thermalised due to collisions.
+"""
+function ef_thermalised(e0, ef, vcrit, v0, tf, tau)
+    ef_th = copy(e0)
+    mask = (v0 .> vcrit) .| (tf .< tau)
+    ef_th[mask] .= ef[mask]
+    return ef_th
+end
