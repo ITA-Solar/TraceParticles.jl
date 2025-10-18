@@ -120,6 +120,76 @@ mutable struct HybridParams{
 end
 
 """
+    HybridParamsSavedValues
+Parameter container for a hybrid GCA/FO particle simulation with the possibility
+to save values during simulation.
+The `eomid` determines which EoM to use and the random number generator `rng` is
+used to determine the particle phase when switching from GCA to full orbit
+integration.
+"""
+mutable struct HybridParamsSavedValues{
+    T1<:Real,
+    T2,
+    T3<:Int,
+    T4,
+    T5<:AbstractRNG,
+    T6<:Function,
+    T7<:SavedValues
+}
+    charge::T1
+    mass::T1
+    electromagneticfield::T2
+    initialmagneticmoment::T1
+    magneticmoment::T1
+    weight::T1
+    nrejections::T3
+    terminationcode::T4
+    rng::T5
+    getphase::T6
+    eomid::T3
+    nswitches::T3
+    initialeomid::T3
+    saved_values::T7
+
+    function HybridParamsSavedValues(
+        ;
+        charge::T1,
+        mass::T1,
+        electromagneticfield::T2,
+        saved_values::T7,
+        magneticmoment::T1=0.0,
+        weight::T1=1.0,
+        nrejections::T3=0,
+        terminationcode::T4=TerminationCode.NotTerminated,
+        rng::T5=Xoshiro(1),
+        getphase::T6=(integrator) -> rand(
+            integrator.p.rng, 0.0, Float64(2pi)
+        ),
+        nswitches::T3=0,
+        initialeomid::T3=2,
+    ) where {
+        T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function,T7<:SavedValues
+    }
+        new{T1,T2,T3,T4,T5,T6,T7}(
+            charge,
+            mass,
+            electromagneticfield,
+            magneticmoment,
+            magneticmoment,
+            weight,
+            nrejections,
+            terminationcode,
+            rng,
+            getphase,
+            initialeomid,
+            nswitches,
+            initialeomid,
+            saved_values,
+        )
+    end
+end
+
+"""
     HybridParamsWithDetection
 Parameter container for a hybrid GCA/FO particle simulation. It is similar to
 `HybridParams` but with switch times and respective EoM-IDs to use for post

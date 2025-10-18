@@ -110,6 +110,165 @@ function output_func_lightweight_hybrid(sol, i)
     false
 end
 
+function out2(sol, i)
+    x0, y0, z0, vx0, vy0, vz0 = first(sol)
+    xf, yf, zf, vxf, vyf, vzf = last(sol)
+    t0, tf = first(sol.t), last(sol.t)
+    keys = (
+        :x0, :y0, :z0, :vx0, :vy0, :vz0,
+        :xf, :yf, :zf, :vxf, :vyf, :vzf,
+        :nt,
+        :t0, :tf,
+        :charge, :mass, :magneticmoment, :weight,
+        :nrejections,
+        :retcode, :terminationcode,
+        :nswitches,
+        :eomid, :initialeomid,
+    )
+    values = (
+        x0, y0, z0, vx0, vy0, vz0,
+        xf, yf, zf, vxf, vyf, vzf,
+        length(sol.t),
+        t0, tf,
+        sol.prob.p.charge, sol.prob.p.mass, sol.prob.p.magneticmoment, sol.prob.p.weight,
+        sol.prob.p.nrejections,
+        Int(sol.retcode), Int(sol.prob.p.terminationcode),
+        sol.prob.p.nswitches,
+        sol.prob.p.eomid, sol.prob.p.initialeomid,
+    )
+    return NamedTuple{keys}(values),
+    false
+end
+
+function output_func_preallocated(sol, i)
+    x0, y0, z0, vx0, vy0, vz0 = first(sol)
+    xf, yf, zf, vxf, vyf, vzf = last(sol)
+    t0, tf = first(sol.t), last(sol.t)
+    sol.prob.p.out[1, i] = x0
+    sol.prob.p.out[2, i] = y0
+    sol.prob.p.out[3, i] = z0
+    sol.prob.p.out[4, i] = vx0
+    sol.prob.p.out[5, i] = vy0
+    sol.prob.p.out[6, i] = vz0
+    sol.prob.p.out[7, i] = xf
+    sol.prob.p.out[8, i] = yf
+    sol.prob.p.out[9, i] = zf
+    sol.prob.p.out[10, i] = vxf
+    sol.prob.p.out[11, i] = vyf
+    sol.prob.p.out[12, i] = vzf
+    sol.prob.p.out[13, i] = length(sol.t)
+    sol.prob.p.out[14, i] = t0
+    sol.prob.p.out[15, i] = tf
+    sol.prob.p.out[16, i] = sol.prob.p.charge
+    sol.prob.p.out[17, i] = sol.prob.p.mass
+    return nothing, false
+end
+
+struct OutputFuncSaveatHybrid{T1<:AbstractVector,T2<:NTuple{N,Symbol} where {N}}
+    saveat::T1
+    intermediate_saveats::T1
+    outputkeys::T2
+
+    function OutputFuncSaveatHybrid(saveat::T1) where {T1<:AbstractVector}
+        N = length(saveat)
+        Nintermediate = 1:N-2
+        tkeys = Tuple(Symbol("t", i) for i in Nintermediate)
+        xkeys = Tuple(Symbol("x", i) for i in Nintermediate)
+        ykeys = Tuple(Symbol("y", i) for i in Nintermediate)
+        zkeys = Tuple(Symbol("z", i) for i in Nintermediate)
+        vxkeys = Tuple(Symbol("vx", i) for i in Nintermediate)
+        vykeys = Tuple(Symbol("vy", i) for i in Nintermediate)
+        vzkeys = Tuple(Symbol("vz", i) for i in Nintermediate)
+        outputkeys = (
+            :x0, xkeys..., :xf,
+            :y0, ykeys..., :yf,
+            :z0, zkeys..., :zf,
+            :vx0, vxkeys..., :vxf,
+            :vy0, vykeys..., :vyf,
+            :vz0, vzkeys..., :vzf,
+            :nt, :t0, tkeys..., :tf,
+            :charge, :mass, :magneticmoment, :weight, :nrejections,
+            :retcode, :terminationcode,
+            :nswitches, :eomid, :initialeomid,
+        )
+        new{T1,typeof(outputkeys)}(saveat, saveat[2:end-1], outputkeys)
+    end
+end
+function (self::OutputFuncSaveatHybrid)(sol, i)
+    ntimes = length(sol.t)
+    x0, y0, z0, vx0, vy0, vz0 = first(sol)
+    xf, yf, zf, vxf, vyf, vzf = last(sol)
+    t0, tf = first(sol.t), last(sol.t)
+    mask = Tuple(
+        findfirst(x -> x == t, sol.t) for t in self.intermediate_saveats
+    )
+    tvals = Tuple(
+        isnothing(i) ? missing : sol.t[i] for i in mask
+    )
+    xvals = Tuple(
+        isnothing(i) ? missing : sol[i][1] for i in mask
+    )
+    yvals = Tuple(
+        isnothing(i) ? missing : sol[i][2] for i in mask
+    )
+    zvals = Tuple(
+        isnothing(i) ? missing : sol[i][3] for i in mask
+    )
+    vxvals = Tuple(
+        isnothing(i) ? missing : sol[i][4] for i in mask
+    )
+    vyvals = Tuple(
+        isnothing(i) ? missing : sol[i][5] for i in mask
+    )
+    vzvals = Tuple(
+        isnothing(i) ? missing : sol[i][6] for i in mask
+    )
+    outputvalues = (
+        x0, xvals..., xf,
+        y0, yvals..., yf,
+        z0, zvals..., zf,
+        vx0, vxvals..., vxf,
+        vy0, vyvals..., vyf,
+        vz0, vzvals..., vzf,
+        ntimes, t0, tvals..., tf,
+        sol.prob.p.charge, sol.prob.p.mass, sol.prob.p.magneticmoment, sol.prob.p.weight,
+        sol.prob.p.nrejections,
+        Int(sol.retcode), Int(sol.prob.p.terminationcode),
+        sol.prob.p.nswitches,
+        sol.prob.p.eomid, sol.prob.p.initialeomid,
+    )
+    return NamedTuple{self.outputkeys}(outputvalues), false
+end
+
+function out3(sol, i)
+    x0, y0, z0, vx0, vy0, vz0 = first(sol)
+    xf, yf, zf, vxf, vyf, vzf = last(sol)
+    return (
+        x0=x0, y0=y0, z0=z0, vx0=vx0, vy0=vy0, vz0=vz0,
+        xf=xf, yf=yf, zf=zf, vxf=vxf, vyf=vyf, vzf=vzf,
+        nt=length(sol.t),
+        t0=first(sol.t),
+        tf=last(sol.t),
+        charge=sol.prob.p.charge,
+        mass=sol.prob.p.mass,
+        magneticmoment=sol.prob.p.magneticmoment,
+        weight=sol.prob.p.weight,
+        nrejections=sol.prob.p.nrejections,
+        retcode=Int(sol.retcode),
+        terminationcode=Int(sol.prob.p.terminationcode),
+        nswitches=sol.prob.p.nswitches,
+        eomid=sol.prob.p.eomid,
+        initialeomid=sol.prob.p.initialeomid,
+        x=sol[:, 1],
+        y=sol[:, 2],
+        z=sol[:, 3],
+        vx=sol[:, 4],
+        vy=sol[:, 5],
+        vz=sol[:, 6],
+        t=sol.t,
+    ),
+    false
+end
 
 """
     find_max_larmorradius(sol; ntimes=5length(sol.t))

@@ -353,6 +353,103 @@ function (self::MHDSamplingHybrid)(prob, _, _)
 end
 
 """
+    struct MHDSamplingHybridSavingCallback
+        rng
+        proposal_distr
+        target_distr
+        tg_itp
+        xbounds
+        ybounds
+        zbounds
+        t0bounds
+        tf
+        max_value
+        initialeomid
+        save_values
+        save_func
+        saveat
+
+# Methods
+    (::MHDSamplingHybrid)(prob, _, _)
+Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
+rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
+with a temperature given by `tg_itp(x,y,z)`. Evaluates the importance weight of
+the particle using the `target_distr`ibution. Remakes the problem with
+`HybridParams`.
+"""
+struct MHDSamplingHybridSavingCallback{
+    T1<:AbstractRNG,T2,T3,T4,T5<:Tuple{Real,Real},T6<:Real,T7<:Real,T8<:Int,T9,
+    T10<:Function,T11<:AbstractVector
+}
+    rng::T1
+    proposal_distr::T2
+    target_distr::T3
+    tg_itp::T4
+    xbounds::T5
+    ybounds::T5
+    zbounds::T5
+    t0bounds::T5
+    tf::T6
+    max_value::T7
+    initialeomid::T8
+    save_values::T9
+    save_func::T10
+    saveat::T11
+end
+function (self::MHDSamplingHybridSavingCallback)(prob, i, _)
+    x, y, z, vx, vy, vz, t, weight, nrejections = mhdsampling(
+        prob.p.mass,
+        self.rng,
+        self.proposal_distr,
+        self.target_distr,
+        self.tg_itp,
+        self.xbounds,
+        self.ybounds,
+        self.zbounds,
+        self.t0bounds,
+        self.max_value,
+    )
+    u0 = Vector{Float64}(undef, 6)
+    if self.initialeomid == 1
+        magneticmoment = getu0_guidingcentre!(
+            u0, x, y, z, vx, vy, vz, t,
+            prob.p.mass, prob.p.charge, prob.p.electromagneticfield
+        )
+    elseif self.initialeomid == 2
+        magneticmoment = getu0_fullorbit!(
+            u0, x, y, z, vx, vy, vz, t,
+            prob.p.mass, prob.p.charge, prob.p.electromagneticfield
+        )
+    else
+        error("Invalid initialeomid: $(self.initialeomid). Must be 1 or 2.")
+    end
+    # This remaking allocates memory when creating the new params, which
+    # still points to the same actual values, but it is thread-safe because
+    # as long as the parameters that points to `prob.p` is not mutated.
+    return remake(
+        prob;
+        u0=u0,
+        tspan=(t, self.tf),
+        p=HybridParams(
+            charge=prob.p.charge,
+            mass=prob.p.mass,
+            electromagneticfield=prob.p.electromagneticfield,
+            magneticmoment=magneticmoment,
+            weight=weight,
+            nrejections=nrejections,
+            terminationcode=TerminationCode.NotTerminated,
+            initialeomid=self.initialeomid,
+            save_values=self.save_values[i],
+            cb=SavingCallback(
+                self.save_func,
+                self.save_values[i];
+                saveat=self.saveat
+            )
+        )
+    )
+end
+
+"""
     initialconditions_mhdsampling(
         npart::Int,
         electromagneticfield,

@@ -359,6 +359,14 @@ function relativisticaffect!(integrator)
     terminate!(integrator)
 end
 
+
+#-------------------------------------------------------------------------------
+# `save_func`s for `SavingCallback`s
+#-------------------------------------------------------------------------------
+function save_magneticmoment(u, t, integrator)
+    return integrator.p.magneticmoment
+end
+
 #-------------------------------------------------------------------------------
 # Other functions
 #-------------------------------------------------------------------------------
