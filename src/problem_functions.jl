@@ -347,7 +347,7 @@ function (self::MHDSamplingHybrid)(prob, _, _)
             magneticmoment=magneticmoment,
             weight=weight,
             nrejections=nrejections,
-            initialeomid=self.initialeomid # initialised with the EoM `lorentzforce!`
+            eomid=self.initialeomid
         )
     )
 end
@@ -428,7 +428,7 @@ function get_ics_hybrid(icfile::String, tf, emfield)
         npart = length(x0)
         t_precision = eltype(tf)
         u0 = Vector{Vector{Float64}}(undef, npart)
-        tspan = Vector{Tuple{t_precision, t_precision}}(undef, npart)
+        tspan = Vector{Tuple{t_precision,t_precision}}(undef, npart)
         params = Vector{HybridParams}(undef, npart)
         for i in 1:npart
             u0[i] = [
