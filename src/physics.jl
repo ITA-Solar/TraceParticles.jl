@@ -917,7 +917,8 @@ function cosineof_pitchangle(
     magneticmoment::Real,
 )
     B = norm(magneticfield)
-    return sqrt(1 / (2B * magneticmoment / (mass * parallel_velocity^2) + 1))
+    return sign(parallel_velocity) *
+           sqrt(1 / (2B * magneticmoment / (mass * parallel_velocity^2) + 1))
 end
 
 function pitchangle(
