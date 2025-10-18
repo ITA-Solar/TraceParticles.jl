@@ -28,7 +28,6 @@ using DifferentialEquations
 using Interpolations
 using Test
 
-expdir = Base.source_dir()
 
 #-------------------------------------------------------------------------------
 # EXPERIMENT PARAMTERS
