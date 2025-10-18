@@ -640,3 +640,21 @@ function h5_getobservables(
         return DataFrame(read(fid))
     end
 end
+
+function save_runstatistics(
+    fname_run,
+    fname_stats,
+    timed_stats,
+    expname,
+    expdir,
+    mgrtol,
+    mcrtol,
+    eratiotol,
+    switchbacktol,
+    machine,
+    nthreads
+)
+    df_run = h5_getall(fname_run)
+    e0, ef = h5_getenergies(fname_run)
+    df_stats = DataFrame(CSV.File(fname_stats))
+end
