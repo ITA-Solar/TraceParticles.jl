@@ -1,6 +1,7 @@
 using Distributed
 using DifferentialEquations
 using Printf
+using Dates
 
 """
 This script is used as a fast way to run a single test particle simulation
@@ -28,38 +29,34 @@ As a bare minimum, the `expparams.jl` file must define the following variables:
 - `charger::Real` : The charge of the test particles.
 - `mass::Real` : The mass of the test
 - `tspan::Tuple{Real, Real}` : The time span of the simulation.
-- `prob_func::Function` or `u0::Vector{<:Real}`: The function that generates
-    the initial conditions of the test particles or an initial condition to be
-    used for all test particles. `prob_func` must be encapsulated in the
-    `NamedTuple` `ensembleprob_kwargs`.
-- `trajectories::Int` : The number of test particles to simulate. Must be
-    encapsulated in the `NamedTuple` `solve_kwargs`.
+- `ensembleprob_kwargs::Dict` : Keyword arguments for the `EnsembleProblem`.
+- `solve_args::Dict` : Arguments for the `solve`-function.
+- `solve_kwargs::Dict` : Keyword arguments for the `solve`-function.
 
-## Passing positoinal and keyword arguments to EnsembleProblem and Solve
+## Positional and keyword arguments to `EnsembleProblem` and `solve`
 Keyword arguments to the `EnsembleProblem` constructor and  keyword arguments
-to the `solve` function must be defined in separate `NamedTuple`s. The tuples
-must be named `ensembleprob_kwargs` and `solve_kwargs`.
+to the `solve`-function must be defined in `Dict`s.
 
-The tuples are then splashed into place.
+The dictionaries are then splashed into place.
 
 E.g. to define a output function, reduction, maxiters, safetycopy,
 and solution algorithm, one must, in the user-provided parameter-file,
 define the following:
 ```julia
-ensembleprob_kwargs = (
-    prob_func = myprob_func,
-    output_func = myoutput_func,
-    reduction = myreduction
+ensembleprob_kwargs = Dict(
+    :prob_func => myprob_func,
+    :output_func => myoutput_func,
+    :reduction => myreduction
 )
 
-solve_kwargs = (
-    trajectories = 10,
-    maxiters = 10000,
-    safetycopy = false,
+solve_kwargs = Dict(
+    :trajectories => 10,
+    :maxiters => 10000,
+    :safetycopy => false,
     )
 ```
 
-## Parlallelisation
+## Parallelisation
 To multithread, provide the number of threads through command line.
 
 To run using distributed computing, provide the number of processes through
@@ -69,11 +66,14 @@ If the script is run with multiple threads and mulitple processes, the script
 will use distributed computing.
 """
 
+localARGS = isdefined(Main, :newARGS) ? newARGS : ARGS
+@show localARGS
 
-
-commandlineparams = ARGS[1]
+commandlineparams = localARGS[1]
 paramsfile = joinpath(pwd(), basename(commandlineparams))
-include(paramsfile)
+if !isdefined(Main, :paramset)
+    include(paramsfile)
+end
 #exp_params = experiment_parameters()
 
 try
@@ -144,57 +144,6 @@ catch
     (ensemble_algorithm,)
 end
 
-
-function print_particlecounter(count, total)
-    @printf "Particle %i (%.2f %%)\r" count count / total * 100
-end
-
-lk = ReentrantLock()
-particlecounter = 0
-@everywhere function update_particlecounter()
-    global particlecounter
-    particlecounter += 1
-end
-
-if ensemble_algorithm == EnsembleDistributed()
-    # Distributed
-    # Overwrite the the ensemble problem keyword argument `prob_func` with some
-    # progress verbose.
-    ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
-        prob_func=(prob, i, repeat) -> begin
-            remote_do(update_particlecounter, 1) # 1 is main process
-            ensembleprob_kwargs.prob_func(prob, i, repeat)
-        end
-    )
-elseif ensemble_algorithm == EnsembleThreads()
-    ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
-        prob_func=(prob, i, repeat) -> begin
-            global particlecounter
-            global lk
-            lock(lk)
-            try
-                particlecounter += 1
-            finally
-                unlock(lk)
-            end
-            ensembleprob_kwargs.prob_func(prob, i, repeat)
-        end
-    )
-else
-    # Serial
-    # Overwrite the the ensemble problem keyword argument `prob_func` with some
-    # progress verbose.
-    ensembleprob_kwargs_internal = (ensembleprob_kwargs...,
-        prob_func=(prob, i, repeat) -> begin
-            #print("Particle $i  of $npart \r")
-            print_particlecounter(i, npart)
-            ensembleprob_kwargs.prob_func(prob, i, repeat)
-        end
-    )
-end
-
-
-
 #===============================================================================#
 
 #PROBLEM SETUP
@@ -212,40 +161,45 @@ prob = ODEProblem(
         zeros(1) # Dummy initial condition
     end,
     typeof(tspan) <: Tuple{Real,Real} ? tspan : (0, 1),
-    (
-        charge=charge,
-        mass=mass,
-        fields=fields_itp,
-        magneticmoment=try
-            mu0
-        catch
-            nothing
-        end
-    )
+    if eom == guidingcentreapproximation!
+        GCAParams(
+            charge=charge,
+            mass=mass,
+            electromagneticfield=fields_itp,
+            magneticmoment=try
+                mu0
+            catch
+                0.0
+            end,
+        )
+    elseif eom == hybridgcafo!
+        HybridParams(
+            charge=charge,
+            mass=mass,
+            electromagneticfield=fields_itp,
+            magneticmoment=try
+                mu0
+            catch
+                0.0
+            end,
+        )
+    end
 )
 ensemble_prob = EnsembleProblem(
     prob
     ;
-    ensembleprob_kwargs_internal...
+    ensembleprob_kwargs...
 )
 
 #===============================================================================#
 # START OF SIMULATION
 
+println("Running program: $PROGRAM_FILE")
+println("Start time: $(string(now()))")
+println("Host name : $(gethostname())")
 println("Running ensemble of $npart particles...")
 println(".................................................................",
     "...............")
-
-running = true
-if ensemble_algorithm != EnsembleSerial()
-    @async begin
-        while running
-            #print("Particle $particlecounter of $npart \r")
-            print_particlecounter(particlecounter, npart)
-            sleep(0.1)
-        end
-    end
-end
 
 @time sim = DifferentialEquations.solve(
     ensemble_prob,
@@ -262,9 +216,12 @@ if !(:reduction in keys(ensembleprob_kwargs))
     JLD2.@save "out.jld2" sim
 else
     try
-        println("\nPost-processing: Computing GCAStates...")
-        filename = tp.get_filename(ensembleprob_kwargs.reduction)
-        @time tp.save_gcastates(filename, fields_itp)
+        println("\nPost-processing: Computing energies...")
+        filename = get_filename(ensembleprob_kwargs[:reduction])
+        @time save_energy(
+            filename,
+            fields_itp;
+        )
         println("                 Success")
     catch e
         println("                 Failed:\n", e)
