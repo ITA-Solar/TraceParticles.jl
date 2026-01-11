@@ -92,12 +92,13 @@ end
 
 """
     save_energy(filename, fields_itp)
-Calculates the GCAStates of the initial and final states of an ensamble of
+Calculates the kinetic energy of the initial and final states of an ensamble of
 test particles.
 """
 function save_energy(
     filename::String,
     electromagneticfield::Any;
+    eom::Function,
     components="all",
     verbose=false,
 )
@@ -120,56 +121,7 @@ function save_energy(
                 npart = nrow(df)
                 e0 = Vector{Float64}(undef, npart)
                 ef = Vector{Float64}(undef, npart)
-                for i in 1:npart
-                    if df[i, :initialeomid] == 1
-                        e0[i] = kineticenergy(
-                            [
-                                df[i, :x0],
-                                df[i, :y0],
-                                df[i, :z0],
-                                df[i, :vx0],
-                            ],
-                            df[i, :charge],
-                            df[i, :mass],
-                            df[i, :initialmagneticmoment],
-                            electromagneticfield,
-                            df[i, :t0],
-                        )
-                    elseif df[i, :initialeomid] == 2
-                        e0[i] = kineticenergy(
-                            [
-                                df[i, :vx0],
-                                df[i, :vy0],
-                                df[i, :vz0],
-                            ],
-                            df[i, :mass],
-                        )
-                    end
-                    if df[i, :eomid] == 1
-                        ef[i] = kineticenergy(
-                            [
-                                df[i, :xf],
-                                df[i, :yf],
-                                df[i, :zf],
-                                df[i, :vxf],
-                            ],
-                            df[i, :charge],
-                            df[i, :mass],
-                            df[i, :magneticmoment],
-                            electromagneticfield,
-                            df[i, :tf],
-                        )
-                    elseif df[i, :eomid] == 2
-                        ef[i] = kineticenergy(
-                            [
-                                df[i, :vxf],
-                                df[i, :vyf],
-                                df[i, :vzf],
-                            ],
-                            df[i, :mass],
-                        )
-                    end
-                end
+                compute_energies!(e0, ef, eom, df, electromagneticfield)
                 group0 = create_group(h5_e0, batchname)
                 groupf = create_group(h5_ef, batchname)
                 write_dataset(group0, "energy", e0)
@@ -178,7 +130,7 @@ function save_energy(
         catch e
             rm(name0)
             rm(namef)
-            @error "While saving GCA states:" exeption = (e, catch_backtrace())
+            @error "While saving energies:" exeption = (e)#, catch_backtrace())
         end
         try
             groupname = "metadata"
@@ -200,8 +152,101 @@ function save_energy(
     end
 end
 
+function compute_energies!(
+    e0::AbstractVector,
+    ef::AbstractVector,
+    eom::typeof(guidingcentreapproximation!),
+    df::DataFrame,
+    electromagneticfield::Any
+)
+    for i in eachindex(e0)
+        e0[i] = kineticenergy(
+            [
+                df[i, :x0],
+                df[i, :y0],
+                df[i, :z0],
+                df[i, :vparal0],
+            ],
+            df[i, :charge],
+            df[i, :mass],
+            df[i, :magneticmoment],
+            electromagneticfield,
+            df[i, :t0],
+        )
+        ef[i] = kineticenergy(
+            [
+                df[i, :xf],
+                df[i, :yf],
+                df[i, :zf],
+                df[i, :vparalf],
+            ],
+            df[i, :charge],
+            df[i, :mass],
+            df[i, :magneticmoment],
+            electromagneticfield,
+            df[i, :tf],
+        )
+    end
+end
 
-
+function compute_energies!(
+    e0::AbstractVector,
+    ef::AbstractVector,
+    eom::typeof(hybridgcafo!),
+    df::DataFrame,
+    electromagneticfield::Any
+)
+    for i in eachindex(e0)
+        if df[i, :initialeomid] == 1
+            e0[i] = kineticenergy(
+                [
+                    df[i, :x0],
+                    df[i, :y0],
+                    df[i, :z0],
+                    df[i, :vx0],
+                ],
+                df[i, :charge],
+                df[i, :mass],
+                df[i, :initialmagneticmoment],
+                electromagneticfield,
+                df[i, :t0],
+            )
+        elseif df[i, :initialeomid] == 2
+            e0[i] = kineticenergy(
+                [
+                    df[i, :vx0],
+                    df[i, :vy0],
+                    df[i, :vz0],
+                ],
+                df[i, :mass],
+            )
+        end
+        if df[i, :eomid] == 1
+            ef[i] = kineticenergy(
+                [
+                    df[i, :xf],
+                    df[i, :yf],
+                    df[i, :zf],
+                    df[i, :vxf],
+                ],
+                df[i, :charge],
+                df[i, :mass],
+                df[i, :magneticmoment],
+                electromagneticfield,
+                df[i, :tf],
+            )
+        elseif df[i, :eomid] == 2
+            ef[i] = kineticenergy(
+                [
+                    df[i, :vxf],
+                    df[i, :vyf],
+                    df[i, :vzf],
+                ],
+                df[i, :mass],
+            )
+        end
+    end
+end
 #____/\_____/\_________________________________________________________________
 #
 # HDF5 Loading routines
@@ -221,7 +266,6 @@ function h5_nbatches(filename)
     end
 end
 
-
 """
     h5_getbatch(filename, batchnr)
 Returns batch number `batchnr` as a `DataFrame`.
@@ -231,7 +275,6 @@ function h5_getbatch(filename, batchnr)
         DataFrame(read(h5_file["batch_$batchnr"]))
     end
 end
-
 
 """
     h5_getdataset(filename, dataset)
@@ -311,7 +354,6 @@ function h5_getall(filename, batches::AbstractVector)
         end
     )
 end
-
 
 """
     h5_getenergies_gca(filename, args...; units="eV")
