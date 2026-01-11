@@ -111,8 +111,7 @@ export
     MHDSamplingGCA,
     MHDSamplingHybrid,
     PredefinedICs,
-    initialconditions_mhdsampling,
-    get_ics_hybrid
+    initialconditions_mhdsampling
 # output_functions.jl
 export
     output_func_lightweight,
@@ -141,7 +140,8 @@ export
     h5_getobservables,
     save_gcastates,
     save_energy,
-    create_bifrost_itps
+    create_bifrost_itps,
+    create_diffeq_ic
 # dataprosessing.jl
 export
     initialstate_terminationcode,

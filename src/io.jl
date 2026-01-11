@@ -488,6 +488,28 @@ function h5_replaceparticles!(
     end
 end
 
+"""
+    h5_adddataset!(fname, dataset, key)
+Adds a dataset to all batches in a HDF5-file.
+"""
+function h5_adddataset!(
+    fname::String,
+    dataset::AbstractVector,
+    key::String,
+)
+    h5open(fname, "r+") do fid
+        batches, _ = h5_nbatches(fname)
+        i = 1
+        for b in batches
+            group = fid["batch_$b"]
+            n = length(first(group))
+            write(group, key,
+                dataset[i:i+n-1])
+            i += n
+        end
+    end
+end
+
 #____/\_____/\_________________________________________________________________
 #
 # Creating interpolation objects from Bifrost input (MHD snapshots)
@@ -603,25 +625,101 @@ function create_bifrost_itps(
     end
 end
 
+#____/\_____/\_________________________________________________________________
+#
+# Creating `ODEProblem` arguments
+#
 """
-    h5_adddataset!(fname, dataset, key)
-Adds a dataset to all batches in a HDF5-file.
+    create_diffeq_ic(
+        ic_file::string,
+        tf::AbstractVector,
+        emfield::Any;
+        f=hybridgcafo!
+    )
+Construct `u0`, `tspan` and `p` (parameters) for necessary for creating an
+`ODEProblem`. The type of `p` depends on the value of `f`.
+
+## Arguments
+-`ic_file` is assumed to be a JLD2 file containing
+the initial positions, initial velocities, initial times, charge, mass, magnetic
+moment, statistical weight, and number of rejections (from sampling the condition)
+for the particles to simulate.
+
+-`f` is a function representing the equations of motion for the particles. If the
+function is `hybridgcafo!`, then it is assumed that `ic_file` contains a field
+`eomid` too, that reflects which state of the hybrid scheme the particles are
+initialised in.
+
+-`tf` is a vector of the final time of the particles.
+
+-`emfield` is the callable object that returns the electric and magnetic field at
+an arbitrary position. It is used to create the parameters for the `ODEProblem`
+but should not be duplicated per particle as it may be large.
 """
-function h5_adddataset!(
-    fname::String,
-    dataset::AbstractVector,
-    key::String,
+function create_diffeq_ic(
+    icfile::String,
+    tf::AbstractVector,
+    emfield::Any;
+    f::Function=hybridgcafo!
 )
-    h5open(fname, "r+") do fid
-        batches, _ = h5_nbatches(fname)
-        i = 1
-        for b in batches
-            group = fid["batch_$b"]
-            n = length(first(group))
-            write(group, key,
-                dataset[i:i+n-1])
-            i += n
+    return h5open(icfile) do fid
+        x0 = read(fid, "x0")
+        y0 = read(fid, "y0")
+        z0 = read(fid, "z0")
+        vx0 = read(fid, "vx0")
+        vy0 = read(fid, "vy0")
+        vz0 = read(fid, "vz0")
+        t0 = read(fid, "t0")
+        charge = read(fid, "charge")
+        mass = read(fid, "mass")
+        magneticmoment = read(fid, "magneticmoment")
+        weight = read(fid, "weight")
+        nrejections = read(fid, "nrejections")
+        npart = length(x0)
+        t_precision = eltype(tf)
+        u0 = Vector{Vector{Float64}}(undef, npart)
+        tspan = Vector{Tuple{t_precision,t_precision}}(undef, npart)
+        for i in 1:npart
+            u0[i] = [
+                x0[i],
+                y0[i],
+                z0[i],
+                vx0[i],
+                vy0[i],
+                vz0[i]
+            ]
+            tspan[i] = (t0[i], tf)
         end
+        if f==hybridgcafo!
+            eomid = read(fid, "eomid")
+            params = Vector{HybridParams}(undef, npart)
+            for i in 1:npart
+                params[i] = HybridParams(
+                    charge=charge[i],
+                    mass=mass[i],
+                    electromagneticfield=emfield,
+                    magneticmoment=magneticmoment[i],
+                    weight=weight[i],
+                    nrejections=nrejections[i],
+                    eomid=eomid[i]
+                )
+            end
+        elseif f == guidingcentreappoximation!
+            params = Vector{GCAParams}(undef, npart)
+            for i in 1:npart
+                params[i] = GCAParams(
+                    charge=charge[i],
+                    mass=mass[i],
+                    electromagneticfield=emfield,
+                    magneticmoment=magneticmoment[i],
+                    weight=weight[i],
+                    nrejections=nrejections[i],
+                )
+            end
+        else
+            throw(ArgumentError("No implementation for `f`=$f"))
+        end
+        return u0, tspan, params
     end
 end
 
