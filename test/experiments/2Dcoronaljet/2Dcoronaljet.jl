@@ -12,7 +12,10 @@ expdir = Base.source_dir()
 
 # Create interpolation objects
 # To create electron density interpolators demands EoS-tables so we avoid that.
-brxp = BifrostExperiment("testsnap", expdir)
+brxp = BifrostExperiment(
+    "testsnap",
+    expdir
+)
 create_bifrost_itps(
     brxp,
     1,
@@ -27,118 +30,74 @@ create_bifrost_itps(
 )
 
 # EXPEIRMENT PARAMETERS
-#===============================================================================#
+#==============================================================================#
 # Concerning field, duration and bounds
-fields_itp = load_object(expdir * "/cs_t1_BE.jld2")
-tg_itp = load_object(expdir * "/cs_t1_tg_normfalse.jld2")
-r_itp = load_object(expdir * "/cs_t1_r_normfalse.jld2")
+params = TraceParticlesParameters(
+    precision = Float64,
+    emfield_file = expdir * "/cs_t1_BE.jld2",
+    tg_file = expdir * "/cs_t1_tg_normfalse.jld2",
+    target_distr_file = expdir * "/cs_t1_r_normfalse.jld2",
+    static_itp_wrapper = false,
+    xz_itp_wrapper = false,
+    ic_onthefly = true,
 
-fields_itp = ElectromagneticFieldInterpolator(fields_itp)
+    t0start = 0.0,
+    t0end = 0.0,
+    tf = 1e-2 * 100, # dtsnap is hs
+    #xbounds = (14.527344e6, 18.824219e6) # Bounds of of initial position in x
+    # x bounds for the whole simulation snapshot
+    # The whole snapshot except a 40km edge on both sides.
+    xstart_ic = 1.5822270393371582e7,
+    xend_ic = 1.6318359375e7,
+    ystart_ic = 1e6,
+    yend_ic = 1e6,
+    zstart_ic = -6.598462104797363e6,
+    zend_ic = -6.102306842803955e6,
 
-dtsnap = 1e-2 # in code units (hs)
-t0 = 0.0
-t0bounds = (t0, t0)
-tf = dtsnap * 100
-#xbounds = (14.527344e6, 18.824219e6) # Bounds of of initial position in x
-# x bounds for the whole simulation snapshot
-# The whole snapshot except a 40km edge on both sides.
-xbounds = (1.5822270393371582e7, 1.6318359375e7)
-ybounds = (1e6, 1e6)                 # Bounds of of initial position in y
-zbounds = (-6.598462104797363e6, -6.102306842803955e6)
-
+    # Particle parameters
+    charge = -TraceParticles.e, # Charge of particles
+    mass = TraceParticles.m_e, # Mass of particles
+    eom = guidingcentreapproximation!, # Equation of motion
+    npart = Int(1e2),
+    seed = 5,
+    # Parameters for saving data
+    expname = "testresults",
+    batchsize = Int(1e1),
+    # Where to save the results
+    datadir = expdir,
+    # Define parameters for callbacks
+    kill_oob = true,
+    xkill = true,
+    zkill = true,
+    xlowerbound = 1.5822270393371582e7,
+    xupperbound = 1.6318359375e7,
+    zlowerbound = -6.598462104797363e6,
+    zupperbound = -6.102306842803955e6,
+    oob_save_positions = (true, true),
+    kill_relativistic = true,
+    relativistic_fraction = 0.02,
+    rel_save_positions = (true, true),
+    kill_high_gradb = true,
+    gradient_tolerance = 0.001,
+    gradb_save_positions = (true, true),
+    # Other stuff
+    alg = Rosenbrock23(),
+    save_max_observables = true,
+    reltol = 3e-8,
+    abstol = 1e0,
+    maxiters = 10_000_000,
+    verbose = false,
+)
 #==============================================================================#
-# Particle parameters
-charge = -TraceParticles.e              # Charge of particles
-mass = TraceParticles.m_e               # Mass of particles
-eom = guidingcentreapproximation! # Equation of motion
-npart = Int(1e2)
-seed = 5
-rng = Xoshiro(seed) # Random number generator
-# Parameters for saving data
-expname = "testresults"
-fname = joinpath(expdir, expname, expname * ".h5")
-# Where to save the results
-datadir = expdir
-# Define Callbacks
-out_cb = DiscreteCallback(
-    OutOfBoundsCondition((xbounds, zbounds), 1:2:3),
-    outofboundsaffect!
-)
-rel_cb = DiscreteCallback(
-    RelativisticConditionGCA(; mass=mass, fraction=0.02),
-    relativisticaffect!
-)
-gca_cb = DiscreteCallback(
-    MagneticGradientCondition(0.001),
-    magneticgradientaffect!,
-)
-# Size of the batch of particles to be saved in a single file
-batchsize = Int(1e1)
-# Set batchsize to npart if the npart < batchsize
-batchsize = npart > batchsize ? batchsize : npart
-nbatches = ceil(Int, npart / batchsize)
-# Max-value needed for the rejection algorithm
-maxval = maximum(r_itp.itp.itp.itp.coefs)
-domain = [xbounds, zbounds] # Domain of sampling.
 
-alg = Rosenbrock23()
-"""
-Keyword arguments in the creation of the DifferentialEquaions.EnsembleProblem.
-"""
-ensembleprob_kwargs = Dict(
-    # The data footprint and format of output data through an output function
-    :output_func => output_func_max_lightweight,
-    # How to reduce the simulation data (e.g. how often to save)
-    :reduction => SaveBatchAsHDF5(datadir, expname, batchsize, nbatches;
-        verbose=false
-    ),
-    :safetycopy => false,
-    # How to choose initial condition of the particle
-    :prob_func => MHDSamplingGCA(
-        rng,
-        r_itp,
-        r_itp,
-        tg_itp,
-        xbounds,
-        ybounds,
-        zbounds,
-        t0bounds,
-        tf,
-        maxval,
-    )
-)
-
-"""
-Keyword arguments that will be passed to DifferentialEquations.solve() for
-solving the ensemble problem. 
-"""
-solve_kwargs = Dict(
-    :reltol => 3e-8,
-    :abstol => 1e0,
-    :trajectories => npart,
-    :maxiters => 10_000_000,
-    :callback => CallbackSet(out_cb, rel_cb, gca_cb),
-    # The number of particles in each simulation batch.
-    # Each batch has its datafile.
-    :batch_size => batchsize,
-)
-
+# Construct the problem
+tpprob = TraceParticlesProblem(params)
 # Run the simulation
-#==============================================================================#
-odeprob = ODEProblem(
-    eom,
-    zeros(4),
-    (t0, tf),
-    (
-        charge=charge,
-        mass=mass,
-        electromagneticfield=fields_itp,
-        magneticmoment=0.0,
-    )
-)
+solve(tpprob, params)
 
-prob = EnsembleProblem(odeprob; ensembleprob_kwargs...)
-sol = solve(prob, alg, EnsembleSerial(); solve_kwargs...)
+#==============================================================================#
+(; ensemble_prob, callbackset) = tpprob
+(; electromagneticfield) = ensemble_prob.prob.p
 
 # For testing PposPvel and Relativistic callback
 u0 = [
@@ -146,25 +105,33 @@ u0 = [
     [1.63e7, 1e6, -6.3e6, -1e6],
 ]
 mu = [4.1e-11, 4.1e-11]
-tspan = [(t0, tf) for _ in 1:2]
-params = [
+tspan2 = [(params.t0start, params.tf) for _ in 1:2]
+params2 = [
     GCAParams(
-        charge=charge,
-        mass=mass,
+        charge=params.charge,
+        mass=params.mass,
         magneticmoment=mu[i],
-        electromagneticfield=fields_itp
+        electromagneticfield=electromagneticfield
     ) for i in 1:2
 ]
 ensembleprob_kwargs = Dict(
-    :prob_func => PredefinedICs(u0, tspan, params)
+    :prob_func => PredefinedICs(u0, tspan2, params2)
 )
-prob2 = EnsembleProblem(odeprob; ensembleprob_kwargs...)
-solve_kwargs[:trajectories] = 2
-solve_kwargs[:batch_size] = 2
-sol2 = solve(prob2, alg, EnsembleSerial(); solve_kwargs...)
+prob2 = EnsembleProblem(ensemble_prob.prob; ensembleprob_kwargs...)
+solve_kwargs = Dict(
+    :trajectories => 2,
+    :batch_size => 2,
+    :abstol => params.abstol,
+    :reltol => params.reltol,
+    :callback => callbackset,
+    :maxiters => params.maxiters,
+)
+sol2 = solve(prob2, params.alg, EnsembleSerial(); solve_kwargs...)
 
 # Save GCAStates
-save_gcastates(fname, fields_itp)
+resultsdir = joinpath(expdir, params.expname)
+fname = joinpath(resultsdir, params.expname * ".h5")
+save_gcastates(fname, electromagneticfield)
 
 # Test the results
 #==============================================================================#
@@ -208,13 +175,16 @@ rtols_errorprone = Dict(
 )
 
 # Retrieve the solutions for which to test the results against.
-answersol2 = load_object(expdir * "/testresults/answersol2.jld2")
-answersol1_df = load_object(expdir * "/testresults/answersol1_df.jld2")
+answersol2 = load_object(expdir * "/answers/answersol2.jld2")
+answersol1_df = load_object(expdir * "/answers/answersol1_df.jld2")
 answersol1_e0, answersol1_ef = load_object(
-    expdir * "/testresults/answersol1_energies.jld2"
+    expdir * "/answers/answersol1_energies.jld2"
 )
 # Get the results
 e0, ef = h5_getenergies_gca(fname)
+# Check that the results from `save_gcastates` is the same as the results from
+# `save_energies`
+@test (e0, ef) == h5_getenergies(fname)
 df = h5_getall(fname)
 
 # The particles that have larger errors
@@ -277,9 +247,8 @@ end
 rm(expdir * "/cs_t1_BE.jld2")
 rm(expdir * "/cs_t1_tg_normfalse.jld2")
 rm(expdir * "/cs_t1_r_normfalse.jld2")
-rm(fname)
-rm(joinpath(expdir, expname, expname * "_gcastates0.h5"))
-rm(joinpath(expdir, expname, expname * "_gcastatesf.h5"))
+rm(resultsdir, recursive=true)
+
 
 # Test the results form the relativistic particles in sol2
 @test all([u.u for u in sol2.u] .≈ answersol2)
