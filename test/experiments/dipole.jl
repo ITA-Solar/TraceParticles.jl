@@ -154,9 +154,11 @@ v = norm(u0[4:6])
 α = atan(vperp / vparal)
 R0x = R0[1]
 
-function T_dipole(q, m, M, R0, v, α)
-    return @. 2π * q * M / (m * v^2 * R0) * (1 - 1 / 3 * sin(α)^0.62)
-end # function T_dipole
+if !isdefined(Main, :T_dipole)
+    function T_dipole(q, m, M, R0, v, α)
+        return @. 2π * q * M / (m * v^2 * R0) * (1 - 1 / 3 * sin(α)^0.62)
+    end # function T_dipole
+end
 
 T = T_dipole(charge, mass, M, R0x, v, α)
 angularfreq = 2π / T

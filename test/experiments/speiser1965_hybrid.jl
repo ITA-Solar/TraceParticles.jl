@@ -64,10 +64,12 @@ ni = (100, 100, 100)
 η = 0.025  # guide field?
 d = 1e-4 # Current sheet width
 b = 1e-2  # Characteristic field strength
-function speiserBfield(
-    x::Float64,
-)
-    return [η, -x / d, 0.0] * b
+if !isdefined(Main, :speiserBfield)
+    function speiserBfield(
+        x::Float64,
+    )
+        return [η, -x / d, 0.0] * b
+    end
 end
 
 t_eject = π * mass / (charge * η * b)

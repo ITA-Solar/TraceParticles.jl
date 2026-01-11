@@ -170,10 +170,10 @@ sol = DifferentialEquations.solve(
 );
 
 times = range(16period, tf, length=1000)
-switch1 = [sol[1](t, idxs=1:3) for t in times]
-switch2 = [sol[2](t, idxs=1:3) for t in times]
-fo = [sol[3](t, idxs=1:3) for t in times]
-gca = [sol[4](t, idxs=1:3) for t in times]
+switch1 = [sol.u[1](t, idxs=1:3) for t in times]
+switch2 = [sol.u[2](t, idxs=1:3) for t in times]
+fo = [sol.u[3](t, idxs=1:3) for t in times]
+gca = [sol.u[4](t, idxs=1:3) for t in times]
 rmse1 = sqrt(mean(norm.(switch1 .- fo) .^ 2))
 rmse2 = sqrt(mean(norm.(switch2 .- gca) .^ 2))
 @test isapprox(rmse1, 0.0; atol=1e-4)
