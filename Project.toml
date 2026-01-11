@@ -1,7 +1,7 @@
 name = "TraceParticles"
 uuid = "391c92f7-b09d-4c05-9261-2c00f62b9ca4"
-authors = ["eilifso <e.s.oyre@astro.uio.no>"]
 version = "0.1.0"
+authors = ["eilifso <e.s.oyre@astro.uio.no>"]
 
 [deps]
 BifrostTools = "526b3974-5bd8-47e8-be8d-381be867b53b"
@@ -18,6 +18,7 @@ HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"

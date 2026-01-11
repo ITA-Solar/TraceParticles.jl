@@ -451,6 +451,21 @@ function h5_getfinalstate_gca(filename, args...)
     return xf, yf, zf, vparalf, mu
 end
 
+"""
+    h5_getobservables(
+        fname::String;
+        obs_fname = joinpath(splitdir(fname, "observables.h5"))
+    )
+Load and return observables as a `DataFrame`.
+"""
+function h5_getobservables(
+    fname::String;
+    obs_fname=joinpath(splitdir(fname)[1], "observables.h5")
+)
+    h5open(obs_fname) do fid
+        return DataFrame(read(fid))
+    end
+end
 
 #____/\_____/\_________________________________________________________________
 #
@@ -765,18 +780,38 @@ function create_diffeq_ic(
     end
 end
 
-"""
-    h5_getobservables(
-        fname::String;
-        obs_fname = joinpath(splitdir(fname, "observables.h5"))
-    )
-Load and return observables as a `DataFrame`.
-"""
-function h5_getobservables(
-    fname::String;
-    obs_fname=joinpath(splitdir(fname)[1], "observables.h5")
-)
-    h5open(obs_fname) do fid
-        return DataFrame(read(fid))
+function create_expdir(datadir::String, expname::String)
+    # Create data-directory if not already present
+    try
+        mkdir(datadir)
+    catch
+    end
+
+    # Create experiment-directory. Prompt for deletion if already present.
+    expdir = joinpath(datadir, expname)
+    try
+        mkdir(expdir)
+    catch
+        println("The directory $expdir already exists.
+         Do you want to delete it and re-run? y/n")
+        if readline() == "y"
+            rm(expdir, recursive=true)
+            mkdir(expdir)
+        else
+            error("Exiting.")
+        end
+    end
+end
+
+function create_paramsbackup(datadir::String, expname::String)
+    # Copy parameter-file to experiment-directory, giving it a name equal
+    # to the experiment-name. This only work if the parameter file is given
+    # as a command line argument.
+    expdir = joinpath(datadir, expname)
+    try
+        paramsbackup = expdir * "/" * expname * ".jl"
+        cp(PROGRAM_FILE, paramsbackup)
+    catch
+        @warn "Unable to copy parameter file to experiment directory."
     end
 end

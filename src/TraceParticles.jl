@@ -24,6 +24,7 @@ using HDF5
 using Interpolations
 using JLD2
 using LinearAlgebra
+using Parameters
 using Printf
 using Random
 using StaticArrays
@@ -50,6 +51,9 @@ include("dataprocessing.jl")
 include("gcastate.jl")
 include("get.jl")
 include("runs.jl")
+include("traceparticlesparameters.jl")
+include("traceparticlesproblem.jl")
+include("solve.jl")
 
 
 #________/\_____________________________________________________________________
@@ -160,8 +164,11 @@ export
 # get.jl
 export
     get_observable
-# runs.jl
+# traceparticlesparameters.jl
 export
-    rerun
+    TraceParticlesParameters
+# traceparticlesproblem.jl
+export
+    TraceParticlesProblem
 #-------------------------------------------------------------------------------
 end
