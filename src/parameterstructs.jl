@@ -1,21 +1,14 @@
 """
-    parameterstructs.jl
 This file defines mutable structs that are useful as containers for the
 parameters in a `ODEProblem` in DifferentialEquations.jl. With mutable
 structs, the parameters can be altered during the integration, as opposed
 to using a `Tuple` or a `NamedTuple`.
 """
 
-mutable struct ParticleParams{T1<:Real,T2}
+@kwdef mutable struct ParticleParams{T1<:Real,T2}
     charge::T1
     mass::T1
     electromagneticfield::T2
-
-    function ParticleParams(
-        ; charge::T1, mass::T1, electromagneticfield::T2,
-    ) where {T1<:Real,T2}
-        new{T1,T2}(charge, mass, electromagneticfield)
-    end
 end
 
 """
@@ -26,35 +19,14 @@ sampling and they have a statistical weight. The struct also contains a
 `terminationcode` that indicates what kind of callback terminated the particle
 trajectory.
 """
-mutable struct GCAParams{T1<:Real,T2,T3<:Int,T4}
+@kwdef mutable struct GCAParams{T1<:Real,T2,T3<:Int,T4,T5}
     charge::T1
     mass::T1
     electromagneticfield::T2
     magneticmoment::T1
-    weight::T1
-    nrejections::T3
-    terminationcode::T4
-
-    function GCAParams(
-        ;
-        charge::T1,
-        mass::T1,
-        electromagneticfield::T2,
-        magneticmoment::T1,
-        weight::T1=1.0,
-        nrejections::T3=0,
-        terminationcode::T4=TerminationCode.NotTerminated,
-    ) where {T1<:Real,T2,T3<:Int,T4}
-        new{T1,T2,T3,T4}(
-            charge,
-            mass,
-            electromagneticfield,
-            magneticmoment,
-            weight,
-            nrejections,
-            terminationcode,
-        )
-    end
+    weight::T5 = 1.0
+    nrejections::T3 = 0
+    terminationcode::T4 = TerminationCode.NotTerminated
 end
 
 """
