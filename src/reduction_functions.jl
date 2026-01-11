@@ -85,36 +85,20 @@ The struct instance is callable and its fields are
 - `nbatches::Int`: The total number of batches.
 - `metadata::Dict{<:String, <:Any}`: A dictionary of user-specified metadata.
 """
-mutable struct SaveBatchAsHDF5
-    expdir::String
-    expname::String
-    suffix::String
-    batchnr::Int
-    batchsize::Int
-    nbatches::Int
-    metadata::Dict{<:String,<:Any}
-    verbose::Bool
-    function SaveBatchAsHDF5(
-        expdir::String,
-        expname::String,
-        batchsize::Int,
-        nbatches::Int;
-        suffix::String="",
-        metadata::Dict{<:String,<:Any}=Dict{String,Any}(),
-        verbose::Bool=true
-    )
-        batchnr = 0
-        new(
-            expdir,
-            expname,
-            suffix,
-            batchnr,
-            batchsize,
-            nbatches,
-            metadata,
-            verbose
-        )
-    end
+@kwdef mutable struct SaveBatchAsHDF5{
+    S<:String,
+    I<:Integer,
+    B<:Bool,
+    T1
+}
+    expdir::S
+    expname::S
+    batchsize::I
+    nbatches::I
+    batchnr::I = 0
+    suffix::S = ""
+    verbose::B = true
+    metadata::T1 = Dict{String,String}()
 end
 function (self::SaveBatchAsHDF5)(u, batch, I)
     # Save the batch as a DataFrame
