@@ -44,16 +44,16 @@ include("callbacks.jl")
 include("problem_functions.jl")
 include("output_functions.jl")
 include("reduction_functions.jl")
-include("parameterstructs.jl")
+include("odeparameters.jl")
 include("bifrost.jl")
 include("io.jl")
 include("dataprocessing.jl")
 include("gcastate.jl")
 include("get.jl")
-include("runs.jl")
 include("traceparticlesparameters.jl")
 include("traceparticlesproblem.jl")
 include("solve.jl")
+include("rerun.jl")
 
 
 #________/\_____________________________________________________________________
