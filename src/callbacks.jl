@@ -234,7 +234,7 @@ function hybridswitchaffect!(integrator)
     elseif integrator.p.eomid == 2
         switch2gca_affect!(integrator)
     else
-        @warn """Trying to switch EoM, but switch paramer is neither 1 nor 2.
+        @warn """Trying to switch EoM, but switch parameter is neither 1 nor 2.
 Current value: $(integrator.p.eomid)."""
     end
     integrator.p.nswitches += 1
