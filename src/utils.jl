@@ -150,6 +150,10 @@ function Base.maximum(itp::StaticXZInterpolation)
     return maximum(itp.itp.itp.itp.coefs)
 end
 
+#____/\_____/\_________________________________________________________________
+#
+# Various utility functions
+#
 """
     Base.dropdims(arr::AbstractArray)
 Extend `dropdims` to find and drop all axes with one point when `dims` keyword 
@@ -174,9 +178,6 @@ function Base.dropdims(axes::Tuple{Vararg{Vector}})
     mask = findall(x -> length(x) != 1, axes)
     return axes[mask]
 end
-
-
-#____/\_____/\_________________________________________________________________
 
 """
 Convenience structure for storing the maximum value of some quantity during

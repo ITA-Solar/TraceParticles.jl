@@ -104,7 +104,6 @@ function rerun(
     )
 end
 
-
 """
     rerun(
         u0::Vector{<:Vector{<:Real}},

@@ -27,7 +27,9 @@ function print_batch_statistics(batch)
     ncurvature = sum(batch.terminationcode .== 3)
     neratio = sum(batch.terminationcode .== 4)
     nrel = sum(batch.terminationcode .== 5)
-    hybswitches = batch.nswitches[batch.nswitches.>0]
+    if hasproperty(batch, :nswitches)
+        hybswitches = batch.nswitches[batch.nswitches.>0]
+    end
 
     println("")
     println("Timestamp:                   $(now())\n")
@@ -51,17 +53,17 @@ function print_batch_statistics(batch)
         maxhyb = sum(@. (batch.nswitches > 0) & (batch.retcode == 4))
         println("Hybrid switch statistics")
         @printf "  Amount that switched:      %i (%.2f%%)\n" nhybrid nhybrid * c1
-        @printf "  Average nof. switches:     %.4f\n" mean(hybswitches)
         if length(hybswitches) > 0
+            @printf "  Average nof. switches:     %.4f\n" mean(hybswitches)
             @printf "  Median:                    %i\n" median(hybswitches)
+            @printf "  Standard deviation:        %.4f\n" std(hybswitches)
+            @printf "  Most nof. switches:        %i\n" maximum(hybswitches)
+            @printf "  Least nof. switches:       %i\n" minimum(hybswitches)
+            @printf(
+                "  MaxIters & switched:       %i (%.0f%% of %i, %.0f%% of MaxIters)\n",
+                maxhyb, maxhyb / nhybrid * 100, nhybrid, maxhyb / nmaxiters * 100
+            )
         end
-        @printf "  Standard deviation:        %.4f\n" std(hybswitches)
-        println("  Most nof. switches:        $(maximum(hybswitches))")
-        println("  Least nof. switches:       $(minimum(hybswitches))")
-        @printf(
-            "  MaxIters & switched:       %i (%.0f%% of %i, %.0f%% of MaxIters)\n",
-            maxhyb, maxhyb / nhybrid * 100, nhybrid, maxhyb / nmaxiters * 100
-        )
     else
         @printf "  Nof. MagneticGradient:     %i (%.0f%%)\n" ngradient ngradient * c1
         @printf "  Nof. MagneticCurvature:    %i (%.0f%%)\n" ncurvature ncurvature * c1
@@ -163,18 +165,17 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
     catch e
         try
             CSV.write("./tp_panic.csv", df)
-            @info "Error writing batch to HDF5-file. The batch has been written " *
+            @warn "Error writing batch to HDF5-file. The batch has been written " *
                   "as a `DataFrame` in 'tp_panic.csv'."
         catch e2
             @warn "Writing panic-file failed: $e2"
         finally
-            error(e)
+            @error e
         end
     end
 
     return u, false
 end
-
 
 """
     get_filename(reduction::SaveBatchAsHDF5)

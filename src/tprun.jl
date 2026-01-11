@@ -67,14 +67,12 @@ will use distributed computing.
 """
 
 localARGS = isdefined(Main, :newARGS) ? newARGS : ARGS
-@show localARGS
 
 commandlineparams = localARGS[1]
 paramsfile = joinpath(pwd(), basename(commandlineparams))
 if !isdefined(Main, :paramset)
     include(paramsfile)
 end
-#exp_params = experiment_parameters()
 
 try
     mkdir("data")
@@ -101,11 +99,9 @@ if !isdefined(Main, :expname)
     error("")
 end
 
-datadir = try
-    datadir
-catch
+if !isdefined(Main, :datadir)
     println("'datadir' not set, using 'data'.")
-    "data"
+    datadir = "data"
 end
 
 expdir = datadir * "/" * expname
