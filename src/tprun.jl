@@ -220,7 +220,8 @@ else
         filename = get_filename(ensembleprob_kwargs[:reduction])
         @time save_energy(
             filename,
-            fields_itp;
+            fields_itp,
+            ensemble_prob.prob.f.f
         )
         println("                 Success")
     catch e
