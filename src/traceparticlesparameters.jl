@@ -7,6 +7,7 @@
         TB<:Tuple{B, B},
         DT<:DataType,
         AlgType<:SciMLBase.AbstractODEAlgorithm,
+        L<:Logging.LogLevel
     } @deftype D
     eom::F
     npart::I
@@ -29,6 +30,7 @@
     safetycopy::B = false
     save_max_observables::B = false
     verbose::B = true
+    loglevel::L = Logging.Info
     static_itp_wrapper::B = false
     xz_itp_wrapper::B = false
     initialeomid::I = 2

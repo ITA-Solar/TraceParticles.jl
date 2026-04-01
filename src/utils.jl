@@ -8,7 +8,6 @@
 #-------------------------------------------------------------------------------
 # Module containing the utility functions.
 #-------------------------------------------------------------------------------
-
 """
     ElectromagneticFieldInterpolator{T<:AbstractVector}(interpolator::T)
 A convenience struct for a vector of interpolators representing the components

@@ -1,24 +1,26 @@
 """
-    print_reduction_overview(batchnr, nbatches, expdir, filename, I)
-Prints some meta-information about the current batch.
+    reduction_overview(batchnr, nbatches, expdir, filename, I)
+Returns some meta-information about the current batch.
 """
-function print_reduction_overview(batchnr, nbatches, expdir, filename, I)
-    println("")
-    println("=================================================================",
-        "===============")
-    println(pwd())
-    println("Batch $(batchnr) of $(nbatches).")
-    println("")
-    println("Saving particles $I to")
-    println("--> $filename")
+function reduction_overview(batchnr, nbatches, expdir, filename, I)
+    return """
+========================================================================
+Timestamp: $(now())
+
+Batch $(batchnr) of $(nbatches).
+
+Saved particles $I to
+--> $(joinpath(pwd(), filename))
+
+"""
 end
 
 
 """
-    print_batch_statistics(batch)
-Prints some statistics about the current batch.
+    batch_statistics(batch)
+Returns some statistics about the current batch.
 """
-function print_batch_statistics(batch)
+function batch_statistics(batch)
     npart = nrow(batch)
     c1 = 100 / npart
     nmaxiters = sum(batch.retcode .== 4)
@@ -31,47 +33,50 @@ function print_batch_statistics(batch)
         hybswitches = batch.nswitches[batch.nswitches.>0]
     end
 
-    println("")
-    println("Timestamp:                   $(now())\n")
-    println("                  Summary statistics")
-    @printf "Number of particles:         %.1E\n" npart
-    @printf "Average number of timesteps: %.1f\n" mean(batch.nt)
-    @printf "Median number of timesteps:  %.1f\n" median(batch.nt)
-    @printf "Standard deviation of steps: %.1f\n" std(batch.nt)
-    @printf "Fewest number of steps:      %i\n" minimum(batch.nt)
-    @printf "Most number of steps:        %i\n" maximum(batch.nt)
-    @printf "Total number of timesteps:   %.2E\n" sum(batch.nt)
-    @printf "Initial time:                %.5f\n" batch.t0[1]
-    @printf "Oldest particle:             %.5f\n" maximum(batch.tf)
-    @printf "Average end time:            %.5f\n" mean(batch.tf)
-    println("Termination statistics")
-    @printf "  Nof. maxiters:             %i (%.2f%%)\n" nmaxiters nmaxiters * c1
-    @printf "  Nof. OutofBounds:          %i (%.2f%%)\n" noob noob * c1
-    @printf "  Nof. Relativistic:         %i (%.2f%%)\n" nrel nrel * c1
+    msg = """
+        Summary statistics
+$(@sprintf "Number of particles:         %.1E" npart)
+$(@sprintf "Average number of timesteps: %.1f" mean(batch.nt))
+$(@sprintf "Median number of timesteps:  %.1f" median(batch.nt))
+$(@sprintf "Standard deviation of steps: %.1f" std(batch.nt))
+$(@sprintf "Fewest number of steps:      %i" minimum(batch.nt))
+$(@sprintf "Most number of steps:        %i" maximum(batch.nt))
+$(@sprintf "Total number of timesteps:   %.2E" sum(batch.nt))
+$(@sprintf "Initial time:                %.5f" batch.t0[1])
+$(@sprintf "Oldest particle:             %.5f" maximum(batch.tf))
+$(@sprintf "Average end time:            %.5f" mean(batch.tf))
+Termination statistics
+  $(@sprintf "Nof. maxiters:             %i (%.2f%%)" nmaxiters nmaxiters * c1)
+  $(@sprintf "Nof. OutofBounds:          %i (%.2f%%)" noob noob * c1)
+  $(@sprintf "Nof. Relativistic:         %i (%.2f%%)" nrel nrel * c1)
+"""
+
     if hasproperty(batch, :nswitches)
         nhybrid = sum(batch.nswitches .> 0)
         maxhyb = sum(@. (batch.nswitches > 0) & (batch.retcode == 4))
-        println("Hybrid switch statistics")
-        @printf "  Amount that switched:      %i (%.2f%%)\n" nhybrid nhybrid * c1
+        msg *= "Hybrid switch statistics\n"
+        msg *= @sprintf "  Amount that switched:      %i (%.2f%%)\n" nhybrid nhybrid * c1
         if length(hybswitches) > 0
-            @printf "  Average nof. switches:     %.4f\n" mean(hybswitches)
-            @printf "  Median:                    %i\n" median(hybswitches)
-            @printf "  Standard deviation:        %.4f\n" std(hybswitches)
-            @printf "  Most nof. switches:        %i\n" maximum(hybswitches)
-            @printf "  Least nof. switches:       %i\n" minimum(hybswitches)
-            @printf(
+            msg *= @sprintf "  Average nof. switches:     %.4f\n" mean(hybswitches)
+            msg *= @sprintf "  Median:                    %i\n" median(hybswitches)
+            msg *= @sprintf "  Standard deviation:        %.4f\n" std(hybswitches)
+            msg *= @sprintf "  Most nof. switches:        %i\n" maximum(hybswitches)
+            msg *= @sprintf "  Least nof. switches:       %i\n" minimum(hybswitches)
+            msg *= @sprintf(
                 "  MaxIters & switched:       %i (%.0f%% of %i, %.0f%% of MaxIters)\n",
                 maxhyb, maxhyb / nhybrid * 100, nhybrid, maxhyb / nmaxiters * 100
             )
         end
     else
-        @printf "  Nof. MagneticGradient:     %i (%.0f%%)\n" ngradient ngradient * c1
-        @printf "  Nof. MagneticCurvature:    %i (%.0f%%)\n" ncurvature ncurvature * c1
-        @printf "  Nof. ParallelEfield:       %i (%.0f%%)\n" neratio neratio * c1
+        msg *= @sprintf "  Nof. MagneticGradient:     %i (%.0f%%)\n" ngradient ngradient * c1
+        msg *= @sprintf "  Nof. MagneticCurvature:    %i (%.0f%%)\n" ncurvature ncurvature * c1
+        msg *= @sprintf "  Nof. ParallelEfield:       %i (%.0f%%)\n" neratio neratio * c1
     end
-    println("=================================================================",
-        "===============")
+    msg *= "=================================================================" *
+        "============="
+    return msg
 end
+
 
 """
     SaveBatchAsHDF5(expdir, expname, batchsize, nbatches)
@@ -105,16 +110,6 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
     self.batchnr += 1
     filename = get_filename(self)
 
-    if self.verbose
-        print_reduction_overview(
-            self.batchnr,
-            self.nbatches,
-            self.expdir,
-            filename,
-            I
-        )
-    end
-
     df = DataFrame(batch)
 
     batchname = "batch_$(self.batchnr)"
@@ -141,16 +136,20 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
             # Write batch specific metadata
             write(batchmetagroup, batchname, string(now()))
         end
-        # Write batch statistics to file?
         if self.verbose
-            println("success")
-            print_batch_statistics(df)
+            @info reduction_overview(
+                self.batchnr,
+                self.nbatches,
+                self.expdir,
+                filename,
+                I
+            ) * batch_statistics(df)
         end
     catch e
         try
             CSV.write("./tp_panic.csv", df)
             @warn "Error writing batch to HDF5-file. The batch has been written " *
-                  "as a `DataFrame` in 'tp_panic.csv'."
+                "as a `DataFrame` in 'tp_panic.csv'."
         catch e2
             @warn "Writing panic-file failed: $e2"
         finally

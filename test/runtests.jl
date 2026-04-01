@@ -2,6 +2,7 @@ using TraceParticles
 using BifrostTools
 using Test
 using LinearAlgebra
+using Logging
 using DifferentialEquations
 using DataFrames
 using Interpolations
@@ -14,11 +15,35 @@ if !isdefined(Main, :verbose)
     verbose = 3
 end
 
-if "fast_tests" in ARGS
-    include("fast_tests.jl")
+logfilepath = "runtests.log.txt"
+if "debug" in ARGS
+    loglevel = Logging.Debug
+elseif "info" in ARGS
+    loglevel = Logging.Info
 else
-    @testset verbose = verbose ≥ 1 "All tests" begin
-        include("fast_tests.jl")
-        include("slow_tests.jl")
+    loglevel = Logging.Warn
+end
+logger = TraceParticles.logger2fileandstderr(loglevel, logfilepath)
+
+if "fast_tests" in ARGS
+    @testset verbose = verbose ≥ 1 "Tests" begin
+        with_logger(logger) do
+            include("fast_tests.jl")
+        end
+        targetfile = joinpath(@__DIR__,"fast_tests.log.txt")
+        include("test_log.jl")
+        testlog(loglevel, logfilepath, targetfile, verbose)
+    end
+else
+    @testset verbose = verbose ≥ 1 "Tests" begin
+        with_logger(logger) do
+            include("fast_tests.jl")
+            include("slow_tests.jl")
+        end
+        targetfile = joinpath(@__DIR__,"all_tests.log.txt")
+        include("test_log.jl")
+        testlog(loglevel, logfilepath, targetfile, verbose)
     end # testset all test
 end
+
+if loglevel == Logging.Info rm(logfilepath) end

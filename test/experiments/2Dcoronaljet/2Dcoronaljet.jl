@@ -3,6 +3,7 @@ using DifferentialEquations
 using DataFrames
 using Interpolations
 using JLD2
+using Logging
 using Random
 using Test
 using TraceParticles
@@ -91,7 +92,7 @@ params = TraceParticlesParameters(
 #==============================================================================#
 
 # Construct the problem
-tpprob = TraceParticlesProblem(params)
+tpprob = TraceParticlesProblem(params; logger=current_logger())
 # Run the simulation
 solve(tpprob, params)
 

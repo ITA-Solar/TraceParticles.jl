@@ -1,0 +1,24 @@
+┌ Warning: Trying to switch EoM, but switch parameter is neither 1 nor 2.
+│ Current value: 0.
+└ @ TraceParticles /mn/stornext/u3/eilifo/code/TraceParticles.jl/src/callbacks.jl:237
+┌ Warning: Trying to switch EoM, but switch parameter is neither 1 nor 2.
+│ Current value: 0.
+└ @ TraceParticles /mn/stornext/u3/eilifo/code/TraceParticles.jl/src/callbacks.jl:237
+┌ Warning: Trying to switch EoM, but switch parameter is neither 1 nor 2.
+│ Current value: 0.
+└ @ TraceParticles /mn/stornext/u3/eilifo/code/TraceParticles.jl/src/callbacks.jl:237
+┌ Warning: Trying to switch EoM, but switch parameter is neither 1 nor 2.
+│ Current value: 0.
+└ @ TraceParticles /mn/stornext/u3/eilifo/code/TraceParticles.jl/src/callbacks.jl:237
+┌ Warning: Trying to switch EoM, but switch parameter is neither 1 nor 2.
+│ Current value: 0.
+└ @ TraceParticles /mn/stornext/u3/eilifo/code/TraceParticles.jl/src/callbacks.jl:237
+┌ Warning: Trying to switch EoM, but switch parameter is neither 1 nor 2.
+│ Current value: 0.
+└ @ TraceParticles /mn/stornext/u3/eilifo/code/TraceParticles.jl/src/callbacks.jl:237
+┌ Warning: Trying to switch EoM, but switch parameter is neither 1 nor 2.
+│ Current value: 0.
+└ @ TraceParticles /mn/stornext/u3/eilifo/code/TraceParticles.jl/src/callbacks.jl:237
+┌ Warning: Trying to switch EoM, but switch parameter is neither 1 nor 2.
+│ Current value: 0.
+└ @ TraceParticles /mn/stornext/u3/eilifo/code/TraceParticles.jl/src/callbacks.jl:237

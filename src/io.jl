@@ -815,3 +815,16 @@ function create_paramsbackup(datadir::String, expname::String)
         @warn "Unable to copy parameter file to experiment directory."
     end
 end
+
+function logger2fileandstderr(
+    loglevel::Logging.LogLevel,
+    filepath::String,
+)
+    return TeeLogger(
+        ConsoleLogger(stderr, loglevel),
+        MinLevelLogger(
+            FileLogger(filepath),
+            loglevel
+        )
+    )
+end

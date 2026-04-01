@@ -4,17 +4,20 @@ Solve a `TraceParticlesProblem` given a `TraceParticlesParameters` instance.
 """
 function DifferentialEquations.solve(
         prob::TraceParticlesProblem,
-        params::TraceParticlesParameters
+        params::TraceParticlesParameters;
+        logger = nothing
 )
-    (; datadir, expname, abstol, reltol, maxiters, alg) = params
-    create_expdir(datadir, expname)
-    create_paramsbackup(datadir, expname)
-    return solve(prob;
-        solver_algorithm=alg,
-        abstol=abstol,
-        reltol=reltol,
-        maxiters=maxiters
-    )
+    logger = isnothing(logger) ? prob.logger : logger
+    with_logger(logger) do
+        (; datadir, expname, abstol, reltol, maxiters, alg) = params
+        create_paramsbackup(datadir, expname)
+        return solve(prob;
+            solver_algorithm=alg,
+            abstol=abstol,
+            reltol=reltol,
+            maxiters=maxiters,
+        )
+    end
 end
 
 """
@@ -39,36 +42,39 @@ function DifferentialEquations.solve(
 )
     # Find the number of processes working in parellel.
     np = nprocs()
-    println(".................................................................",
-        "...............")
     if np > 1
         # If there are more than 1 worker, solve the problem using distributed
         # parallelisation.
-        @warn "Running on $np processes. Make sure the the problem function and
-            necessary packages are defined on all workers using `@everywhere`"
+        @warn "Running on $np processes. Make sure the the problem function
+            and necessary packages are defined on all workers using
+            `@everywhere`"
+        paral_msg = "on $np processes"
         ensemble_algorithm = EnsembleDistributed()
     elseif Threads.nthreads() > 1
         # If there are multiple threads, solve the problem multi-threaded.
-        println("Running on $(Threads.nthreads()) threads.")
+        paral_msg = "on $(Threads.nthreads()) threads"
         ensemble_algorithm = EnsembleThreads()
     else
         # Solve the problem serially.
-        println("Running in serial.")
+        paral_msg =  "in serial"
         ensemble_algorithm = EnsembleSerial()
     end
     #==========================================================================#
     # START OF SIMULATION
     # Unpack struct fields
     (; ensemble_prob, callbackset, trajectories, batch_size) = prob
+
+    @info """
+------------------------------------------------------------------------
+Running program: $PROGRAM_FILE $paral_msg
+Start time: $(string(now()))
+Host name : $(gethostname())
+Running an ensemble of $trajectories particles
+TraceParticles.jl package version: $(pkgversion(TraceParticles))
+------------------------------------------------------------------------------"""
     
-    println("Running program: $PROGRAM_FILE")
-    println("Start time: $(string(now()))")
-    println("Host name : $(gethostname())")
-    println("Running ensemble of $trajectories particles...")
-    println(".................................................................",
-        "...............")
     
-    @time sim = DifferentialEquations.solve(
+    time_taken = @timed sim = DifferentialEquations.solve(
         ensemble_prob,
         solver_algorithm,
         ensemble_algorithm
@@ -81,6 +87,9 @@ function DifferentialEquations.solve(
         callback=callbackset,
         kwargs...
     );
+    @info """Ensemble solved:
+    Elapsed time: $(time_taken.time) seconds
+    Allocations: $(time_taken.bytes) bytes"""
 
     if ensemble_prob.reduction == SciMLBase.DEFAULT_REDUCTION
         @warn "No reduction function specified.
@@ -88,15 +97,17 @@ function DifferentialEquations.solve(
         JLD2.@save "out.jld2" sim
     elseif typeof(ensemble_prob.reduction) <: SaveBatchAsHDF5
         try
-            println("\nPost-processing: Computing energies...")
             filename = get_filename(ensemble_prob.reduction)
-            @time save_energy(
+            time_taken = @timed save_energy(
                 filename,
-                ensemble_prob.prob.p.electromagneticfield,
-                ensemble_prob.prob.f.f
+                ensemble_prob.prob.p.electromagneticfield;
+                eom=ensemble_prob.prob.f.f
             )
+            @info """Energies computed:
+            Elapsed time: $(time_taken.time) seconds
+            Allocations: $(time_taken.bytes) bytes"""
         catch e
-            @error "Failed to save energies:\n $e"
+            @error "Failed to save energies" exeption=e
         end
     end
 end
