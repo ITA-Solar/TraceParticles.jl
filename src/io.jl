@@ -747,7 +747,7 @@ function create_diffeq_ic(
             ]
             tspan[i] = (t0[i], tf)
         end
-        if f==hybridgcafo!
+        if f == hybridgcafo!
             eomid = read(fid, "eomid")
             params = Vector{HybridParams}(undef, npart)
             for i in 1:npart
@@ -761,7 +761,7 @@ function create_diffeq_ic(
                     eomid=eomid[i]
                 )
             end
-        elseif f == guidingcentreappoximation!
+        elseif f == guidingcentreapproximation!
             params = Vector{GCAParams}(undef, npart)
             for i in 1:npart
                 params[i] = GCAParams(

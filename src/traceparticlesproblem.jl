@@ -130,7 +130,7 @@ function TraceParticlesProblem(
             u0, tspan, params = create_diffeq_ic(
                 p.ic_file,
                 tf,
-                p.fields_itp;
+                fields_itp;
                 f=eom
             )
             prob_func = PredefinedICs(u0, tspan, params)
