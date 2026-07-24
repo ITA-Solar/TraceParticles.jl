@@ -14,7 +14,7 @@
         tspan
         params
 # Methods
-    (::PredefinedICs)(prob, i, _)
+    (::PredefinedICs)(prob, ctx)
 Remakes the problem with predefined initial conditions `u0[i]`, time span
 `tspan[i]`, and parameters `params[i]`.
 """
@@ -42,12 +42,12 @@ struct PredefinedICs{
         end
     end
 end
-function (self::PredefinedICs)(prob, i, _)
+function (self::PredefinedICs)(prob, ctx)
     remake(
         prob,
-        u0=self.u0[i],
-        tspan=self.tspan[i],
-        p=self.params[i],
+        u0=self.u0[ctx.sim_id],
+        tspan=self.tspan[ctx.sim_id],
+        p=self.params[ctx.sim_id],
     )
 end
 
@@ -199,7 +199,7 @@ end
         max_value
 
 # Methods
-    (::MHDSamplingGCA)(prob, _, _)
+    (::MHDSamplingGCA)(prob, _)
 Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
 rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
 with a temperature given by `tg_itp(x,y,z)`. Evaluates the importance weight of
@@ -221,7 +221,7 @@ struct MHDSamplingGCA{
     tf::T6
     max_value::T7
 end
-function (self::MHDSamplingGCA)(prob, _, _)
+function (self::MHDSamplingGCA)(prob, _)
     x, y, z, vx, vy, vz, t, weight, nrejections = mhdsampling(
         prob.p.mass,
         self.rng,
@@ -284,7 +284,7 @@ end
         initialeomid
 
 # Methods
-    (::MHDSamplingHybrid)(prob, _, _)
+    (::MHDSamplingHybrid)(prob, _)
 Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
 rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
 with a temperature given by `tg_itp(x,y,z)`. Evaluates the importance weight of
@@ -306,7 +306,7 @@ struct MHDSamplingHybrid{
     max_value::T7
     initialeomid::T8
 end
-function (self::MHDSamplingHybrid)(prob, _, _)
+function (self::MHDSamplingHybrid)(prob, _)
     x, y, z, vx, vy, vz, t, weight, nrejections = mhdsampling(
         prob.p.mass,
         self.rng,

@@ -1,5 +1,5 @@
 """
-    output_func_max_lightweight(sol, i)
+    output_func_max_lightweight(sol, ctx)
 Output function for ensemble simulations using `DifferentialEquations`.
 
 Finds the maximum larmor radius, minimum field length and maximum scales ratio
@@ -9,7 +9,7 @@ in addition to its charge, mass and magnetic moment.
 
 We set the required "rerun" return argument to false.
 """
-function output_func_max_lightweight(sol, i)
+function output_func_max_lightweight(sol, _)
     ntimes = length(sol.t)
     maxrl, meanrl = find_max_larmorradius(sol, ntimes=ntimes)
     minlb, meanlb = find_min_fieldlength(sol, ntimes=ntimes)
@@ -17,8 +17,8 @@ function output_func_max_lightweight(sol, i)
         sol,
         ntimes=ntimes,
     )
-    x0, y0, z0, vparal0 = first(sol)
-    xf, yf, zf, vparalf = last(sol)
+    x0, y0, z0, vparal0 = first(sol.u)
+    xf, yf, zf, vparalf = last(sol.u)
     # Construct and retunr the output tuple
     return (
         x0=x0, y0=y0, z0=z0, vparal0=vparal0,
@@ -60,14 +60,14 @@ end
 
 
 """
-    output_func_lightweight(sol, i)
+    output_func_lightweight(sol, _)
 Output function for ensemble simulations using `DifferentialEquations`.
 
 Returns only the initial and final state of the particle, in addition to its
 charge, mass and magnetic moment. We set the required "rerun" return argument
 to false.
 """
-function output_func_lightweight(sol, i)
+function output_func_lightweight(sol, _)
     x0, y0, z0, vparal0 = first(sol)
     xf, yf, zf, vparalf = last(sol)
     return (
@@ -86,7 +86,7 @@ function output_func_lightweight(sol, i)
     ),
     false
 end
-function output_func_lightweight_hybrid(sol, i)
+function output_func_lightweight_hybrid(sol, _)
     x0, y0, z0, vx0, vy0, vz0 = first(sol)
     xf, yf, zf, vxf, vyf, vzf = last(sol)
     return (
@@ -133,14 +133,14 @@ function find_max_larmorradius(sol; ntimes=5length(sol.t))
     if ntimes == 1
         time = sol.t[1]
         farray = larmorradius(
-            sol[1][1:3],
+            sol.u[1][1:3],
             time,
             sol.prob.p.magneticmoment,
             sol.prob.p.charge,
             sol.prob.p.mass,
             sol.prob.p.electromagneticfield,
         )
-        max = MaxValue(farray, sol[1], time)
+        max = MaxValue(farray, sol.u[1], time)
         mean = sum(farray) / length(farray)
     else
         times = range(first(sol.t), last(sol.t), length=ntimes)
@@ -171,11 +171,11 @@ function find_min_fieldlength(sol; ntimes=5length(sol.t))
     if ntimes == 1
         time = sol.t[1]
         farray = characteristicfieldlength(
-            sol[1][1:3],
+            sol.u[1][1:3],
             time,
             sol.prob.p.electromagneticfield,
         )
-        min = MinValue(farray, sol[1], time)
+        min = MinValue(farray, sol.u[1], time)
         mean = farray
     else
         times = range(first(sol.t), last(sol.t), length=ntimes)
@@ -211,13 +211,13 @@ function find_max_scalesratio(sol; ntimes=5length(sol.t))
         time = sol.t[1]
         farray = scalesratio(
             time,
-            sol[1][1:3],
+            sol.u[1][1:3],
             sol.prob.p.mass,
             sol.prob.p.charge,
             sol.prob.p.magneticmoment,
             sol.prob.p.electromagneticfield,
         )
-        max = MaxValue(farray, sol[1], time)
+        max = MaxValue(farray, sol.u[1], time)
         mean = farray
     else
         times = range(first(sol.t), last(sol.t), length=ntimes)

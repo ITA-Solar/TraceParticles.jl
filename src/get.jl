@@ -68,7 +68,7 @@ a single time or over a range of times.
     get_observable(solution, symbol; tspan, times, nsteps, kwargs...)
 """
 function get_observable(
-    sol::Union{EnsembleSolution,VectorOfArray},
+    sol::Union{EnsembleSolution,Vector},
     sym::Symbol;
     t=nothing,
     kwargs...

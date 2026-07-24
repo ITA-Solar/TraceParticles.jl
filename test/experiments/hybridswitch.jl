@@ -6,6 +6,7 @@ using StaticArrays
 using Statistics
 using Test
 using TraceParticles
+import DiffEqCallbacks as CB
 
 #-------------------------------------------------------------------------------
 # EXPERIMENT PARAMTERS
@@ -113,7 +114,7 @@ params = (
 ω_c = q * norm(B) / m
 freq = ω_c / (2π)  # Gyrofrequency in Hz
 period = abs(1 / freq)  # Gyroperiod in seconds
-cb = PresetTimeCallback(
+cb = CB.PresetTimeCallback(
     [
         4period,
         8period,
@@ -122,7 +123,7 @@ cb = PresetTimeCallback(
     ],
     hybridswitchaffect!
 )
-#cb = PresetTimeCallback(
+#cb = CB.PresetTimeCallback(
 #    [
 #        1 / 6 * tf,
 #        2 / 6 * tf,
@@ -137,18 +138,18 @@ cb = PresetTimeCallback(
 
 
 # Problem functions
-prob_func(prob, i, _) = remake(
+prob_func(prob, ctx) = remake(
     prob,
-    f=eoms[i],
-    u0=ic[i],
+    f=eoms[ctx.sim_id],
+    u0=ic[ctx.sim_id],
     p=HybridParams(;
         charge=prob.p.charge,
         mass=prob.p.mass,
         electromagneticfield=prob.p.electromagneticfield,
-        magneticmoment=params.magneticmoment[i],
+        magneticmoment=params.magneticmoment[ctx.sim_id],
         terminationcode=TerminationCode.NotTerminated,
-        rng=params.rng[i],
-        eomid=params.initialeomid[i],
+        rng=params.rng[ctx.sim_id],
+        eomid=params.initialeomid[ctx.sim_id],
         getphase=prob.p.getphase,
     )
 )

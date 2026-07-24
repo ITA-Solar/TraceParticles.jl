@@ -191,15 +191,15 @@ params_GCA = (
 # RUN SIMULATION
 
 # Problem functions
-prob_func_FO(prob, i, _) = remake(prob, u0=ic_FO[i], p=(
-    charge=params_FO[1][i],
-    mass=params_FO[2][i],
+prob_func_FO(prob, ctx) = remake(prob, u0=ic_FO[ctx.sim_id], p=(
+    charge=params_FO[1][ctx.sim_id],
+    mass=params_FO[2][ctx.sim_id],
     electromagneticfield=params_FO[3],
 ))
-prob_func_GCA(prob, i, _) = remake(prob, u0=ic_GCA[i], p=(
-    charge=params_GCA[1][i],
-    mass=params_GCA[2][i],
-    magneticmoment=params_GCA[3][i],
+prob_func_GCA(prob, ctx) = remake(prob, u0=ic_GCA[ctx.sim_id], p=(
+    charge=params_GCA[1][ctx.sim_id],
+    mass=params_GCA[2][ctx.sim_id],
+    magneticmoment=params_GCA[3][ctx.sim_id],
     electromagneticfield=params_GCA[4],
 ))
 
