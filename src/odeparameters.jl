@@ -67,9 +67,7 @@ mutable struct HybridParams{
         nrejections::T3=0,
         terminationcode::T4=TerminationCode.NotTerminated,
         rng::T5=Xoshiro(1),
-        getphase::T6=(integrator) -> rand(
-            integrator.p.rng, 0.0, Float64(2pi)
-        ),
+        getphase::T6=(integrator) -> 2pi*rand(integrator.p.rng),
         nswitches::T3=0,
         eomid::T3=2,
     ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
@@ -135,16 +133,14 @@ mutable struct HybridParamsWithDetection{
         nrejections::T3=0,
         terminationcode::T4=TerminationCode.NotTerminated,
         rng::T5=Xoshiro(1),
-        getphase::T6=(integrator) -> rand(
-            integrator.p.rng, 0.0, Float64(pi)
-        ),
+        getphase::T6=(integrator) -> 2pi*rand(integrator.p.rng),
         nswitches::T3=0,
         initialeomid::T3=2,
         maxswitches::T3=100,
     ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
         timeatswitch = zeros(Float64, maxswitches)
         eomidafterswitch = zeros(Int32, maxswitches)
-        magneticmomentafterswitch = zeros(Int32, maxswitches)
+        magneticmomentafterswitch = zeros(Float64, maxswitches)
         new{T1,T2,T3,T4,T5,T6,Vector{Float64},Vector{Int32}}(
             charge,
             mass,

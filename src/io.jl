@@ -715,7 +715,7 @@ but should not be duplicated per particle as it may be large.
 """
 function create_diffeq_ic(
     icfile::String,
-    tf::AbstractVector,
+    tf::Number,
     emfield::Any;
     f::Function=hybridgcafo!
 )

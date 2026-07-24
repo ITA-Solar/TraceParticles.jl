@@ -210,8 +210,8 @@ function find_max_scalesratio(sol; ntimes=5length(sol.t))
     if ntimes == 1
         time = sol.t[1]
         farray = scalesratio(
-            time,
             sol.u[1][1:3],
+            time,
             sol.prob.p.mass,
             sol.prob.p.charge,
             sol.prob.p.magneticmoment,

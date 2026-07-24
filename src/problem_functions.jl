@@ -15,8 +15,8 @@
         params
 # Methods
     (::PredefinedICs)(prob, ctx)
-Remakes the problem with predefined initial conditions `u0[i]`, time span
-`tspan[i]`, and parameters `params[i]`.
+Remakes the problem with predefined initial conditions `u0[ctx.sim_id]`, time
+span `tspan[ctx.sim_id]`, and parameters `params[ctx.sim_id]`.
 """
 struct PredefinedICs{
     T1<:AbstractVector,
