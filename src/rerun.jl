@@ -120,7 +120,7 @@ end
 Rerun GCA particles with initial condition `u0` and magnetic moments `mu0`,
 using the parameters `charge`, `mass`, `fields`, and `tspans`. The arguments
 `ensemble_prob_kwargs` and `solve_kwargs` are dictionaries containing keyword
-arguments for the `EnsembleProblem` and `DifferentialEquations.solve` function.
+arguments for the `EnsembleProblem` and `solve` function.
 """
 function rerun(
     u0::Vector{<:Vector{<:Real}},
@@ -163,7 +163,7 @@ function rerun(
     )
 
     @info "Re-running with $nparticles particles..."
-    @time sol = DifferentialEquations.solve(
+    @time sol = solve(
         ensemble_prob,
         alg,
         parallelisation

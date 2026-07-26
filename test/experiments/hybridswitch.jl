@@ -1,4 +1,4 @@
-using DifferentialEquations
+using OrdinaryDiffEq
 using Interpolations
 using LinearAlgebra
 using Random
@@ -160,7 +160,7 @@ prob = ODEProblem(hybridgcafo!, zeros(6), tspan, params)
 eprob = EnsembleProblem(prob, prob_func=prob_func)
 
 # SOLVE
-sol = DifferentialEquations.solve(
+sol = solve(
     eprob,
     Tsit5;
     #reltol=1e-8,

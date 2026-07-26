@@ -13,9 +13,9 @@ such that the GCA holds.
 The GC is initialised in the centre of the bottle to avoid any other drifts.
 """
 
-using DifferentialEquations
 using Interpolations
 using LinearAlgebra
+using OrdinaryDiffEq
 using StaticArrays
 using Test
 using TraceParticles
@@ -170,9 +170,9 @@ prob_GCA = ODEProblem(
 
 #...............................................................................
 # RUN SIMULATION
-sol_FO = DifferentialEquations.solve(prob_FO, Tsit5();
+sol_FO = solve(prob_FO, Tsit5();
     reltol=5e-7, abstol=1e-9)
-sol_GCA = DifferentialEquations.solve(prob_GCA, Tsit5();
+sol_GCA = solve(prob_GCA, Tsit5();
     reltol=1e-4, abstol=1e-9)
 
 #...............................................................................

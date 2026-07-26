@@ -18,7 +18,7 @@ parameters).
 """
 
 using TraceParticles
-using DifferentialEquations
+using OrdinaryDiffEq
 using Interpolations
 using StaticArrays
 using Test
@@ -156,9 +156,9 @@ hcb = DiscreteCallback(
 )
 #...............................................................................
 # RUN SIMULATION
-fosol = DifferentialEquations.solve(prob)
-hsol = DifferentialEquations.solve(hprob, callback=hcb)
-gcasol = DifferentialEquations.solve(gcaprob)
+fosol = solve(prob)
+hsol = solve(hprob, callback=hcb)
+gcasol = solve(gcaprob)
 #...............................................................................
 
 

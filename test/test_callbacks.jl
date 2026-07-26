@@ -1,4 +1,4 @@
-using DifferentialEquations
+using SciMLBase
 using Test
 
 using TraceParticles:

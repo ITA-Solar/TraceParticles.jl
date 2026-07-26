@@ -1,15 +1,16 @@
-using TraceParticles
 using BifrostTools
-using Test
+using DataFrames
+using DiffEqCallbacks
+using Interpolations
+using JLD2
 using LinearAlgebra
 using Logging
-using DifferentialEquations
-using DataFrames
-using Interpolations
+using OrdinaryDiffEq
 using Random
-using JLD2
 using StaticArrays
 using Statistics
+using Test
+using TraceParticles
 
 if !isdefined(Main, :verbose)
     verbose = 3

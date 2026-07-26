@@ -17,6 +17,11 @@ oscillation. Should yield an eject time of πm/(qηb) (≈ 1.3e-4 sec with curre
 parameters).
 """
 
+using Interpolations
+using OrdinaryDiffEq
+using Test
+using TraceParticles
+
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS
 #
@@ -113,7 +118,7 @@ prob = ODEProblem(
 
 #...............................................................................
 # RUN SIMULATION
-sol = DifferentialEquations.solve(prob)
+sol = solve(prob)
 #...............................................................................
 
 

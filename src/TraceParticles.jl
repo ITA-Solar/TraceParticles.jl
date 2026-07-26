@@ -12,11 +12,9 @@ module TraceParticles
 #____/\______/\_________________________________________________________________
 
 using BifrostTools
-using CSV
-using CurveFit
 using DataFrames
 using Dates
-using DifferentialEquations
+using DiffEqCallbacks
 using Distributed
 using EnumX
 using ForwardDiff
@@ -26,12 +24,14 @@ using JLD2
 using LinearAlgebra
 using Logging
 using LoggingExtras
+using OrdinaryDiffEq
 using Parameters
 using Printf
 using Random
+using SciMLBase
 using StaticArrays
-using StatsBase
 using Statistics
+using StatsBase
 
 
 #_______________________________________________________________________________

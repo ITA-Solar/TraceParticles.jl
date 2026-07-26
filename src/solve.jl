@@ -2,7 +2,7 @@
     solve(prob::TraceParticlesProblem, params::TraceParticlesParameters)
 Solve a `TraceParticlesProblem` given a `TraceParticlesParameters` instance.
 """
-function DifferentialEquations.solve(
+function SciMLBase.solve(
         prob::TraceParticlesProblem,
         params::TraceParticlesParameters;
         logger = nothing
@@ -32,7 +32,7 @@ arguments are:
 - `abstol=1e-3`
 - `maxiters=1e5`
 """
-function DifferentialEquations.solve(
+function SciMLBase.solve(
     prob::TraceParticlesProblem;
     solver_algorithm::SciMLBase.AbstractODEAlgorithm = Tsit5(),
     abstol::Real = 1e-6,
@@ -72,9 +72,9 @@ Host name : $(gethostname())
 Running an ensemble of $trajectories particles
 TraceParticles.jl package version: $(pkgversion(TraceParticles))
 ------------------------------------------------------------------------------"""
-    
-    
-    time_taken = @timed sim = DifferentialEquations.solve(
+
+
+    time_taken = @timed sim = SciMLBase.solve(
         ensemble_prob,
         solver_algorithm,
         ensemble_algorithm

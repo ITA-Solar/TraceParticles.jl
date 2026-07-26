@@ -24,7 +24,7 @@ methods, such as:
 and the chosen numerical solver, scheme and interpolation chosen.
 """
 
-using DifferentialEquations
+using OrdinaryDiffEq
 using Interpolations
 using Test
 using TraceParticles
@@ -211,8 +211,8 @@ eprob_FO = EnsembleProblem(prob_FO, prob_func=prob_func_FO)
 eprob_GCA = EnsembleProblem(prob_GCA, prob_func=prob_func_GCA)
 
 # SOLVE
-sol_FO = DifferentialEquations.solve(eprob_FO, Tsit5, reltol=1.1e-4, trajectories=2)
-sol_GCA = DifferentialEquations.solve(eprob_GCA, Tsit5, reltol=1.1e-4, trajectories=2)
+sol_FO = solve(eprob_FO, Tsit5, reltol=1.1e-4, trajectories=2)
+sol_GCA = solve(eprob_GCA, Tsit5, reltol=1.1e-4, trajectories=2)
 
 #-------------------------------------------------------------------------------
 # CALCULATE DEVIATIONS FROM ANALYTICAL SOLUTION

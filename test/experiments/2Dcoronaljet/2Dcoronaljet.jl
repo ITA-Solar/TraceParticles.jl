@@ -1,13 +1,14 @@
 using BifrostTools
-using DifferentialEquations
 using DataFrames
 using Interpolations
 using JLD2
 using Logging
+using OrdinaryDiffEq
 using Random
+using SciMLBase
+using StaticArrays
 using Test
 using TraceParticles
-using StaticArrays
 
 expdir = Base.source_dir()
 

@@ -130,11 +130,11 @@ reltol_fo = 1e-7
 abstol_fo = 1e-9
 reltol_gca = 1e-4
 abstol_gca = 1e-9
-fo_sim = DifferentialEquations.solve(
+fo_sim = solve(
     fo_prob, Tsit5();
     reltol=reltol_fo, abstol=abstol_fo
 )
-gca_sim = DifferentialEquations.solve(
+gca_sim = solve(
     gca_prob, Tsit5();
     reltol=reltol_gca, abstol=abstol_gca
 )

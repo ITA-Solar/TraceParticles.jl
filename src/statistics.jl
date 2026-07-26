@@ -721,6 +721,21 @@ function hist(
 end
 
 """
+    powerfit(x, y)
+Fits the parameters (a, b) in y = a·xᵇ, via its linear equivalent
+log(y) = log(a) + b·log(x) and QR-factorisation.
+"""
+function powerfit(x, y)
+    lx, ly = log.(x), log.(y)
+    n = length(lx)
+    A = hcat(ones(n), lx)
+    # With rectangular A, the \ operator computes the minimum least-square solution
+    # using QR-factorisation
+    logA, b = A \ ly
+    return exp(logA), b
+end
+
+"""
     powerlawslope(energy, weight; nbins=20)
 Calculate the slope of a power-law distribution fitted to the histogram
 of `energy` weighted by `weight`. The histogram is calculated with `nbins` bins.
@@ -737,6 +752,6 @@ function powerlawslope(energy, weight; nbins=20)
     end
     x = x[mask]
     y = y[mask]
-    _, b = CurveFit.power_fit(x, y)
+    _, b = powerfit(x, y)
     return b
 end

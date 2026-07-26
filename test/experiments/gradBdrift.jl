@@ -15,6 +15,12 @@ To be able to compare the GCA and full orbit, the simulation duration has to
 be a multiple of the gyration period.
 """
 
+using Interpolations
+using LinearAlgebra
+using OrdinaryDiffEq
+using Test
+using TraceParticles
+
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS
 #
@@ -129,8 +135,8 @@ prob_GCA = ODEProblem(
 
 #...............................................................................
 # RUN SIMULATION
-sol_FO = DifferentialEquations.solve(prob_FO)
-sol_GCA = DifferentialEquations.solve(prob_GCA)
+sol_FO = solve(prob_FO)
+sol_GCA = solve(prob_GCA)
 
 #...............................................................................
 
