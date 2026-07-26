@@ -1,7 +1,9 @@
-using Distributed
-using DifferentialEquations
-using Printf
 using Dates
+using Distributed
+using DiffEqCallbacks
+using OrdinaryDiffEq
+using Printf
+using SciMLBase
 
 """
 This script is used as a fast way to run a single test particle simulation
@@ -197,7 +199,7 @@ println("Running ensemble of $npart particles...")
 println(".................................................................",
     "...............")
 
-@time sim = DifferentialEquations.solve(
+@time sim = solve(
     ensemble_prob,
     solve_args...
     ;
