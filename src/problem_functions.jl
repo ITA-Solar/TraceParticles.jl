@@ -187,7 +187,6 @@ end
 
 """
     struct MHDSamplingGCA
-        rng
         proposal_distr
         target_distr
         tg_itp
@@ -208,23 +207,22 @@ guiding centre, magnetic moment, and parallel velocity and remakes the problem
 with `GCAParams`.
 """
 struct MHDSamplingGCA{
-    T1<:AbstractRNG,T2,T3,T4,T5<:Tuple{Real,Real},T6<:Real,T7<:Real,
+    T1,T2,T3,T4<:Tuple{Real,Real},T5<:Real,T6<:Real,
 }
-    rng::T1
-    proposal_distr::T2
-    target_distr::T3
-    tg_itp::T4
-    xbounds::T5
-    ybounds::T5
-    zbounds::T5
-    t0bounds::T5
-    tf::T6
-    max_value::T7
+    proposal_distr::T1
+    target_distr::T2
+    tg_itp::T3
+    xbounds::T4
+    ybounds::T4
+    zbounds::T4
+    t0bounds::T4
+    tf::T5
+    max_value::T6
 end
-function (self::MHDSamplingGCA)(prob, _)
+function (self::MHDSamplingGCA)(prob, ctx)
     x, y, z, vx, vy, vz, t, weight, nrejections = mhdsampling(
         prob.p.mass,
-        self.rng,
+        ctx.rng,
         self.proposal_distr,
         self.target_distr,
         self.tg_itp,
@@ -271,7 +269,6 @@ end
 
 """
     struct MHDSamplingHybrid
-        rng
         proposal_distr
         target_distr
         tg_itp
@@ -292,24 +289,23 @@ the particle using the `target_distr`ibution. Remakes the problem with
 `HybridParams`.
 """
 struct MHDSamplingHybrid{
-    T1<:AbstractRNG,T2,T3,T4,T5<:Tuple{Real,Real},T6<:Real,T7<:Real,T8<:Int
+    T1,T2,T3,T4<:Tuple{Real,Real},T5<:Real,T6<:Real,T7<:Int
 }
-    rng::T1
-    proposal_distr::T2
-    target_distr::T3
-    tg_itp::T4
-    xbounds::T5
-    ybounds::T5
-    zbounds::T5
-    t0bounds::T5
-    tf::T6
-    max_value::T7
-    initialeomid::T8
+    proposal_distr::T1
+    target_distr::T2
+    tg_itp::T3
+    xbounds::T4
+    ybounds::T4
+    zbounds::T4
+    t0bounds::T4
+    tf::T5
+    max_value::T6
+    initialeomid::T7
 end
-function (self::MHDSamplingHybrid)(prob, _)
+function (self::MHDSamplingHybrid)(prob, ctx)
     x, y, z, vx, vy, vz, t, weight, nrejections = mhdsampling(
         prob.p.mass,
-        self.rng,
+        ctx.rng,
         self.proposal_distr,
         self.target_distr,
         self.tg_itp,
@@ -347,7 +343,8 @@ function (self::MHDSamplingHybrid)(prob, _)
             magneticmoment=magneticmoment,
             weight=weight,
             nrejections=nrejections,
-            eomid=self.initialeomid
+            eomid=self.initialeomid,
+            rng=ctx.rng
         )
     )
 end

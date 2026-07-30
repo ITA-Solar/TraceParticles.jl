@@ -9,13 +9,15 @@ function SciMLBase.solve(
 )
     logger = isnothing(logger) ? prob.logger : logger
     with_logger(logger) do
-        (; datadir, expname, abstol, reltol, maxiters, alg) = params
+        (; datadir, expname, abstol, reltol, maxiters, alg, seed) = params
         create_paramsbackup(datadir, expname)
-        return solve(prob;
-            solver_algorithm=alg,
-            abstol=abstol,
-            reltol=reltol,
-            maxiters=maxiters,
+        return solve(
+            prob,
+            alg,
+            abstol,
+            reltol,
+            maxiters,
+            seed,
         )
     end
 end
@@ -24,20 +26,14 @@ end
     solve(prob::TraceParticlesProblem; kwargs...)
 Solve a `TraceParticlesProblem` and compute the initial and final energy of the
 particles using `save_energy`.
-
-The default solver algorithm is `Tsit5` unless the keyword argument
-`solver_algorithm` is set to something different. Other default keyword
-arguments are:
-- `abstol=1e-6`
-- `abstol=1e-3`
-- `maxiters=1e5`
 """
 function SciMLBase.solve(
-    prob::TraceParticlesProblem;
-    solver_algorithm::SciMLBase.AbstractODEAlgorithm = Tsit5(),
-    abstol::Real = 1e-6,
-    reltol::Real = 1e-3,
-    maxiters::Number = 1e5,
+    prob::TraceParticlesProblem,
+    alg::SciMLBase.AbstractODEAlgorithm,
+    abstol::Real,
+    reltol::Real,
+    maxiters::Number,
+    seed::Number,
     kwargs...
 )
     # Find the number of processes working in parellel.
@@ -76,7 +72,7 @@ TraceParticles.jl package version: $(pkgversion(TraceParticles))
 
     time_taken = @timed sim = SciMLBase.solve(
         ensemble_prob,
-        solver_algorithm,
+        alg,
         ensemble_algorithm
         ;
         trajectories=trajectories,

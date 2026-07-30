@@ -60,7 +60,6 @@ function TraceParticlesProblem(
                 prop_distr = itp_wrapper(load_object(p.proposal_distr_file))
             end
             maxval = maximum(prop_distr) # Needed by the rejection algorithm.
-            rng = Xoshiro(p.seed) # Random number generator
             # Create the problem function
             # determines the initial conditions of the particles,
             # including statistical weight and initial and final simulation times.
@@ -70,7 +69,6 @@ function TraceParticlesProblem(
             t0bounds = (p.t0start, p.t0end)
             if eom == hybridgcafo!
                 prob_func = MHDSamplingHybrid(
-                    rng,
                     prop_distr,
                     target_distr,
                     tg_itp,
@@ -84,7 +82,6 @@ function TraceParticlesProblem(
                 )
             elseif eom == guidingcentreapproximation!
                 prob_func = MHDSamplingGCA(
-                    rng,
                     prop_distr,
                     target_distr,
                     tg_itp,
