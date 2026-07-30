@@ -78,7 +78,7 @@ function guidingcentreapproximation!(du, u, p, t)
     ∇b, ∇ExB, ∇B, B_vec, E_vec, ∂b, ∂ExB, _ = fieldgradients(
         x, y, z, t, p.electromagneticfield
     )
-    # We index `du` with 1:4 to allow aribitrary size of u.
+    # We index `du` with 1:4 to allow arbitrary size of u.
     # (This is necessary when doing hybrid swtich method).
     du[1:4] .= gca_drift_and_acceleration(
         ∇b, ∇ExB, ∇B, B_vec, E_vec, ∂b, ∂ExB, vparal, q, m, μ

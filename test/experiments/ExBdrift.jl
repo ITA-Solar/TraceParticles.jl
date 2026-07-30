@@ -153,7 +153,6 @@ emfields_itp = ElectromagneticFieldInterpolator(
 # Set initial position and velocities
 pos = zeros(Float64, numDims, numParticles) # Position -> origin
 vel = zeros(Float64, numDims, numParticles) # Velocity
-#  Create DifferentialEquations.jl particle type
 ic_FO = [[x0e, y0e, z0e, vxe, vye, vze], [x0p, y0p, z0p, vxp, vyp, vzp]]
 params_FO = (
     [-TraceParticles.e, TraceParticles.e],

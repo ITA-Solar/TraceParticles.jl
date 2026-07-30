@@ -2,7 +2,7 @@
     callbacks.jl
 
 This file defines various conditions and affects used as callbacks using
-DifferentialEquations.jl.
+solving the differential equations.
 """
 
 # -----------------------------------------------------------------------------
@@ -158,7 +158,7 @@ end
     MagneticGradientCondition
 Callback condition for checking GCA assumption. Returns `true` if the ratio
 between the particle Larmor radius and the characteristic length of the
-magnetic field is higher than a tolerance `switchtol`.
+magnetic field is higher than a `tolerance`.
 """
 mutable struct MagneticGradientCondition{T<:Real}
     tolerance::T

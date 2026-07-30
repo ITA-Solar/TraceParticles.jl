@@ -1,0 +1,4 @@
+┌ Info: EM-field loaded:
+│ Elapsed time: 0.042277489 seconds
+│ Allocations: 2850600 bytes
+└ @ TraceParticles /home/eilif/github/TraceParticles.jl/src/traceparticlesproblem.jl:118

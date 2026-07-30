@@ -7,7 +7,7 @@
         end # testset dipole
 
         @testset verbose = verbose ≥ 4 "2D coronal jet" begin
-            include("experiments/2Dcoronaljet/2Dcoronaljet.jl")
+            include("experiments/2Dfanspine/test_2Dfanspine.jl")
         end # testset 2D coronal jet
 
     end # testset Experiments

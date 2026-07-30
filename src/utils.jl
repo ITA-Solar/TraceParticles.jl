@@ -11,8 +11,8 @@
 """
     ElectromagneticFieldInterpolator{T<:AbstractVector}(interpolator::T)
 A convenience struct for a vector of interpolators representing the components
-of the electromagnetic field. Following the convention of storing the
-vector of components that are stored as a JLD2 object [bx, by, bz, ex, ey, ez].
+of the electromagnetic field. Assumes the vector of components stored as
+[bx, by, bz, ex, ey, ez].
 Calling an instance of this struct with spatial coordinates returns the electric
 and magnetic fields at that point as two `SVector{3}` vectors.
 """
@@ -93,7 +93,7 @@ function Base.size(itp::StaticInterpolation)
     return size(itp.itp)
 end
 function Base.maximum(itp::StaticInterpolation)
-    return maximum(itp.itp.itp.itp.coefs)
+    return maximum(Interpolations.coefficients(itp.itp.itp))
 end
 """
     XZInterpolation
@@ -117,7 +117,7 @@ function Base.size(itp::XZInterpolation)
     return size(itp.itp)
 end
 function Base.maximum(itp::XZInterpolation)
-    return maximum(itp.itp.itp.itp.coefs)
+    return maximum(Interpolations.coefficients(itp.itp.itp))
 end
 
 
@@ -146,7 +146,7 @@ function Base.size(itp::StaticXZInterpolation)
     return size(itp.itp)
 end
 function Base.maximum(itp::StaticXZInterpolation)
-    return maximum(itp.itp.itp.itp.coefs)
+    return maximum(Interpolations.coefficients(itp.itp.itp))
 end
 
 #____/\_____/\_________________________________________________________________
@@ -154,11 +154,10 @@ end
 # Various utility functions
 #
 """
-    Base.dropdims(arr::AbstractArray)
-Extend `dropdims` to find and drop all axes with one point when `dims` keyword 
-is excluded.
+    squeeze(arr::AbstractArray)
+Find and drop all axes with one point.
 """
-function Base.dropdims(arr::AbstractArray)
+function squeeze(arr::AbstractArray)
     meshsize = size(arr)
     idxs = findall(x -> x == 1, meshsize)
     for dim in idxs
@@ -169,11 +168,10 @@ end
 
 
 """
-    Base.dropdims(axes::Tuple{Vararg{Vector})
-Extend `dropdims` to find and drop all axes with one point when `dims` keyword 
-is excluded.
+    squeeze(axes::Tuple{Vararg{Vector})
+Find and drop all axes with one point.
 """
-function Base.dropdims(axes::Tuple{Vararg{Vector}})
+function squeeze(axes::Tuple{Vararg{Vector}})
     mask = findall(x -> length(x) != 1, axes)
     return axes[mask]
 end

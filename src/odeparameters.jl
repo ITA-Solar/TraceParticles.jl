@@ -1,6 +1,6 @@
 """
 This file defines mutable structs that are useful as containers for the
-parameters in a `ODEProblem` in DifferentialEquations.jl. With mutable
+parameters in a `ODEProblem` in from SciML. With mutable
 structs, the parameters can be altered during the integration, as opposed
 to using a `Tuple` or a `NamedTuple`.
 """

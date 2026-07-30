@@ -40,7 +40,7 @@ function get_br_var_interpolator(
         )
     end
     var = stack(var)
-    var = dropdims(var)
+    var = squeeze(var)
     xaxis, yaxis, zaxis = get_axes(brxp, units=units)
     if haskey(kwargs, :slicex)
         xaxis = xaxis[kwargs[:slicex]]
@@ -51,7 +51,7 @@ function get_br_var_interpolator(
     if haskey(kwargs, :slicez)
         zaxis = zaxis[kwargs[:slicez]]
     end
-    br_axes = dropdims( (xaxis, yaxis, zaxis) )
+    br_axes = squeeze( (xaxis, yaxis, zaxis) )
     if snaps isa AbstractVector
         times = get_var(brxp, snaps, "t"; units=units)
         br_axes = (br_axes..., times)
@@ -144,7 +144,7 @@ function normfactor_2Duniformmesh(
 
     # Normalise the variable over the full domain
     axes = get_axes(brxp, units=units)
-    axes = dropdims(axes)
+    axes = squeeze(axes)
     var /= normfactor_2Duniformmesh(var[:, 1, :], axes)
 
     # Normalise the variable over the limits.

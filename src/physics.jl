@@ -762,7 +762,7 @@ function get_guidingcentre(
     B_inv = 1 / B # Inverse of the magnetic field strength
     b_vec = magneticfield * B_inv # Magnetic field direction (unit vector)
     vel_in_E_frame = vel - exbdrift(b_vec, electricfield, B_inv)
-    # Calculate the guiding centre posistion
+    # Calculate the guiding centre position
     R = pos + mass / (charge * B) * (vel_in_E_frame × b_vec)
     # Calculate the velocity parallell to the magnetic field -- vparal
     # and the magnetic moment -- mu

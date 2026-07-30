@@ -144,41 +144,16 @@ function TraceParticlesProblem(
             (; xlowerbound, xupperbound) = p
             (; ylowerbound, yupperbound) = p
             (; zlowerbound, zupperbound) = p
-            if xkill && !ykill && !zkill
-                axes_bounds = ((xlowerbound, xupperbound))
-                axes_idxs = [1]
-            elseif !xkill && ykill && !zkill
-                axes_bounds = ((ylowerbound, yupperbound))
-                axes_idxs = [2]
-            elseif !xkill && !ykill && zkill
-                axes_bounds = ((zlowerbound, zupperbound))
-                axes_idxs = [3]
-            elseif xkill && ykill && !zkill
-                axes_bounds = (
-                    (xlowerbound, xupperbound),
-                    (ylowerbound, yupperbound)
-                )
-                axes_idxs = 1:2
-            elseif xkill && !ykill && zkill
-                axes_bounds = (
-                    (xlowerbound, xupperbound),
-                    (zlowerbound, zupperbound)
-                )
-                axes_idxs = 1:2:3
-            elseif !xkill && ykill && zkill
-                axes_bounds = (
-                    (ylowerbound, yupperbound),
-                    (zlowerbound, zupperbound)
-                )
-                axes_idxs = 2:3
-            elseif xkill && ykill && zkill
-                axes_bounds = (
-                    (xlowerbound, xupperbound),
-                    (ylowerbound, yupperbound),
-                    (zlowerbound, zupperbound)
-                )
-                axes_idxs = 1:3
-            end
+
+            kill_at_axis = (xkill, ykill, zkill)
+            axisbounds = (
+                (xlowerbound, xupperbound),
+                (ylowerbound, yupperbound),
+                (zlowerbound, zupperbound),
+            )
+            axes_idxs = [i for i in 1:3 if kill_at_axis[i]]
+            axes_bounds = Tuple(axisbounds[i] for i in axes_idxs)
+
             out_cb = DiscreteCallback(
                 OutOfBoundsCondition(axes_bounds, axes_idxs),
                 outofboundsaffect!,

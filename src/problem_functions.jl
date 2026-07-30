@@ -4,7 +4,7 @@
 #           problem_functions.jl
 #-------------------------------------------------------------------------------
 # Contains problem functions to be used as the keyword-argument `prob_func` in 
-# an DifferentialEquations.EnsembleProblem.
+# an `EnsembleProblem` from SciMl.
 #-------------------------------------------------------------------------------
 
 """

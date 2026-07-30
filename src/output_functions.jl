@@ -1,6 +1,6 @@
 """
     output_func_max_lightweight(sol, ctx)
-Output function for ensemble simulations using `DifferentialEquations`.
+Output function for ensemble simulations using `EnsembleProblem` from SciML.
 
 Finds the maximum larmor radius, minimum field length and maximum scales ratio
 of the particle's trajectory using the inherent interpolation function in the
@@ -19,7 +19,7 @@ function output_func_max_lightweight(sol, _)
     )
     x0, y0, z0, vparal0 = first(sol.u)
     xf, yf, zf, vparalf = last(sol.u)
-    # Construct and retunr the output tuple
+    # Construct and return the output tuple
     return (
         x0=x0, y0=y0, z0=z0, vparal0=vparal0,
         xf=xf, yf=yf, zf=zf, vparalf=vparalf,
@@ -61,7 +61,7 @@ end
 
 """
     output_func_lightweight(sol, _)
-Output function for ensemble simulations using `DifferentialEquations`.
+Output function for ensemble simulations using `EnsembleProblem` from SciML.
 
 Returns only the initial and final state of the particle, in addition to its
 charge, mass and magnetic moment. We set the required "rerun" return argument

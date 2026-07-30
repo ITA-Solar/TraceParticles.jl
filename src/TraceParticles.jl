@@ -128,7 +128,7 @@ export
     SaveBatchAsHDF5,
     get_filename,
     print_batch_statistics
-# parameterstructs.jl
+# odeparameters.jl
 export
     GCAParams,
     ParticleParams,
@@ -148,7 +148,7 @@ export
     save_energy,
     create_bifrost_itps,
     create_diffeq_ic
-# dataprosessing.jl
+# dataprocessing.jl
 export
     initialstate_terminationcode,
     finalstate_terminationcode,

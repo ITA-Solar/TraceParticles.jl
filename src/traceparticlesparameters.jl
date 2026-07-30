@@ -46,7 +46,7 @@
     seed::I = 1
     ic_file::S = ""
     ## Parameters for callbacks
-    ### Hybrid switchi5
+    ### Hybrid switch
     gradient_tolerance = precision(1e-4)
     curvature_tolerance = precision(1e-4)
     eparal_ratio = precision(Inf)

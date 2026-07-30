@@ -131,4 +131,4 @@ velysimτ = sol.u[indx][1][5]
 velyτ = -0.5 * 3.0 * a / (η * b)
 @testset verbose = true "Full orbit: Default alg." begin
     @test isapprox(velysimτ, velyτ, atol=abs(5 * velyτ))
-end # testset Full orbit: RK4
+end

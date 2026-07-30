@@ -177,5 +177,7 @@ fo = [sol.u[3](t, idxs=1:3) for t in times]
 gca = [sol.u[4](t, idxs=1:3) for t in times]
 rmse1 = sqrt(mean(norm.(switch1 .- fo) .^ 2))
 rmse2 = sqrt(mean(norm.(switch2 .- gca) .^ 2))
-@test isapprox(rmse1, 0.0; atol=1e-4)
-@test isapprox(rmse2, 0.0; atol=1e-4)
+@testset "Hybrid switching" begin
+    @test isapprox(rmse1, 0.0; atol=1e-4)
+    @test isapprox(rmse2, 0.0; atol=1e-4)
+end
