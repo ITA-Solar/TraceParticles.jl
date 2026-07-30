@@ -66,7 +66,7 @@ mutable struct HybridParams{
         weight::T1=1.0,
         nrejections::T3=0,
         terminationcode::T4=TerminationCode.NotTerminated,
-        rng::T5=Xoshiro(1),
+        rng::T5=Xoshiro(),
         getphase::T6=(integrator) -> 2pi*rand(integrator.p.rng),
         nswitches::T3=0,
         eomid::T3=2,

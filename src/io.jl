@@ -68,7 +68,7 @@ function save_gcastates(
         catch e
             rm(name0)
             rm(namef)
-            @error "While saving GCA states:" exeption = (e, catch_backtrace())
+            @error "While saving GCA states:" exception = (e, catch_backtrace())
         end
         try
             groupname = "metadata"
@@ -78,7 +78,7 @@ function save_gcastates(
             write_dict(metagroup0, metadata)
             write_dict(metagroupf, metadata)
         catch e
-            @warn "While copying metadata:" exeption = (e, catch_backtrace())
+            @warn "While copying metadata:" exception = (e, catch_backtrace())
         end
         close(h5_sol)
         close(h5_gcastates0)
@@ -130,7 +130,7 @@ function save_energy(
         catch e
             rm(name0)
             rm(namef)
-            @error "While saving energies:" exeption = (e)#, catch_backtrace())
+            @error "While saving energies:" exception = (e)#, catch_backtrace())
         end
         try
             groupname = "metadata"
@@ -140,7 +140,7 @@ function save_energy(
             write_dict(metagroup0, metadata)
             write_dict(metagroupf, metadata)
         catch e
-            @warn "While copying metadata:" exeption = (e, catch_backtrace())
+            @warn "While copying metadata:" exception = (e, catch_backtrace())
         end
         close(h5_sol)
         close(h5_e0)
@@ -689,7 +689,7 @@ end
 """
     create_diffeq_ic(
         ic_file::string,
-        tf::AbstractVector,
+        tf::Number,
         emfield::Any;
         f=hybridgcafo!
     )

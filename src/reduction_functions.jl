@@ -147,9 +147,9 @@ function (self::SaveBatchAsHDF5)(u, batch, I)
         end
     catch e
         try
-            JLD2.save("./tp_panic.csv", df)
+            JLD2.save("./tp_panic.jld2", "batch", df)
             @warn "Error writing batch to HDF5-file. The batch has been written " *
-                "as a `DataFrame` in 'tp_panic.csv'."
+                "as a `DataFrame` in 'tp_panic.jld2'."
         catch e2
             @warn "Writing panic-file failed: $e2"
         finally

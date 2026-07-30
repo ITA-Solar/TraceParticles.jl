@@ -107,9 +107,10 @@ TraceParticles.jl package version: $(pkgversion(TraceParticles))
             Elapsed time: $(time_taken.time) seconds
             Allocations: $(time_taken.bytes) bytes"""
         catch e
-            @error "Failed to save energies" exeption=e
+            @error "Failed to save energies" exception=e
         end
     end
+    return sim
 end
 
 
