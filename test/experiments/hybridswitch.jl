@@ -103,10 +103,13 @@ params = (
     charge=q,
     mass=m,
     electromagneticfield=emfields_itp,
-    magneticmoment=ones(4) * μ,
-    rng=[Xoshiro(1), Xoshiro(2), Xoshiro(1), Xoshiro(1)],
+    magneticmoment=ones(2) * μ,
+    rng=[Xoshiro(1), Xoshiro(2)],
     getphase=(integrator) -> π / 2,
-    initialeomid=[2, 1, 0, 0]
+    initialeomid=[
+                  TraceParticles.EoMID.FullOrbit,
+                  TraceParticles.EoMID.GuidingCentreApproximation,
+                ]
 )
 
 #-------------------------------------------------------------------------------
@@ -138,43 +141,82 @@ cb = CB.PresetTimeCallback(
 
 
 # Problem functions
-prob_func(prob, ctx) = remake(
+prob_func(prob, ctx) = begin
+    remake(
+        prob,
+        f=eoms[ctx.sim_id],
+        u0=ic[ctx.sim_id],
+        p=HybridParams(;
+            charge=prob.p.charge,
+            mass=prob.p.mass,
+            electromagneticfield=prob.p.electromagneticfield,
+            magneticmoment=params.magneticmoment[ctx.sim_id],
+            terminationcode=TraceParticles.TerminationCode.NotTerminated,
+            rng=params.rng[ctx.sim_id],
+            initialeomid=params.initialeomid[ctx.sim_id],
+            getphase=prob.p.getphase,
+        )
+    )
+end
+prob = ODEProblem(hybridgcafo!, zeros(6), tspan, params)
+
+foprob = remake(
     prob,
-    f=eoms[ctx.sim_id],
-    u0=ic[ctx.sim_id],
-    p=HybridParams(;
+    f=eoms[3],
+    u0=ic[3],
+    p=FullOrbitParams(;
         charge=prob.p.charge,
         mass=prob.p.mass,
         electromagneticfield=prob.p.electromagneticfield,
-        magneticmoment=params.magneticmoment[ctx.sim_id],
-        terminationcode=TerminationCode.NotTerminated,
-        rng=params.rng[ctx.sim_id],
-        eomid=params.initialeomid[ctx.sim_id],
-        getphase=prob.p.getphase,
+        terminationcode=TraceParticles.TerminationCode.NotTerminated,
+    )
+)
+gcaprob = remake(
+    prob,
+    f=eoms[4],
+    u0=ic[4],
+    p=GCAParams(;
+        charge=prob.p.charge,
+        mass=prob.p.mass,
+        electromagneticfield=prob.p.electromagneticfield,
+        terminationcode=TraceParticles.TerminationCode.NotTerminated,
+        magneticmoment=μ
     )
 )
 
 # ODEProblems
-prob = ODEProblem(hybridgcafo!, zeros(6), tspan, params)
 # EnsembleProblems
 eprob = EnsembleProblem(prob, prob_func=prob_func)
 
 # SOLVE
 sol = solve(
     eprob,
-    Tsit5;
+    Tsit5();
     #reltol=1e-8,
-    trajectories=4,
+    trajectories=2,
     callback=cb,
     adaptive=true,
     #dt=tf / 1000
 );
-
+fosol = solve(
+    foprob,
+    Tsit5();
+    #reltol=1e-8,
+    adaptive=true,
+    #dt=tf / 1000
+);
+gcasol = solve(
+    gcaprob,
+    Tsit5();
+    #reltol=1e-8,
+    adaptive=true,
+    #dt=tf / 1000
+);
 times = range(16period, tf, length=1000)
 switch1 = [sol.u[1](t, idxs=1:3) for t in times]
 switch2 = [sol.u[2](t, idxs=1:3) for t in times]
-fo = [sol.u[3](t, idxs=1:3) for t in times]
-gca = [sol.u[4](t, idxs=1:3) for t in times]
+fo = [fosol(t, idxs=1:3) for t in times]
+gca = [gcasol(t, idxs=1:3) for t in times]
 rmse1 = sqrt(mean(norm.(switch1 .- fo) .^ 2))
 rmse2 = sqrt(mean(norm.(switch2 .- gca) .^ 2))
 @testset "Hybrid switching" begin

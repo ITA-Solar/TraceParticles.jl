@@ -114,8 +114,7 @@ function (self::HybridSwitchCondition)(u, t, integrator)
     pos = SVector(x, y, z)
     q, m = integrator.p.charge, integrator.p.mass
     Eratio = eratio(pos, t, integrator.p.electromagneticfield)
-    if integrator.p.eomid == 1
-        # Current scheme is guiding centre approximation
+    if integrator.p.eomid == EoMID.GuidingCentreApproximation
         kratio = magneticcurvatureratio(
             pos, t, m, q, integrator.p.magneticmoment,
             integrator.p.electromagneticfield
@@ -133,7 +132,7 @@ function (self::HybridSwitchCondition)(u, t, integrator)
         else
             return false
         end
-    elseif integrator.p.eomid == 2
+    elseif integrator.p.eomid == EoMID.FullOrbit
         vel = SVector(u[4], u[5], u[6]) # The full orbit velocity vector
         kratio = magneticcurvatureratio(
             pos, vel, t, m, q,
@@ -229,13 +228,10 @@ from full orbit integration to the guiding centre approximation or the
 opposite.
 """
 function hybridswitchaffect!(integrator)
-    if integrator.p.eomid == 1
+    if integrator.p.eomid == EoMID.GuidingCentreApproximation
         switch2fo_affect!(integrator)
-    elseif integrator.p.eomid == 2
+    elseif integrator.p.eomid == EoMID.FullOrbit
         switch2gca_affect!(integrator)
-    else
-        @warn """Trying to switch EoM, but switch parameter is neither 1 nor 2.
-Current value: $(integrator.p.eomid)."""
     end
     integrator.p.nswitches += 1
 end
@@ -250,12 +246,13 @@ opposite. Also records the time of the switch and the new EoM ID in the
 function hybridswitchaffect_withdetection!(integrator)
     integrator.p.nswitches += 1
     integrator.p.timeatswitch[integrator.p.nswitches] = integrator.t
-    if integrator.p.eomid == 1
-        integrator.p.eomidafterswitch[integrator.p.nswitches] = 2
+    if integrator.p.eomid == EoMID.GuidingCentreApproximation
+        integrator.p.eomidafterswitch[integrator.p.nswitches] = EoMID.FullOrbit
         switch2fo_affect!(integrator)
         integrator.p.magneticmomentafterswitch[integrator.p.nswitches] = NaN
-    elseif integrator.p.eomid == 2
-        integrator.p.eomidafterswitch[integrator.p.nswitches] = 1
+    elseif integrator.p.eomid == EoMID.FullOrbit
+        integrator.p.eomidafterswitch[integrator.p.nswitches] =
+            EoMID.GuidingCentreApproximation
         switch2gca_affect!(integrator)
         integrator.p.magneticmomentafterswitch[integrator.p.nswitches] =
             integrator.p.magneticmoment
@@ -276,7 +273,7 @@ Callback affect which switches to the guiding centre approximation by setting
 the parameter `switch` to `1` and transforming `u` to the guiding centre state.
 """
 function switch2gca_affect!(integrator)
-    integrator.p.eomid = 1
+    integrator.p.eomid = EoMID.GuidingCentreApproximation
     integrator.p.magneticmoment = get_guidingcentre!(
         integrator.u,
         integrator.t,
@@ -293,7 +290,7 @@ Callback affect which switches to full orbit integration by setting
 the parameter `switch` to `2` and transforming `u` to a full orbit state.
 """
 function switch2fo_affect!(integrator)
-    integrator.p.eomid = 2
+    integrator.p.eomid = EoMID.FullOrbit
     phaseangle = integrator.p.getphase(integrator)
     get_fullorbit!(
         integrator.u,

@@ -5,10 +5,21 @@ structs, the parameters can be altered during the integration, as opposed
 to using a `Tuple` or a `NamedTuple`.
 """
 
-@kwdef mutable struct ParticleParams{T1<:Real,T2}
+"""
+    FullOrbitParams
+A container for the parameters used in a particle simulation solving the
+Lorentz force directly, and the initial state of the particles are drawn
+using rejection sampling giving them a statistical weight. The struct also
+contains a `terminationcode` that indicates what kind of callback terminated
+the particle trajectory.
+"""
+@kwdef mutable struct FullOrbitParams{T1<:Real,T2,T3<:Int,T4,T5}
     charge::T1
     mass::T1
     electromagneticfield::T2
+    weight::T5 = 1.0
+    nrejections::T3 = 0
+    terminationcode::T4 = TerminationCode.NotTerminated
 end
 
 """
@@ -39,9 +50,10 @@ mutable struct HybridParams{
     T1<:Real,
     T2,
     T3<:Int,
-    T4,
+    T4<:TerminationCode.T,
     T5<:AbstractRNG,
     T6<:Function,
+    T7<:EoMID.T,
 }
     charge::T1
     mass::T1
@@ -53,25 +65,25 @@ mutable struct HybridParams{
     terminationcode::T4
     rng::T5
     getphase::T6
-    eomid::T3
+    eomid::T7
     nswitches::T3
-    initialeomid::T3
+    initialeomid::T7
 
     function HybridParams(
         ;
         charge::T1,
         mass::T1,
         electromagneticfield::T2,
-        magneticmoment::T1=0.0,
+        magneticmoment::T1=NaN,
         weight::T1=1.0,
         nrejections::T3=0,
-        terminationcode::T4=TerminationCode.NotTerminated,
+        initialeomid::T7=EoMID.GuidingCentreApproximation,
         rng::T5=Xoshiro(),
+        terminationcode::T4=TerminationCode.NotTerminated,
         getphase::T6=(integrator) -> 2pi*rand(integrator.p.rng),
         nswitches::T3=0,
-        eomid::T3=2,
-    ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
-        new{T1,T2,T3,T4,T5,T6}(
+    ) where {T1<:Real,T2,T3<:Int,T4<:TerminationCode.T,T5<:AbstractRNG,T6<:Function,T7<:EoMID.T}
+        new{T1,T2,T3,T4,T5,T6,T7}(
             charge,
             mass,
             electromagneticfield,
@@ -82,9 +94,9 @@ mutable struct HybridParams{
             terminationcode,
             rng,
             getphase,
-            eomid,
+            initialeomid,
             nswitches,
-            eomid,
+            initialeomid,
         )
     end
 end
@@ -99,11 +111,12 @@ mutable struct HybridParamsWithDetection{
     T1<:Real,
     T2,
     T3<:Int,
-    T4,
+    T4<:TerminationCode.T,
     T5<:AbstractRNG,
     T6<:Function,
     T7<:AbstractVector,
-    T8<:AbstractVector
+    T8<:Vector{<:Enum{Int32}},
+    T9<:EoMID.T
 }
     charge::T1
     mass::T1
@@ -115,9 +128,9 @@ mutable struct HybridParamsWithDetection{
     terminationcode::T4
     rng::T5
     getphase::T6
-    eomid::T3
+    eomid::T9
     nswitches::T3
-    initialeomid::T3
+    initialeomid::T9
     maxswitches::T3
     timeatswitch::T7
     eomidafterswitch::T8
@@ -128,20 +141,22 @@ mutable struct HybridParamsWithDetection{
         charge::T1,
         mass::T1,
         electromagneticfield::T2,
-        magneticmoment::T1=0.0,
+        magneticmoment::T1=NaN,
         weight::T1=1.0,
         nrejections::T3=0,
         terminationcode::T4=TerminationCode.NotTerminated,
         rng::T5=Xoshiro(1),
         getphase::T6=(integrator) -> 2pi*rand(integrator.p.rng),
         nswitches::T3=0,
-        initialeomid::T3=2,
+        initialeomid::T9=EoMID.FullOrbit,
         maxswitches::T3=100,
-    ) where {T1<:Real,T2,T3<:Int,T4,T5<:AbstractRNG,T6<:Function}
+    ) where {
+            T1<:Real,T2,T3<:Int,T4<:TerminationCode.T,T5<:AbstractRNG,T6<:Function,
+            T9<:EoMID.T}
         timeatswitch = zeros(Float64, maxswitches)
-        eomidafterswitch = zeros(Int32, maxswitches)
+        eomidafterswitch = fill(initialeomid, maxswitches)
         magneticmomentafterswitch = zeros(Float64, maxswitches)
-        new{T1,T2,T3,T4,T5,T6,Vector{Float64},Vector{Int32}}(
+        new{T1,T2,T3,T4,T5,T6,Vector{Float64},typeof(eomidafterswitch),T9}(
             charge,
             mass,
             electromagneticfield,

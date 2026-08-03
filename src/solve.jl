@@ -5,20 +5,42 @@ Solve a `TraceParticlesProblem` given a `TraceParticlesParameters` instance.
 function SciMLBase.solve(
         prob::TraceParticlesProblem,
         params::TraceParticlesParameters;
-        logger = nothing
+        logger = nothing,
+        seed = params.seed
 )
     logger = isnothing(logger) ? prob.logger : logger
     with_logger(logger) do
-        (; datadir, expname, abstol, reltol, maxiters, alg, seed) = params
+        (; datadir, expname, abstol, reltol, maxiters, alg) = params
         create_paramsbackup(datadir, expname)
-        return solve(
+        sim = solve(
             prob,
             alg,
             abstol,
             reltol,
             maxiters,
-            seed,
+            seed
         )
+
+        if params.compute_initial_and_final_energy
+            if get_reductiontype(prob) <: SaveBatchAsHDF5
+                try
+                    filename = get_filename(prob)
+                    time_taken = @timed save_energy(
+                        filename,
+                        get_electromagneticfield(prob);
+                        eom=get_eom(prob)
+                    )
+                    @info """Energies computed:
+                    Elapsed time: $(time_taken.time) seconds
+                    Allocations: $(time_taken.bytes) bytes"""
+                catch e
+                    @error "Failed to save energies" exception=e
+                end
+            else
+                @info "Did not compute energies: Uknown reduction"
+            end
+        end
+        return sim
     end
 end
 
@@ -44,15 +66,15 @@ function SciMLBase.solve(
         @warn "Running on $np processes. Make sure the the problem function
             and necessary packages are defined on all workers using
             `@everywhere`"
-        paral_msg = "on $np processes"
+        paral_msg = "$np processes"
         ensemble_algorithm = EnsembleDistributed()
     elseif Threads.nthreads() > 1
         # If there are multiple threads, solve the problem multi-threaded.
-        paral_msg = "on $(Threads.nthreads()) threads"
+        paral_msg = "$(Threads.nthreads()) threads"
         ensemble_algorithm = EnsembleThreads()
     else
         # Solve the problem serially.
-        paral_msg =  "in serial"
+        paral_msg =  "Serial"
         ensemble_algorithm = EnsembleSerial()
     end
     #==========================================================================#
@@ -62,11 +84,19 @@ function SciMLBase.solve(
 
     @info """
 ------------------------------------------------------------------------
-Running program: $PROGRAM_FILE $paral_msg
-Start time: $(string(now()))
-Host name : $(gethostname())
-Running an ensemble of $trajectories particles
 TraceParticles.jl package version: $(pkgversion(TraceParticles))
+Running experiment: $PROGRAM_FILE $paral_msg
+Parallelisation: $paral_msg
+Host name : $(gethostname())
+Start time: $(string(now()))
+
+Running an ensemble of $trajectories particles
+Random seed: $seed
+Equations of motion: $(get_eom(prob))
+Max iterations per particle: $maxiters
+Problem function: $(typeof(get_prob_func(prob)).name.name)
+Output function: $(typeof(get_output_func(prob)).name.name)
+Reduction: $(typeof(get_reduction(prob)).name.name)
 ------------------------------------------------------------------------------"""
 
 
@@ -88,25 +118,7 @@ TraceParticles.jl package version: $(pkgversion(TraceParticles))
     Elapsed time: $(time_taken.time) seconds
     Allocations: $(time_taken.bytes) bytes"""
 
-    if ensemble_prob.reduction == SciMLBase.DEFAULT_REDUCTION
-        @warn "No reduction function specified.
-        Saving the full ensemble simulation as 'out.jld2'."
-        JLD2.@save "out.jld2" sim
-    elseif typeof(ensemble_prob.reduction) <: SaveBatchAsHDF5
-        try
-            filename = get_filename(ensemble_prob.reduction)
-            time_taken = @timed save_energy(
-                filename,
-                ensemble_prob.prob.p.electromagneticfield;
-                eom=ensemble_prob.prob.f.f
-            )
-            @info """Energies computed:
-            Elapsed time: $(time_taken.time) seconds
-            Allocations: $(time_taken.bytes) bytes"""
-        catch e
-            @error "Failed to save energies" exception=e
-        end
-    end
+
     return sim
 end
 

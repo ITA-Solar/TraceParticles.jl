@@ -772,21 +772,6 @@ function get_guidingcentre(
     # Out-of-plece return
     return R, vparal, mu
 end
-function get_guidingcentre(
-    pos::AbstractVector,
-    vel::AbstractVector,
-    time::Real,
-    electromagneticfield,
-    charge::Real,
-    mass::Real,
-)
-    electricfield, magneticfield = electromagneticfield(
-        pos[1], pos[2], pos[3], time
-    )
-    return get_guidingcentre(
-        pos, vel, magneticfield, electricfield, charge, mass
-    )
-end
 
 """
     get_guidingcentre!(u::AbstractVector, args...)
@@ -804,22 +789,6 @@ function get_guidingcentre!(
     vel = SVector(vx, vy, vz)
     E, B = electromagneticfield(x, y, z, time)
     R, vparal, mu = get_guidingcentre(pos, vel, B, E, charge, mass)
-    u[1:3] .= R
-    u[4] = vparal
-    return mu
-end
-function get_guidingcentre!(
-    u::AbstractVector,
-    pos::AbstractVector,
-    vel::AbstractVector,
-    magneticfield::AbstractVector,
-    electricfield::AbstractVector,
-    charge::Real,
-    mass::Real,
-)
-    R, vparal, mu = get_guidingcentre(
-        pos, vel, magneticfield, electricfield, charge, mass
-    )
     u[1:3] .= R
     u[4] = vparal
     return mu
@@ -869,15 +838,6 @@ function get_fullorbit(
     position = R + r_L * (sθ * e₁ + cθ * e₂)
     velocity = sign(charge) * vperp * (cθ * e₁ - sθ * e₂) + vparal * b + v_exb
     return [position; velocity]
-end
-function get_fullorbit(
-    electromagneticfield,
-    R::AbstractVector, # Guiding centre position
-    time::Real,
-    args...
-)
-    electricfield, magneticfield = electromagneticfield(R[1], R[2], R[3], time)
-    return get_fullorbit(magneticfield, electricfield, R, args...)
 end
 
 """

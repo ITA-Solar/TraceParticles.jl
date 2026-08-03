@@ -52,7 +52,142 @@ function (self::PredefinedICs)(prob, ctx)
 end
 
 """
-    mhdsampling(
+    struct MHDSampling
+        proposal_distr
+        target_distr
+        tg_itp
+        xbounds
+        ybounds
+        zbounds
+        t0bounds
+        tf
+        max_value
+        eomid
+        hybrid
+
+# Methods
+    (::MHDSampling)(prob, _)
+Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
+rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
+with a temperature given by `tg_itp(x,y,z)`. Evaluates the importance weight of
+the particle using the `target_distr`ibution. Depending on the `eomid` and
+whether the a `hybrid` scheme is used, xalculates the corresponding guiding
+centre, magnetic moment, and parallel velocity and remakes the problem
+with `GCAParams`.
+"""
+struct MHDSampling{
+    T1,T2,T3,T4<:Tuple{Real,Real},T5<:Real,T6<:Real,T7<:Enum{Int32},T8<:Enum{Int32}
+}
+    proposal_distr::T1
+    target_distr::T2
+    tg_itp::T3
+    xbounds::T4
+    ybounds::T4
+    zbounds::T4
+    t0bounds::T4
+    tf::T5
+    max_value::T6
+    eomid::T7
+    hybridscheme::T8
+end
+function (self::MHDSampling)(prob, ctx)
+    x, y, z, vx, vy, vz, t, weight, nrejections = mhdsample(
+        prob.p.mass,
+        ctx.rng,
+        self.proposal_distr,
+        self.target_distr,
+        self.tg_itp,
+        self.xbounds,
+        self.ybounds,
+        self.zbounds,
+        self.t0bounds,
+        self.max_value,
+    )
+
+    if self.hybridscheme == HybridScheme.No && eomid == EoMID.GuidingCentreApproximation
+        u0 = Vector{Float64}(undef, 4)
+    else
+        u0 = Vector{Float64}(undef, 6)
+    end
+
+    if self.eomid == EoMID.FullOrbit
+        u0 .= [x, y, z, vx, vy, vz]
+        magneticmoment = NaN
+    elseif self.eomid == EoMID.GuidingCentreApproximation
+        magneticmoment = getu0_guidingcentre!(
+            u0, x, y, z, vx, vy, vz, t,
+            prob.p.mass, prob.p.charge, prob.p.electromagneticfield
+        )
+    else
+        error("Invalid initialeomid: $(self.initialeomid).")
+    end
+
+    if self.hybridscheme == HybridScheme.Yes
+        params = HybridParams(
+            charge=prob.p.charge,
+            mass=prob.p.mass,
+            electromagneticfield=prob.p.electromagneticfield,
+            magneticmoment=magneticmoment,
+            weight=weight,
+            nrejections=nrejections,
+            initialeomid=self.eomid,
+            rng=ctx.rng
+        )
+    elseif self.hybridscheme == HybridScheme.YesSaveSwitches
+        params = HybridParamsWithDetection(
+            charge=prob.p.charge,
+            mass=prob.p.mass,
+            electromagneticfield=prob.p.electromagneticfield,
+            magneticmoment=magneticmoment,
+            weight=weight,
+            nrejections=nrejections,
+            initialeomid=self.eomid,
+            rng=ctx.rng
+        )
+    elseif self.eomid == EoMID.FullOrbit
+        params = FullOrbitParams(
+            charge=prob.p.charge,
+            mass=prob.p.mass,
+            electromagneticfield=prob.p.electromagneticfield,
+            weight=weight,
+            nrejections=nrejections,
+        )
+    elseif self.eomid == EoMID.GuidingCentreApproximation
+        params = GCAParams(
+            charge=prob.p.charge,
+            mass=prob.p.mass,
+            electromagneticfield=prob.p.electromagneticfield,
+            magneticmoment=magneticmoment,
+            weight=weight,
+            nrejections=nrejections,
+        )
+    end
+
+    #=
+    # This is not thread-safe if `safetycopy=false`
+    # because I'm modifying the arguments of the problem function. This leads
+    # to race conditions with multiple threads. However, this mutating
+    # could work on distributed systems without threads
+    @. prob.u0 = [R[1], R[2], R[3], vparal]
+    prob.p.particledata.terminationcode = TerminationCode.NotTerminated
+    prob.p.particledata.weight = weight
+    prob.p.particledata.nrejections = nrejections
+    return prob
+    =#
+
+    # This remaking allocates memory when creating the new params, which
+    # still points to the same actual values, but it is thread-safe because
+    # as long as the parameters that points to `prob.p` is not mutated.
+    return remake(
+        prob;
+        u0=u0,
+        tspan=(t, self.tf),
+        p=params
+    )
+end
+
+"""
+    mhdsample(
         mass::Real,
         rng::AbstractRNG,
         proposal_distr,
@@ -69,7 +204,7 @@ rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
 with a temperature given by `tg_itp(x,y,z)`. Evaluates the statistical
 importance weight of the particle using the `target_distr`ibution.
 """
-function mhdsampling(
+function mhdsample(
     mass::Real,
     rng::AbstractRNG,
     proposal_distr,
@@ -106,6 +241,93 @@ function mhdsampling(
     vy = maxwellianvelocitysample(rng, temperature, mass)
     vz = maxwellianvelocitysample(rng, temperature, mass)
     return x, y, z, vx, vy, vz, t, weight, nrejections
+end
+
+"""
+    initialconditions_mhdsampling(
+        npart::Int,
+        electromagneticfield,
+        EoM::Function,
+        mass::Real,
+        charge::Real,
+        args...;
+        initialeomid::Int=EoMID.GuidingCentreApproximation
+    )
+Generate initial conditions for `npart` particles using `mhdsampling`.
+Determines whether to calculate the initial conditions as a guiding centre or
+full orbit based on the provided `EoM` function and `initialeomid`.
+"""
+function initialconditions_mhdsampling(
+    npart::Int,
+    electromagneticfield,
+    EoM::Function,
+    mass::Real,
+    charge::Real,
+    args...;
+    initialeomid::Int=EoMID.GuidingCentreApproximation
+)
+    u0s = [zeros(6) for _ in 1:npart]
+    magneticmoments = Vector{Float64}(undef, npart)
+    t0s = Vector{Float64}(undef, npart)
+    weights = Vector{Float64}(undef, npart)
+    nrejections = Vector{Int}(undef, npart)
+
+    if (
+        EoM == lorentzforce! ||
+        (EoM == hybridgcafo! && initialeomid == EoMID.FullOrbit)
+    )
+        u0func! = getu0_fullorbit!
+    elseif (
+        EoM == guidingcentreapproximation! ||
+        (EoM == hybridgcafo! && initialeomid == EoMID.GuidingCentreApproximation)
+    )
+        u0func! = getu0_guidingcentre!
+    end
+    Threads.@threads for i in 1:npart
+        x, y, z, vx, vy, vz, t, weights[i], nrejections[i] = mhdsample(
+            mass, args...
+        )
+        magneticmoments[i] = u0func!(
+            u0s[i], x, y, z, vx, vy, vz, t,
+            mass, charge, electromagneticfield
+        )
+        t0s[i] = t
+    end
+    return u0s, magneticmoments, t0s, weights, nrejections
+end
+
+"""
+    getu0_fullorbit!(
+        u0::AbstractVector,
+        x::Real,
+        y::Real,
+        z::Real,
+        vx::Real,
+        vy::Real,
+        vz::Real,
+        t::Real,
+        mass::Real,
+        charge::Real,
+        electromagneticfield,
+    )
+Store the full orbit position and velocity in `u0`. Returns 0.0 as a dummy-
+magnetic moment.
+"""
+function getu0_fullorbit!(
+    u0::AbstractVector,
+    x::Real,
+    y::Real,
+    z::Real,
+    vx::Real,
+    vy::Real,
+    vz::Real,
+    _::Real,
+    _::Real,
+    _::Real,
+    _,
+)
+    u0 .= [x, y, z, vx, vy, vz]
+    return NaN
 end
 
 """
@@ -149,255 +371,4 @@ function getu0_guidingcentre!(
     )
     u0[1:4] .= [R[1], R[2], R[3], vparal]
     return magneticmoment
-end
-
-"""
-    getu0_fullorbit!(
-        u0::AbstractVector,
-        x::Real,
-        y::Real,
-        z::Real,
-        vx::Real,
-        vy::Real,
-        vz::Real,
-        t::Real,
-        mass::Real,
-        charge::Real,
-        electromagneticfield,
-    )
-Store the full orbit position and velocity in `u0`. Returns 0.0 as a dummy-
-magnetic moment.
-"""
-function getu0_fullorbit!(
-    u0::AbstractVector,
-    x::Real,
-    y::Real,
-    z::Real,
-    vx::Real,
-    vy::Real,
-    vz::Real,
-    _::Real,
-    _::Real,
-    _::Real,
-    _,
-)
-    u0 .= [x, y, z, vx, vy, vz]
-    return 0.0
-end
-
-"""
-    struct MHDSamplingGCA
-        proposal_distr
-        target_distr
-        tg_itp
-        xbounds
-        ybounds
-        zbounds
-        t0bounds
-        tf
-        max_value
-
-# Methods
-    (::MHDSamplingGCA)(prob, _)
-Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
-rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
-with a temperature given by `tg_itp(x,y,z)`. Evaluates the importance weight of
-the particle using the `target_distr`ibution. Calculates the corresponding
-guiding centre, magnetic moment, and parallel velocity and remakes the problem
-with `GCAParams`.
-"""
-struct MHDSamplingGCA{
-    T1,T2,T3,T4<:Tuple{Real,Real},T5<:Real,T6<:Real,
-}
-    proposal_distr::T1
-    target_distr::T2
-    tg_itp::T3
-    xbounds::T4
-    ybounds::T4
-    zbounds::T4
-    t0bounds::T4
-    tf::T5
-    max_value::T6
-end
-function (self::MHDSamplingGCA)(prob, ctx)
-    x, y, z, vx, vy, vz, t, weight, nrejections = mhdsampling(
-        prob.p.mass,
-        ctx.rng,
-        self.proposal_distr,
-        self.target_distr,
-        self.tg_itp,
-        self.xbounds,
-        self.ybounds,
-        self.zbounds,
-        self.t0bounds,
-        self.max_value,
-    )
-    u0 = Vector{Float64}(undef, 4)
-    magneticmoment = getu0_guidingcentre!(
-        u0, x, y, z, vx, vy, vz, t,
-        prob.p.mass, prob.p.charge, prob.p.electromagneticfield
-    )
-    #=
-    # This is not thread-safe if `safetycopy=false`
-    # because I'm modifying the arguments of the problem function. This leads
-    # to race conditions with multiple threads. However, this mutating
-    # could work on distributed systems without threads
-    @. prob.u0 = [R[1], R[2], R[3], vparal]
-    prob.p.particledata.terminationcode = TerminationCode.NotTerminated
-    prob.p.particledata.weight = weight
-    prob.p.particledata.nrejections = nrejections
-    return prob
-    =#
-
-    # This remaking allocates memory when creating the new params, which
-    # still points to the same actual values, but it is thread-safe because
-    # as long as the parameters that points to `prob.p` is not mutated.
-    return remake(
-        prob;
-        u0=u0,
-        tspan=(t, self.tf),
-        p=GCAParams(
-            charge=prob.p.charge,
-            mass=prob.p.mass,
-            electromagneticfield=prob.p.electromagneticfield,
-            magneticmoment=magneticmoment,
-            weight=weight,
-            nrejections=nrejections,
-        )
-    )
-end
-
-"""
-    struct MHDSamplingHybrid
-        proposal_distr
-        target_distr
-        tg_itp
-        xbounds
-        ybounds
-        zbounds
-        t0bounds
-        tf
-        max_value
-        initialeomid
-
-# Methods
-    (::MHDSamplingHybrid)(prob, _)
-Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
-rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
-with a temperature given by `tg_itp(x,y,z)`. Evaluates the importance weight of
-the particle using the `target_distr`ibution. Remakes the problem with
-`HybridParams`.
-"""
-struct MHDSamplingHybrid{
-    T1,T2,T3,T4<:Tuple{Real,Real},T5<:Real,T6<:Real,T7<:Int
-}
-    proposal_distr::T1
-    target_distr::T2
-    tg_itp::T3
-    xbounds::T4
-    ybounds::T4
-    zbounds::T4
-    t0bounds::T4
-    tf::T5
-    max_value::T6
-    initialeomid::T7
-end
-function (self::MHDSamplingHybrid)(prob, ctx)
-    x, y, z, vx, vy, vz, t, weight, nrejections = mhdsampling(
-        prob.p.mass,
-        ctx.rng,
-        self.proposal_distr,
-        self.target_distr,
-        self.tg_itp,
-        self.xbounds,
-        self.ybounds,
-        self.zbounds,
-        self.t0bounds,
-        self.max_value,
-    )
-    u0 = zeros(Float64, 6)
-    if self.initialeomid == 1
-        magneticmoment = getu0_guidingcentre!(
-            u0, x, y, z, vx, vy, vz, t,
-            prob.p.mass, prob.p.charge, prob.p.electromagneticfield
-        )
-    elseif self.initialeomid == 2
-        magneticmoment = getu0_fullorbit!(
-            u0, x, y, z, vx, vy, vz, t,
-            prob.p.mass, prob.p.charge, prob.p.electromagneticfield
-        )
-    else
-        error("Invalid initialeomid: $(self.initialeomid). Must be 1 or 2.")
-    end
-    # This remaking allocates memory when creating the new params, which
-    # still points to the same actual values, but it is thread-safe because
-    # as long as the parameters that points to `prob.p` is not mutated.
-    return remake(
-        prob;
-        u0=u0,
-        tspan=(t, self.tf),
-        p=HybridParams(
-            charge=prob.p.charge,
-            mass=prob.p.mass,
-            electromagneticfield=prob.p.electromagneticfield,
-            magneticmoment=magneticmoment,
-            weight=weight,
-            nrejections=nrejections,
-            eomid=self.initialeomid,
-            rng=ctx.rng
-        )
-    )
-end
-
-"""
-    initialconditions_mhdsampling(
-        npart::Int,
-        electromagneticfield,
-        EoM::Function,
-        mass::Real,
-        charge::Real,
-        args...;
-        initialeomid::Int=1
-    )
-Generate initial conditions for `npart` particles using `mhdsampling`.
-Determines whether to calculate the initial conditions as a guiding centre or
-full orbit based on the provided `EoM` function and `initialeomid`.
-"""
-function initialconditions_mhdsampling(
-    npart::Int,
-    electromagneticfield,
-    EoM::Function,
-    mass::Real,
-    charge::Real,
-    args...;
-    initialeomid::Int=1
-)
-    u0s = [zeros(6) for _ in 1:npart]
-    magneticmoments = Vector{Float64}(undef, npart)
-    t0s = Vector{Float64}(undef, npart)
-    weights = Vector{Float64}(undef, npart)
-    nrejections = Vector{Int}(undef, npart)
-
-    if (
-        EoM == lorentzforce! ||
-        (EoM == hybridgcafo! && initialeomid == 2)
-    )
-        u0func! = getu0_fullorbit!
-    elseif (
-        EoM == guidingcentreapproximation! ||
-        (EoM == hybridgcafo! && initialeomid == 1)
-    )
-        u0func! = getu0_guidingcentre!
-    end
-    Threads.@threads for i in 1:npart
-        x, y, z, vx, vy, vz, t, weights[i], nrejections[i] = mhdsampling(
-            mass, args...
-        )
-        magneticmoments[i] = u0func!(
-            u0s[i], x, y, z, vx, vy, vz, t,
-            mass, charge, electromagneticfield
-        )
-        t0s[i] = t
-    end
-    return u0s, magneticmoments, t0s, weights, nrejections
 end

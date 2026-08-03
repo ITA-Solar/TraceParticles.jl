@@ -93,10 +93,10 @@ A hybrid EoM. Runs either the guiding centre approximation or full orbit
 integration depending on the parameter `switch`.
 """
 function hybridgcafo!(du, u, p, t)
-    if p.eomid == 1
+    if p.eomid == EoMID.GuidingCentreApproximation
         guidingcentreapproximation!(du, u, p, t)
         du[5:6] .= 0.0
-    elseif p.eomid == 2
+    elseif p.eomid == EoMID.FullOrbit
         lorentzforce!(du, u, p, t)
     end
 end

@@ -111,11 +111,13 @@ export
     relativisticaffect!,
     hybridswitchaffect!,
     hybridswitchaffect_withdetection!,
-    TerminationCode
+# enums.jl
+export
+    TerminationCode,
+    EoMID
 # problem_functions.jl
 export
-    MHDSamplingGCA,
-    MHDSamplingHybrid,
+    MHDSampling,
     PredefinedICs,
     initialconditions_mhdsampling
 # output_functions.jl
@@ -130,8 +132,8 @@ export
     print_batch_statistics
 # odeparameters.jl
 export
+    FullOrbitParams,
     GCAParams,
-    ParticleParams,
     HybridParams,
     HybridParamsWithDetection
 # io.jl

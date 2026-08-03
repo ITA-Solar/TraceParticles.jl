@@ -28,9 +28,10 @@ params = TraceParticlesParameters(
     # Particle parameters
     charge = -TraceParticles.e, # Charge of particles
     mass = TraceParticles.m_e, # Mass of particles
-    eom = guidingcentreapproximation!, # Equation of motion
+    eom = hybridgcafo!, # Equation of motion
     npart = Int(1e2),
     seed = 10,
+    initialeomid = TraceParticles.EoMID.FullOrbit,
     # Parameters for saving data
     expname = "2Dfanspine_run1",
     batchsize = Int(1e6),
@@ -51,12 +52,14 @@ params = TraceParticlesParameters(
     kill_high_gradb = true,
     gradient_tolerance = 0.001,
     gradb_save_positions = (true, true),
-    # Other stuff
-    alg = Rosenbrock23(),
-    save_max_observables = false,
+    # Solve parameters
+    alg = Tsit5(),
     reltol = 3e-8,
     abstol = 1e0,
-    maxiters = 10_000_000,
+    maxiters = 10_000,
+    # Other stuff
+    save_max_observables = false,
+    save_switchinfo = true,
     verbose = false,
 )
 #==============================================================================#

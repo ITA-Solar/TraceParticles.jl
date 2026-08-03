@@ -155,6 +155,33 @@ end
 function compute_energies!(
     e0::AbstractVector,
     ef::AbstractVector,
+    eom::typeof(lorentzforce!),
+    df::DataFrame,
+    _
+)
+    for i in eachindex(e0)
+        e0[i] = kineticenergy(
+            [
+                df[i, :vx0],
+                df[i, :vy0],
+                df[i, :vz0],
+            ],
+            df[i, :mass],
+        )
+        ef[i] = kineticenergy(
+            [
+                df[i, :vxf],
+                df[i, :vyf],
+                df[i, :vzf],
+            ],
+            df[i, :mass],
+        )
+    end
+end
+
+function compute_energies!(
+    e0::AbstractVector,
+    ef::AbstractVector,
     eom::typeof(guidingcentreapproximation!),
     df::DataFrame,
     electromagneticfield::Any

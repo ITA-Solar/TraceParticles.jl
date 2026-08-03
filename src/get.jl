@@ -9,8 +9,8 @@
 #____/\_____/\_________________________________________________________________
 #
 const eomidmap = Dict(
-    1 => "GCA",
-    2 => "FO",
+    EoMID.FullOrbit => "FO",
+    EoMID.GuidingCentreApproximation => "GCA",
 )
 
 """

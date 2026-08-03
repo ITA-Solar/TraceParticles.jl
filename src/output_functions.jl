@@ -52,8 +52,8 @@ function output_func_max_lightweight(sol, _)
         meanrl=meanrl,
         meanlb=meanlb,
         meanscalesratio=meanscalesratio,
-        retcode=Int(sol.retcode),
-        terminationcode=Int(sol.prob.p.terminationcode)
+        retcode=Int32(sol.retcode),
+        terminationcode=Int32(sol.prob.p.terminationcode)
     ),
     false
 end
@@ -81,11 +81,31 @@ function output_func_lightweight(sol, _)
         magneticmoment=sol.prob.p.magneticmoment,
         weight=sol.prob.p.weight,
         nrejections=sol.prob.p.nrejections,
-        retcode=Int(sol.retcode),
-        terminationcode=Int(sol.prob.p.terminationcode)
+        retcode=Int32(sol.retcode),
+        terminationcode=Int32(sol.prob.p.terminationcode)
     ),
     false
 end
+
+function output_func_lightweight_fo(sol, _)
+    x0, y0, z0, vx0, vy0, vz0 = first(sol.u)
+    xf, yf, zf, vxf, vyf, vzf = last(sol.u)
+    return (
+        x0=x0, y0=y0, z0=z0, vx0=vx0, vy0=vy0, vz0=vz0,
+        xf=xf, yf=yf, zf=zf, vxf=vxf, vyf=vyf, vzf=vzf,
+        nt=length(sol.t),
+        t0=first(sol.t),
+        tf=last(sol.t),
+        charge=sol.prob.p.charge,
+        mass=sol.prob.p.mass,
+        weight=sol.prob.p.weight,
+        nrejections=sol.prob.p.nrejections,
+        retcode=Int32(sol.retcode),
+        terminationcode=Int32(sol.prob.p.terminationcode)
+    ),
+    false
+end
+
 function output_func_lightweight_hybrid(sol, _)
     x0, y0, z0, vx0, vy0, vz0 = first(sol.u)
     xf, yf, zf, vxf, vyf, vzf = last(sol.u)
@@ -101,15 +121,14 @@ function output_func_lightweight_hybrid(sol, _)
         magneticmoment=sol.prob.p.magneticmoment,
         weight=sol.prob.p.weight,
         nrejections=sol.prob.p.nrejections,
-        retcode=Int(sol.retcode),
-        terminationcode=Int(sol.prob.p.terminationcode),
+        retcode=Int32(sol.retcode),
+        terminationcode=Int32(sol.prob.p.terminationcode),
         nswitches=sol.prob.p.nswitches,
-        eomid=sol.prob.p.eomid,
-        initialeomid=sol.prob.p.initialeomid,
+        eomid=Int32(sol.prob.p.eomid),
+        initialeomid=Int32(sol.prob.p.initialeomid),
     ),
     false
 end
-
 
 """
     find_max_larmorradius(sol; ntimes=5length(sol.t))
@@ -152,7 +171,6 @@ function find_max_larmorradius(sol; ntimes=5length(sol.t))
     return max, mean
 end
 
-
 """
     find_min_fieldlength(sol; ntimes=5length(sol.t))
 Find the minimum field length of the particle's trajectory using the inherent
@@ -186,7 +204,6 @@ function find_min_fieldlength(sol; ntimes=5length(sol.t))
     end
     return min, mean
 end
-
 
 """
     find_max_scalesratio(sol; ntimes=5length(sol.t))

@@ -7,7 +7,8 @@
         TB<:Tuple{B, B},
         DT<:DataType,
         AlgType<:SciMLBase.AbstractODEAlgorithm,
-        L<:Logging.LogLevel
+        L<:Logging.LogLevel,
+        E<:Enum{Int32}
     } @deftype D
     eom::F
     npart::I
@@ -33,7 +34,7 @@
     loglevel::L = Logging.Info
     static_itp_wrapper::B = false
     xz_itp_wrapper::B = false
-    initialeomid::I = 2
+    initialeomid::E = EoMID.FullOrbit
     tg_file::S = ""
     target_distr_file::S = ""
     proposal_distr_file::S = ""
@@ -45,6 +46,7 @@
     zend_ic = precision(NaN)
     seed::I = 1
     ic_file::S = ""
+    compute_initial_and_final_energy::B = true
     ## Parameters for callbacks
     ### Hybrid switch
     gradient_tolerance = precision(1e-4)
@@ -52,6 +54,7 @@
     eparal_ratio = precision(Inf)
     switchback_tolerance = precision(0.9)
     switch_save_positions::TB = (true, true)
+    save_switchinfo::B = false
     ### For terminating the particle when it is out-of-bounds
     kill_oob::B = false
     xkill::B = false
