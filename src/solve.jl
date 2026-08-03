@@ -81,6 +81,7 @@ TraceParticles.jl package version: $(pkgversion(TraceParticles))
         maxiters=maxiters,
         batch_size=batch_size,
         callback=callbackset,
+        seed=seed,
         kwargs...
     );
     @info """Ensemble solved:
