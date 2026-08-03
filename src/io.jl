@@ -39,7 +39,7 @@ function save_gcastates(
 )
     name, extension = splitext(filename)
     if extension == ".h5"
-        _, nbatches = h5_nbatches(filename)
+        nbatches = length(h5_getbatchnames(filename))
         h5_sol = h5open(filename, "r")
         name0 = name * "_gcastates0.h5"
         namef = name * "_gcastatesf.h5"
@@ -104,7 +104,7 @@ function save_energy(
 )
     name, extension = splitext(filename)
     if extension == ".h5"
-        _, nbatches = h5_nbatches(filename)
+        nbatches = length(h5_getbatchnames(filename))
         h5_sol = h5open(filename, "r")
         name0 = name * "_e0.h5"
         namef = name * "_ef.h5"
@@ -253,16 +253,14 @@ end
 #
 
 """
-    h5_nbatches(filename)
-Returns the number of reduction batches in the HDF5 file.
+    h5_getbatchnames(filename)
+Returns the HDF5 group names of the reduction batches.
 """
-function h5_nbatches(filename)
+function h5_getbatchnames(filename)
     h5open(filename, "r") do h5_file
         groups = keys(h5_file)
-        nbatches = length(
-            findall(g -> occursin(r"batch_\d+", g), groups)
-        )
-        return 1:nbatches, nbatches
+        batchnumbers = findall(g -> occursin(r"batch_\d+", g), groups)
+        return groups[batchnumbers]
     end
 end
 
@@ -280,35 +278,57 @@ end
     h5_getdataset(filename, dataset)
     h5_getdataset(filename, dataset, h5group::String)
     h5_getdataset(filename, dataset, batchnr::Int)
-    h5_getdataset(filename, dataset, batches::AbstractVector)
+    h5_getdataset(filename, dataset, batches::Vector{<:Int}
+    h5_getdataset(filename, dataset, batches::Vector{String}
 Returns dataset `dataset` from all batches, the HDF5-group `h5group`,
 `batchnr` or range of `batches`.
 """
-function h5_getdataset(filename::String, dataset, h5_group::String)
+function h5_getdataset(
+    filename::String,
+    dataset::Union{Symbol, String},
+    h5_group::String
+)
     dataset = string(dataset)
     h5open(filename, "r") do h5_file
         read(h5_file[h5_group][dataset])
     end
 end
-function h5_getdataset(filename::String, dataset, batchnr::Int)
+function h5_getdataset(
+    filename::String,
+    dataset::Union{Symbol, String},
+    batchnr::Int
+)
     h5_getdataset(filename, dataset, "batch_$batchnr")
 end
-function h5_getdataset(filename::String, dataset)
-    batches, _ = h5_nbatches(filename)
+function h5_getdataset(
+    filename::String,
+    dataset::Union{Symbol, String}
+)
+    batches = h5_getbatchnames(filename)
     h5_getdataset(filename, dataset, batches)
 end
-function h5_getdataset(filename, dataset, batches::AbstractVector)
+function h5_getdataset(
+    filename::String,
+    dataset::Union{Symbol, String},
+    batches::Vector{<:Int}
+)
+    return h5_getdataset(filename, dataset, ["batch_$i/" for i in batches])
+end
+function h5_getdataset(
+    filename::String,
+    dataset::Union{Symbol, String},
+    batches::Vector{String}
+)
     dataset = string(dataset)
     nbatches = length(batches)
-    groupnames = ["batch_$i/" for i in batches]
     data = reduce(vcat,
         h5open(filename, "r") do h5_file
-            firstbatch = read(h5_file[groupnames[1]*dataset])
+            firstbatch = read(h5_file[batches[1]*dataset])
             npart = length(firstbatch)
             data = Vector{Vector{eltype(firstbatch)}}(undef, nbatches)
             data[1] = firstbatch
             for i in 2:nbatches
-                data[i] = read(h5_file[groupnames[i]*dataset])
+                data[i] = read(h5_file[batches[i]*dataset])
             end
             data
         end
@@ -338,22 +358,28 @@ function h5_getall(filename::String, batchnr::Int)
     return h5_getall(filename, "batch_$batchnr")
 end
 function h5_getall(filename)
-    batches, _ = h5_nbatches(filename)
+    batches = h5_getbatchnames(filename)
     return h5_getall(filename, batches)
 end
-function h5_getall(filename, batches::AbstractVector)
+function h5_getall(filename::String, batches::Vector{<:Int})
     nbatches = length(batches)
     groupnames = ["batch_$i" for i in batches]
+    return h5_getall(filename, groupnames)
+end
+function h5_getall(filename::String, batches::Vector{String})
+    nbatches = length(batches)
     return reduce(vcat,
         h5open(filename, "r") do h5_file
             dfvec = Vector{DataFrame}(undef, nbatches)
             for i in 1:nbatches
-                dfvec[i] = DataFrame(read(h5_file[groupnames[i]]))
+                dfvec[i] = DataFrame(read(h5_file[batches[i]]))
             end
             dfvec
         end
     )
 end
+
+
 
 """
     h5_getenergies_gca(filename, args...; units="eV")
@@ -477,12 +503,13 @@ end
 Merges all batches in a HDF5-file into a single group called `merged`.
 """
 function h5_mergebatches!(filename)
-    batches, nbatches = h5_nbatches(filename)
+    batches = h5_getbatchnames(filename)
+    nbatches = length(batches)
     fields, numparticles = h5open(filename, "r") do fid
-        fields = keys(fid["batch_1"])
+        fields = keys(fid[batches[1]])
         numparticles = 0
-        for b in batches
-            h5group = fid["batch_$b"]
+        for groupid in batches
+            h5group = fid[groupid]
             numparticles += length(h5group[fields[1]])
         end
         return fields, numparticles
@@ -495,12 +522,12 @@ function h5_mergebatches!(filename)
                 @info "In"
                 data = Vector{String}(undef, nbatches)
             else
-                data = Vector{eltype(read(fid["batch_1"][f]))}(undef, numparticles)
+                data = Vector{eltype(read(fid[batches[1]][f]))}(undef, numparticles)
             end
             i = 1
-            for b in batches
-                n = length(fid["batch_$b"][f])
-                data[i:i+n-1] .= read(fid["batch_$b"][f])
+            for groupid in batches
+                n = length(fid[groupid][f])
+                data[i:i+n-1] .= read(fid[groupid][f])
                 i += n
             end
             @info "Writing $f"
@@ -555,10 +582,10 @@ function h5_adddataset!(
     key::String,
 )
     h5open(fname, "r+") do fid
-        batches, _ = h5_nbatches(fname)
+        batches = h5_getbatchnames(fname)
         i = 1
         for b in batches
-            group = fid["batch_$b"]
+            group = fid[b]
             n = length(first(group))
             write(group, key,
                 dataset[i:i+n-1])

@@ -136,6 +136,7 @@ export
     HybridParamsWithDetection
 # io.jl
 export
+    h5_getbatchnames,
     h5_getall,
     h5_getbatch,
     h5_getdataset,
