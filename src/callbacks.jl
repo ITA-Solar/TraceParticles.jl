@@ -55,6 +55,43 @@ end
 # Relativistic particles
 # -----------------------------------------------------------------------------
 
+function isrelativistic(u, integrator, fraction)
+    vx, vy, vz = u[4], u[5], u[6]
+    mass = integrator.p.mass
+    energy = kineticenergy(sqrt(vx^2 + vy^2 + vz^2), mass)
+    return energy > fraction
+end
+
+function isrelativistic_gca(u, t, integrator, fraction)
+    Rx, Ry, Rz, vparal = u[1], u[2], u[3], u[4]
+    μ = integrator.p.magneticmoment
+    mass = integrator.p.mass
+
+    E_vec, B_vec = integrator.p.electromagneticfield(Rx, Ry, Rz, t)
+    v_E = exbdrift(B_vec, E_vec)
+    B = norm(B_vec)
+    vperp = perpendicular_velocity(μ, mass, B)
+    energy = kineticenergy(vparal, vperp, v_E, mass)
+    return energy > fraction
+end
+
+"""
+    RelativisticCondition
+Callback condition for checking if the particle is relativistic. Returns
+`true` if the particle's kinetic energy is a user defined fraction of the rest
+energy.
+"""
+mutable struct RelativisticCondition{T<:Real}
+    fractionofrestenergy::T
+
+    function RelativisticCondition(; mass::T, fraction) where {T}
+        return new{T}(fraction * mass * csqrd)
+    end
+end
+function (self::RelativisticCondition)(u, t, integrator)
+    return isrelativistic(u, integrator, self.fractionofrestenergy)
+end
+
 """
     RelativisticConditionGCA
 Callback condition for checking if the GCA particle is relativistic. Returns
@@ -69,17 +106,30 @@ mutable struct RelativisticConditionGCA{T<:Real}
     end
 end
 function (self::RelativisticConditionGCA)(u, t, integrator)
-    Rx, Ry, Rz, vparal = u[1], u[2], u[3], u[4]
-    μ = integrator.p.magneticmoment
-    mass = integrator.p.mass
-
-    E_vec, B_vec = integrator.p.electromagneticfield(Rx, Ry, Rz, t)
-    v_E = exbdrift(B_vec, E_vec)
-    B = norm(B_vec)
-    vperp = perpendicular_velocity(μ, mass, B)
-    energy = kineticenergy(vparal, vperp, v_E, mass)
-    return energy > self.fractionofrestenergy
+    return isrelativistic_gca(u, t, integrator, self.fractionofrestenergy)
 end
+
+"""
+    RelativisticConditionHybrid
+Callback condition for checking if the particle is relativistic. Returns
+`true` if the particle's kinetic energy is a user defined fraction of the rest
+energy. Perpendicular drifts other than E cross B drift are neglected.
+"""
+mutable struct RelativisticConditionHybrid{T<:Real}
+    fractionofrestenergy::T
+
+    function RelativisticConditionHybrid(; mass::T, fraction) where {T}
+        return new{T}(fraction * mass * csqrd)
+    end
+end
+function (self::RelativisticConditionHybrid)(u, t, integrator)
+    if integrator.p.eomid == EoMID.FullOrbit
+        return isrelativistic(u, integrator, self.fractionofrestenergy)
+    elseif integrator.p.eomid == EoMID.GuidingCentreApproximation
+        return isrelativistic_gca(u, t, integrator, self.fractionofrestenergy)
+    end
+end
+
 
 # -----------------------------------------------------------------------------
 # GCA breakdown and validity conditions
