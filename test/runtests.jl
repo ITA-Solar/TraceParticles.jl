@@ -35,6 +35,8 @@ if "fast_tests" in ARGS
         include("test_log.jl")
         testlog(loglevel, logfilepath, targetfile, verbose)
     end
+elseif "blank" in ARGS
+    nothing
 else
     @testset verbose = verbose ≥ 1 "Tests" begin
         with_logger(logger) do

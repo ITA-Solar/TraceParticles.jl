@@ -104,7 +104,8 @@ function (self::MHDSampling)(prob, ctx)
         self.max_value,
     )
 
-    if self.hybridscheme == HybridScheme.No && eomid == EoMID.GuidingCentreApproximation
+    if self.hybridscheme == HybridScheme.No &&
+        self.eomid == EoMID.GuidingCentreApproximation
         u0 = Vector{Float64}(undef, 4)
     else
         u0 = Vector{Float64}(undef, 6)

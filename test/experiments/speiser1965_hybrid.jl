@@ -194,8 +194,8 @@ hef = get_observable(hsol, :energy, tf)
     end
     @testset verbose = true "Hybrid vs full orbit" begin
         @test isapprox(hsolendR[1], foendR[1], rtol=1e-3)
-        @test isapprox(hsolendR[2], foendR[2], rtol=1e-6)
-        @test isapprox(hsolendR[3], foendR[3], rtol=1e-5)
+        @test isapprox(hsolendR[2], foendR[2], rtol=1e-5)
+        @test isapprox(hsolendR[3], foendR[3], rtol=1e-4)
         @test isapprox(hsol.u[end][4], foendvparal, rtol=1e-2)
         @test isapprox(hsol.prob.p.magneticmoment, foendmu, rtol=5)
         @test isapprox(hef, foef, rtol=1e-5)

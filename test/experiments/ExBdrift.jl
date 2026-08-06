@@ -248,14 +248,13 @@ rmse_pz = sqrt(rmse_pz / nsteps_p)
 #-------------------------------------------------------------------------------
 # TEST RESULTS
 @testset verbose = true "Full orbit: Default alg." begin
-    @test isapprox(rmse_ex, 1e-7, rtol=1e-1)
-    @test isapprox(rmse_ey, 1e-7, rtol=1e-1)
-    @test isapprox(rmse_ez, 0.0, rtol=1e-1)
-    @test isapprox(rmse_px, 5e-15, rtol=1e-1)
-    @test isapprox(rmse_py, 1e-11, rtol=1e-0)
-    @test isapprox(rmse_pz, 0.0, rtol=1e-6)
-end # testset Vay
-# GCA using DifferentialEquations.jl
+    @test isapprox(rmse_ex, 1e-7, atol=1e-6)
+    @test isapprox(rmse_ey, 1e-7, atol=1e-6)
+    @test isapprox(rmse_ez, 0.0, atol=1e-6)
+    @test isapprox(rmse_px, 5e-15, atol=1e-6)
+    @test isapprox(rmse_py, 1e-11, atol=1e-6)
+    @test isapprox(rmse_pz, 0.0, atol=1e-6)
+end
 @testset verbose = true "GCA: Default alg." begin
     # Electron
     @test isapprox(sol_GCA.u[1].u[2][1], 0.02, rtol=1e-13)

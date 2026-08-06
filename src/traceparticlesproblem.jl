@@ -82,8 +82,8 @@ function TraceParticlesProblem(
             odeprob;
             prob_func = prob_func,
             safetycopy = p.safetycopy,
-            (isnothing(output_func) ? (;) : output_func)...,
-            (isnothing(reduction) ? (;) : reduction)...,
+            output_func = output_func,
+            reduction = reduction
         )
 
         # Return the initialised problem
@@ -141,9 +141,9 @@ function construct_ic_onthefly_prob_func(
     t0bounds = (p.t0start, p.t0end)
     (eomid, hybridscheme) = 
         if eom == lorentzforce!
-            (EoM.FullOrbit, HybridScheme.No)
+            (EoMID.FullOrbit, HybridScheme.No)
         elseif eom == guidingcentreapproximation!
-            (EoM.GuidingCentreApproximation, HybridScheme.No)
+            (EoMID.GuidingCentreApproximation, HybridScheme.No)
         elseif eom == hybridgcafo! && p.save_switchinfo
             (p.initialeomid, HybridScheme.YesSaveSwitches)
         elseif eom == hybridgcafo!
@@ -254,7 +254,8 @@ end
 function determine_output_func(p::TraceParticlesParameters)
     if p.eom == hybridgcafo!
         return p.save_switchinfo ?
-            nothing : output_func_lightweight_hybrid
+            output_func = (sol, ctx) -> (sol, false) :
+            output_func_lightweight_hybrid
     elseif p.eom == guidingcentreapproximation!
         return p.save_max_observables ?
             output_func_max_lightweight : output_func_lightweight
@@ -263,14 +264,14 @@ function determine_output_func(p::TraceParticlesParameters)
     end
 end
 
-function determine_reduction(p::TraceParticlesParameters, batchsize)
-    nbatches = ceil(Int, p.npart / batchsize)
+function determine_reduction(p::TraceParticlesParameters, effective_batchsize)
+    nbatches = ceil(Int, p.npart / effective_batchsize)
     return (p.eom == hybridgcafo! || p.save_switchinfo) ?
-        nothing : 
+        (u, data, I) -> (append!(u, data), false) :
         SaveBatchAsHDF5(
             expdir=p.datadir,
             expname=p.expname,
-            batchsize=BATCHSIZE,
+            batchsize=effective_batchsize,
             nbatches=nbatches,
             verbose=p.verbose
         )

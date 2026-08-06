@@ -350,12 +350,12 @@ function h5_getdataset(
     nbatches = length(batches)
     data = reduce(vcat,
         h5open(filename, "r") do h5_file
-            firstbatch = read(h5_file[batches[1]*dataset])
+            firstbatch = read(h5_file[batches[1]*"/"*dataset])
             npart = length(firstbatch)
             data = Vector{Vector{eltype(firstbatch)}}(undef, nbatches)
             data[1] = firstbatch
             for i in 2:nbatches
-                data[i] = read(h5_file[batches[i]*dataset])
+                data[i] = read(h5_file[batches[i]*"/"*dataset])
             end
             data
         end
@@ -406,19 +406,17 @@ function h5_getall(filename::String, batches::Vector{String})
     )
 end
 
-
-
 """
     h5_getenergies_gca(filename, args...; units="eV")
 Returns the initial and final energies of a set of batches in a HDF5-file.
 If `batches` is not specified, the data from all batches are returned.
 """
-function h5_getenergies_gca(filename, args...; units="eV")
+function h5_getenergies_gca(filename; units="eV")
     expname, _ = splitext(filename)
     filename0 = expname * "_gcastates0.h5"
     filenamef = expname * "_gcastatesf.h5"
-    e0 = h5_getdataset(filename0, "energy", args...)
-    ef = h5_getdataset(filenamef, "energy", args...)
+    e0 = h5_getdataset(filename0, "energy")
+    ef = h5_getdataset(filenamef, "energy")
     if units == "eV"
         e0 *= J2eV
         ef *= J2eV
@@ -431,12 +429,12 @@ end
 Returns the initial and final energies of a set of batches in a HDF5-file.
 If `batches` is not specified, the data from all batches are returned.
 """
-function h5_getenergies(filename, args...; units="eV")
+function h5_getenergies(filename; units="eV")
     expname, _ = splitext(filename)
     filename0 = expname * "_e0.h5"
     filenamef = expname * "_ef.h5"
-    e0 = h5_getdataset(filename0, "energy", args...)
-    ef = h5_getdataset(filenamef, "energy", args...)
+    e0 = h5_getdataset(filename0, "energy")
+    ef = h5_getdataset(filenamef, "energy")
     if units == "eV"
         e0 *= J2eV
         ef *= J2eV

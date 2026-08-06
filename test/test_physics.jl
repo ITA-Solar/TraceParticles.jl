@@ -3,7 +3,7 @@ using Test
 using StaticArrays
 
 using TraceParticles:
-    get_guidingcentre!,
+    get_guidingcentre,
     get_fullorbit!,
     larmorradius,
     gyrofrequency,
@@ -49,7 +49,9 @@ end
         @test isapprox(u[4], 1.0, atol=1e-6)
         @test isapprox(mu, 1.0, atol=1e-6)
         # negative charge
-        mu = get_guidingcentre!(u, pos, vel, magneticfield, electricfield, -charge, mass)
+        R, vparal, mu = get_guidingcentre(pos, vel, magneticfield, electricfield, -charge, mass)
+        u[1:3] .= R
+        u[4] = vparal
         @test isapprox(u[1:3], [0.0, 0.0, 0.0], atol=1e-6)
         @test isapprox(u[4], 1.0, atol=1e-6)
         @test isapprox(mu, 1.0, atol=1e-6)
@@ -63,7 +65,9 @@ end
         electricfield = SA[0.0, 1.0e-3, 0.0]
         charge = 1.6e-19  # proton charge
         mass = 1.67e-27  # proton mass
-        mu = get_guidingcentre!(u, pos, vel, magneticfield, electricfield, charge, mass)
+        R, vparal, mu = get_guidingcentre(pos, vel, magneticfield, electricfield, charge, mass)
+        u[1:3] .= R
+        u[4] = vparal
         @test isapprox(
             u[1:3],
             [1.00004175e6, 1.999979129175e6, 3.0e6],
