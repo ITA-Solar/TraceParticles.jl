@@ -56,7 +56,7 @@ function TraceParticlesProblem(
         )
         @info """EM-field loaded:
         Elapsed time: $(time_taken.time) seconds
-        Allocations: $(time_taken.bytes) bytes"""
+        Allocations: $(@sprintf "%i" time_taken.bytes/1e6) MB"""
 
         # Create problem function for using pre-defined initial conditions
         if !p.ic_onthefly

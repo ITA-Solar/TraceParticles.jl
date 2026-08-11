@@ -32,7 +32,7 @@ function SciMLBase.solve(
                     )
                     @info """Energies computed:
                     Elapsed time: $(time_taken.time) seconds
-                    Allocations: $(time_taken.bytes) bytes"""
+                    Allocations: $(@sprintf "%i" time_taken.bytes/1e6) MB"""
                 catch e
                     @error "Failed to save energies" exception=e
                 end
@@ -85,7 +85,8 @@ function SciMLBase.solve(
     @info """
 ------------------------------------------------------------------------
 TraceParticles.jl package version: $(pkgversion(TraceParticles))
-Running experiment: $PROGRAM_FILE $paral_msg
+Program: $PROGRAM_FILE
+Experiment name: $(get_filename(prob))
 Parallelisation: $paral_msg
 Host name : $(gethostname())
 Start time: $(string(now()))
@@ -116,7 +117,7 @@ Reduction: $(typeof(get_reduction(prob)).name.name)
     );
     @info """Ensemble solved:
     Elapsed time: $(time_taken.time) seconds
-    Allocations: $(time_taken.bytes) bytes"""
+    Allocations: $(@sprintf "%i" time_taken.bytes/1e6) MB"""
 
 
     return sim
