@@ -110,7 +110,7 @@ export
     parallelelectricfieldaffect!,
     relativisticaffect!,
     hybridswitchaffect!,
-    hybridswitchaffect_withdetection!,
+    hybridswitchaffect_withdetection!
 # enums.jl
 export
     TerminationCode,

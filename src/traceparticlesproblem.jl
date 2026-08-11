@@ -222,7 +222,7 @@ function construct_callbacks(p::TraceParticlesParameters)
     if eom == hybridgcafo!
         affect = p.save_switchinfo ? 
             hybridswitchaffect_withdetection! :
-            hybridswitchafect
+            hybridswitchaffect!
         switch_cb = DiscreteCallback(
             HybridSwitchCondition(
                 p.gradient_tolerance,
@@ -266,7 +266,7 @@ end
 
 function determine_reduction(p::TraceParticlesParameters, effective_batchsize)
     nbatches = ceil(Int, p.npart / effective_batchsize)
-    return (p.eom == hybridgcafo! || p.save_switchinfo) ?
+    return (p.eom == hybridgcafo! && p.save_switchinfo) ?
         (u, data, I) -> (append!(u, data), false) :
         SaveBatchAsHDF5(
             expdir=p.datadir,

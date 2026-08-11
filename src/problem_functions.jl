@@ -104,11 +104,24 @@ function (self::MHDSampling)(prob, ctx)
         self.max_value,
     )
 
-    if self.hybridscheme == HybridScheme.No &&
-        self.eomid == EoMID.GuidingCentreApproximation
-        u0 = Vector{Float64}(undef, 4)
+    # Initialise the type, size and size of the state vector
+    if self.hybridscheme == HybridScheme.No
+        if self.eomid == EoMID.GuidingCentreApproximation
+            u0 = Vector{Float64}(undef, 4)
+        elseif self.eomid == EoMID.FullOrbit
+            u0 = Vector{Float64}(undef, 6)
+        end
     else
-        u0 = Vector{Float64}(undef, 6)
+        if self.eomid == EoMID.GuidingCentreApproximation
+            # Hybrid scheme with GCA equations initially will only set the
+            # first 4 variables of the state vector, possibly leaving the
+            # fifth and sixth variable NaN, which the DiffEq-solver does not
+            # like in its state vector, hence we initialise the state-vector to
+            # zero in this case.
+            u0 = zeros(Float64, 6)
+        elseif self.eomid == EoMID.FullOrbit
+            u0 = Vector{Float64}(undef, 6)
+        end
     end
 
     if self.eomid == EoMID.FullOrbit
