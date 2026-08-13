@@ -49,10 +49,8 @@ function TraceParticlesProblem(
             vec[5] -> ey
             vec[6] -> ez
         =#
-        time_taken = @timed fields_itp = itp_wrapper(
-            ElectromagneticFieldInterpolator(
-                load_object(p.emfield_file)
-            )
+        time_taken = @timed fields_itp = ElectromagneticFieldInterpolator(
+            [itp_wrapper(component) for component in load_object(p.emfield_file)]
         )
         @info """EM-field loaded:
         Elapsed time: $(time_taken.time) seconds
@@ -108,13 +106,17 @@ wrapped in the `StaticXZInterpolation` struct such that it can be called with
 the signature `itp(x, y, z, t) -> itp(x, z)`.
 """
 function construct_itpwrapper(p::TraceParticlesParameters)
-    return p.static_itp_wrapper ?
-        begin
-            p.xz_itp_wrapper ?
-                (obj) -> StaticXZInterpolation(obj) :
-                (obj) -> StaticInterpolation(obj)
-        end :
-       (obj) -> obj
+    if p.static_itp_wrapper
+        if p.xz_itp_wrapper
+            return (obj) -> StaticXZInterpolation(obj)
+        else
+            return (obj) -> StaticInterpolation(obj)
+        end
+    elseif p.xz_itp_wrapper
+        return (obj) -> XZInterpolation(obj)
+    else
+       return (obj) -> obj
+    end
 end
 
 function construct_ic_onthefly_prob_func(

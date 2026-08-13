@@ -224,7 +224,7 @@ function compute_energies!(
     electromagneticfield::Any
 )
     for i in eachindex(e0)
-        if df[i, :initialeomid] == 1
+        if df[i, :initialeomid] == Int(EoMID.GuidingCentreApproximation)
             e0[i] = kineticenergy(
                 [
                     df[i, :x0],
@@ -238,7 +238,7 @@ function compute_energies!(
                 electromagneticfield,
                 df[i, :t0],
             )
-        elseif df[i, :initialeomid] == 2
+        elseif df[i, :initialeomid] == Int(EoMID.FullOrbit)
             e0[i] = kineticenergy(
                 [
                     df[i, :vx0],
@@ -248,7 +248,7 @@ function compute_energies!(
                 df[i, :mass],
             )
         end
-        if df[i, :eomid] == 1
+        if df[i, :eomid] == Int(EoMID.GuidingCentreApproximation)
             ef[i] = kineticenergy(
                 [
                     df[i, :xf],
@@ -262,7 +262,7 @@ function compute_energies!(
                 electromagneticfield,
                 df[i, :tf],
             )
-        elseif df[i, :eomid] == 2
+        elseif df[i, :eomid] == Int(EoMID.FullOrbit)
             ef[i] = kineticenergy(
                 [
                     df[i, :vxf],
