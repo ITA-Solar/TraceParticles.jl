@@ -397,11 +397,11 @@ function get_parallelpower(
     m = sol.prob.p.mass
     gcastate = GCAState(
         sol(t, idxs=1:4),
-        q,
         t,
+        q,
         sol.prob.p.mass,
         sol.prob.p.magneticmoment,
-        sol.prob.p.electromagneticfield;
+        sol.prob.p.electromagneticfield,
     )
     vparal = gcastate.state[4]
     paralacc = gcastate.paralacc

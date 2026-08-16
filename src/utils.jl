@@ -339,3 +339,9 @@ function discretise(
     end
     return field
 end # function discretise
+
+function logtimed(time_taken, msg)
+    @info """$(msg):
+    Elapsed time: $(time_taken.time) seconds
+    Bytes allocated: $(@sprintf "%.1E" time_taken.bytes)"""
+end

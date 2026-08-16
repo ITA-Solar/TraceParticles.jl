@@ -45,32 +45,33 @@ $(@sprintf "Total number of timesteps:   %.2E" sum(batch.nt))
 $(@sprintf "Initial time:                %.5f" batch.t0[1])
 $(@sprintf "Oldest particle:             %.5f" maximum(batch.tf))
 $(@sprintf "Average end time:            %.5f" mean(batch.tf))
-Termination statistics
-  $(@sprintf "Nof. maxiters:             %i (%.2f%%)" nmaxiters nmaxiters * c1)
-  $(@sprintf "Nof. OutofBounds:          %i (%.2f%%)" noob noob * c1)
-  $(@sprintf "Nof. Relativistic:         %i (%.2f%%)" nrel nrel * c1)
+
+        Termination statistics
+$(@sprintf "Nof. maxiters:               %i (%.2f%%)" nmaxiters nmaxiters * c1)
+$(@sprintf "Nof. OutofBounds:            %i (%.2f%%)" noob noob * c1)
+$(@sprintf "Nof. Relativistic:           %i (%.2f%%)" nrel nrel * c1)
 """
 
     if hasproperty(batch, :nswitches)
         nhybrid = sum(batch.nswitches .> 0)
         maxhyb = sum(@. (batch.nswitches > 0) & (batch.retcode == 4))
-        msg *= "Hybrid switch statistics\n"
-        msg *= @sprintf "  Amount that switched:      %i (%.2f%%)\n" nhybrid nhybrid * c1
+        msg *= "\n        Hybrid switch statistics\n"
+        msg *= @sprintf "Amount that switched:        %i (%.2f%%)\n" nhybrid nhybrid * c1
         if length(hybswitches) > 0
-            msg *= @sprintf "  Average nof. switches:     %.4f\n" mean(hybswitches)
-            msg *= @sprintf "  Median:                    %i\n" median(hybswitches)
-            msg *= @sprintf "  Standard deviation:        %.4f\n" std(hybswitches)
-            msg *= @sprintf "  Most nof. switches:        %i\n" maximum(hybswitches)
-            msg *= @sprintf "  Least nof. switches:       %i\n" minimum(hybswitches)
+            msg *= @sprintf "Average nof. switches:       %.4f\n" mean(hybswitches)
+            msg *= @sprintf "Median:                      %i\n" median(hybswitches)
+            msg *= @sprintf "Standard deviation:          %.4f\n" std(hybswitches)
+            msg *= @sprintf "Most nof. switches:          %i\n" maximum(hybswitches)
+            msg *= @sprintf "Least nof. switches:         %i\n" minimum(hybswitches)
             msg *= @sprintf(
-                "  MaxIters & switched:       %i (%.0f%% of %i, %.0f%% of MaxIters)\n",
+                "MaxIters & switched:         %i (%.0f%% of %i, %.0f%% of MaxIters)\n",
                 maxhyb, maxhyb / nhybrid * 100, nhybrid, maxhyb / nmaxiters * 100
             )
         end
     else
-        msg *= @sprintf "  Nof. MagneticGradient:     %i (%.0f%%)\n" ngradient ngradient * c1
-        msg *= @sprintf "  Nof. MagneticCurvature:    %i (%.0f%%)\n" ncurvature ncurvature * c1
-        msg *= @sprintf "  Nof. ParallelEfield:       %i (%.0f%%)\n" neratio neratio * c1
+        msg *= @sprintf "Nof. MagneticGradient:       %i (%.0f%%)\n" ngradient ngradient * c1
+        msg *= @sprintf "Nof. MagneticCurvature:      %i (%.0f%%)\n" ncurvature ncurvature * c1
+        msg *= @sprintf "Nof. ParallelEfield:         %i (%.0f%%)\n" neratio neratio * c1
     end
     msg *= "=================================================================" *
         "============="

@@ -461,13 +461,13 @@ function energyfraction(
     end
 
     # Fit the histogram
-    hist = fit(
+    hist = StatsBase.fit(
         Histogram,
         energies,
         Weights(weights),
         binedges
     )
-    hist = normalize(hist, mode=:pdf)
+    hist = StatsBase.normalize(hist, mode=:pdf)
     bincentres = midpoints(binedges)
     binwidths = diff(binedges)
 

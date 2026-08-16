@@ -555,8 +555,8 @@ logarithmically spaced. If `maxval` or `minval` are given, these values
 are used as the maximum and minimum values of the histogram bins.
 """
 function hist(
-    data,
-    weight;
+    data;
+    weight=ones(length(data)),
     nbins=20,
     logx=false,
     maxval=nothing,

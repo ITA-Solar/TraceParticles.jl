@@ -69,9 +69,7 @@ function TraceParticlesProblem(
         time_taken = @timed fields_itp = ElectromagneticFieldInterpolator(
             [itp_wrapper(component) for component in load_object(p.emfield_file)]
         )
-        @info """EM-field loaded:
-        Elapsed time: $(time_taken.time) seconds
-        Allocations: $(@sprintf "%i" time_taken.bytes/1e6) MB"""
+        logtimed(time_taken, "EM-field loaded")
 
 
         # Resolve `p.prob_func` into the function that gives each particle its
@@ -270,4 +268,8 @@ end
 
 function get_reductiontype(prob::TraceParticlesProblem)
     return typeof(prob.ensemble_prob.reduction)
+end
+
+function get_nofbatches(prob::TraceParticlesProblem)
+    return ceil(Int, prob.trajectories/prob.batch_size)
 end

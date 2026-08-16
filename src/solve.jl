@@ -30,9 +30,7 @@ function SciMLBase.solve(
                         get_electromagneticfield(prob);
                         eom=get_eom(prob)
                     )
-                    @info """Energies computed:
-                    Elapsed time: $(time_taken.time) seconds
-                    Allocations: $(@sprintf "%i" time_taken.bytes/1e6) MB"""
+                    logtimed(timed_taken, "Energies computed")
                 catch e
                     @error "Failed to save energies" exception=e
                 end
@@ -86,18 +84,19 @@ function SciMLBase.solve(
 ------------------------------------------------------------------------
 TraceParticles.jl package version: $(pkgversion(TraceParticles))
 Program: $PROGRAM_FILE
-Experiment name: $(get_filename(prob))
+Experiment name: $(first(splitext(basename(get_filename(prob)))))
 Parallelisation: $paral_msg
 Host name : $(gethostname())
 Start time: $(string(now()))
 
-Running an ensemble of $trajectories particles
+Running an ensemble of $(@sprintf "%.1E" trajectories) particles
 Random seed: $seed
 Equations of motion: $(get_eom(prob))
 Max iterations per particle: $maxiters
 Problem function: $(typeof(get_prob_func(prob)).name.name)
 Output function: $(typeof(get_output_func(prob)).name.name)
 Reduction: $(typeof(get_reduction(prob)).name.name)
+Number of batches: $(get_nofbatches(prob))
 ------------------------------------------------------------------------------"""
 
 
@@ -115,10 +114,7 @@ Reduction: $(typeof(get_reduction(prob)).name.name)
         seed=seed,
         kwargs...
     );
-    @info """Ensemble solved:
-    Elapsed time: $(time_taken.time) seconds
-    Allocations: $(@sprintf "%i" time_taken.bytes/1e6) MB"""
-
+    logtimed(time_taken, "Ensemble solved")
 
     return sim
 end
