@@ -49,7 +49,7 @@ u0 = [
     [1.63e7, 1e6, -6.3e6, -1e6],
 ]
 mu = [4.1e-11, 4.1e-11]
-tspan2 = [(params.t0start, params.tf) for _ in 1:2]
+tspan2 = [(params.prob_func.t0bounds[1], params.tf) for _ in 1:2]
 params2 = [
     GCAParams(
         charge=params.charge,

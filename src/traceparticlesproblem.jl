@@ -1,3 +1,25 @@
+"""
+    TraceParticlesProblem(p::TraceParticlesParameters; logger=nothing)
+
+An assembled test-particle simulation, ready to be handed to `solve`.
+
+The constructor is the assembly step: it loads the electromagnetic field from
+`p.emfield_file`, wraps every field component so that it takes `(x, y, z, t)`,
+initialises the `prob_func`, picks the `output_func` and `reduction`, and
+creates callbacks implied by `p`. The result is a SciML `EnsembleProblem` plus
+the pieces `solve` needs alongside it.
+
+# Fields
+- `ensemble_prob`: the `EnsembleProblem` to integrate.
+- `callbackset`: the `CallbackSet` built from the termination and equation-of-
+  motion switching parameters in `p`.
+- `trajectories`: number of particles, i.e. `p.npart`.
+- `batch_size`: trajectories per batch, capped at `trajectories`.
+- `logger`: the logger the simulation writes to. Defaults to one that tees to
+  `stderr` and to a log file in the experiment directory.
+
+See also [`TraceParticlesParameters`](@ref).
+"""
 @kwdef struct TraceParticlesProblem{
     ProbType<:EnsembleProblem,
     CallbacksetType<:CallbackSet,
@@ -31,11 +53,6 @@ function TraceParticlesProblem(
         # call signature (x, y, z, t)
         itp_wrapper = construct_itpwrapper(p)
 
-        # Create problem function for computing initial conditions on-the-fly
-        if p.ic_onthefly
-            prob_func = construct_ic_onthefly_prob_func(p, itp_wrapper)
-        end
-
         #=
         Now load the electromagnetic field interpolation object.
         This step assumes that the file `emfield_file` points to a JLD2-file containing
@@ -56,12 +73,12 @@ function TraceParticlesProblem(
         Elapsed time: $(time_taken.time) seconds
         Allocations: $(@sprintf "%i" time_taken.bytes/1e6) MB"""
 
-        # Create problem function for using pre-defined initial conditions
-        if !p.ic_onthefly
-            prob_func = construct_ic_predefined_prob_func()
-        end
 
-        cbs = construct_callbacks(p)
+        # Resolve `p.prob_func` into the function that gives each particle its
+        # initial state.
+        prob_func = init_probfunc(p.prob_func, p, itp_wrapper, fields_itp)
+
+        cbs = create_callbacks(p)
         # Set batchsize to npart if the npart < batchsize
         effective_batchsize = p.npart > p.batchsize ? p.batchsize : p.npart
         # Determine output functions;
@@ -119,110 +136,18 @@ function construct_itpwrapper(p::TraceParticlesParameters)
     end
 end
 
-function construct_ic_onthefly_prob_func(
-    p::TraceParticlesParameters,
-    itp_wrapper
-)
-    (; eom, tf) = p
-    # Load temperature, density and assign proposal and target distributions
-    tg_itp = itp_wrapper(load_object(p.tg_file))
-    # Target distribution for positional sampling
-    target_distr = itp_wrapper(load_object(p.target_distr_file))
-    if isempty(p.proposal_distr_file)
-        prop_distr = target_distr
-    else
-        prop_distr = itp_wrapper(load_object(p.proposal_distr_file))
-    end
-    maxval = maximum(prop_distr) # Needed by the rejection algorithm.
-    # Create the problem function
-    # determines the initial conditions of the particles,
-    # including statistical weight and initial and final simulation times.
-    xbounds = (p.xstart_ic, p.xend_ic)
-    ybounds = (p.ystart_ic, p.yend_ic)
-    zbounds = (p.zstart_ic, p.zend_ic)
-    t0bounds = (p.t0start, p.t0end)
-    (eomid, hybridscheme) = 
-        if eom == lorentzforce!
-            (EoMID.FullOrbit, HybridScheme.No)
-        elseif eom == guidingcentreapproximation!
-            (EoMID.GuidingCentreApproximation, HybridScheme.No)
-        elseif eom == hybridgcafo! && p.save_switchinfo
-            (p.initialeomid, HybridScheme.YesSaveSwitches)
-        elseif eom == hybridgcafo!
-            (p.initialeomid, HybridScheme.Yes)
-        end
-    prob_func = MHDSampling(
-        prop_distr,
-        target_distr,
-        tg_itp,
-        xbounds,
-        ybounds,
-        zbounds,
-        t0bounds,
-        tf,
-        maxval,
-        eomid,
-        hybridscheme
-    )
-end
-
-function construct_callbacks(p::TraceParticlesParameters)
-    cbs = []
-    # If terminate particles out of bounds
-    if p.kill_oob
-        (; xkill, ykill, zkill) = p
-        (; xlowerbound, xupperbound) = p
-        (; ylowerbound, yupperbound) = p
-        (; zlowerbound, zupperbound) = p
-
-        kill_at_axis = (xkill, ykill, zkill)
-        axisbounds = (
-            (xlowerbound, xupperbound),
-            (ylowerbound, yupperbound),
-            (zlowerbound, zupperbound),
-        )
-        axes_idxs = [i for i in 1:3 if kill_at_axis[i]]
-        axes_bounds = Tuple(axisbounds[i] for i in axes_idxs)
-
-        out_cb = DiscreteCallback(
-            OutOfBoundsCondition(axes_bounds, axes_idxs),
-            outofboundsaffect!,
-            save_positions = p.oob_save_positions
-        )
-        push!(cbs, out_cb)
-    end
-    # If kill relativistic particles
-    (; mass, eom) = p
-    if p.kill_relativistic
-        relativistic_condition = 
-            if eom == hybridgcafo!
-                RelativisticConditionHybrid
-            elseif eom == guidingcentreapproximation!
-                RelativisticConditionGCA
-            elseif eom == lorentzforce!
-                RelativisticCondition
-            else
-                throw(ArgumentError("Unknown prob_func for f=$eom."))
-            end
-        rel_cb = DiscreteCallback(
-            relativistic_condition(; mass=mass, fraction=p.relativistic_fraction),
-            relativisticaffect!,
-            save_positions = p.rel_save_positions
-        )
-        push!(cbs, rel_cb)
-    end
-    # If kill when high gradient in magnetic field
-    if p.kill_high_gradb
-        gca_cb = DiscreteCallback(
-            MagneticGradientCondition(p.gradient_tolerance),
-            magneticgradientaffect!,
-            save_positions = p.gradb_save_positions
-        )
-        push!(cbs, gca_cb)
-    end
-    # If hybrid scheme is used, we need to create the switch callback
-    if eom == hybridgcafo!
-        affect = p.save_switchinfo ? 
+"""
+    create_callbacks(p::TraceParticlesParameters)
+Build the callbacks implied by `p`: one per entry of `p.callback_specs`, plus
+the GCA/full-orbit switch callback when the equations of motion are hybrid.
+"""
+function create_callbacks(p::TraceParticlesParameters)
+    # Each callback spec knows how to build its own callback.
+    cbs = Any[create_callback(spec, p) for spec in p.callback_specs]
+    # The hybrid switch is not an optional add-on but part of the equations of
+    # motion, so it is not a callback spec.
+    if p.eom == hybridgcafo!
+        affect = p.save_switchinfo ?
             hybridswitchaffect_withdetection! :
             hybridswitchaffect!
         switch_cb = DiscreteCallback(
@@ -233,24 +158,11 @@ function construct_callbacks(p::TraceParticlesParameters)
                 p.switchback_tolerance
             ),
             affect,
-            save_positions=(true,true),
+            save_positions=p.switch_save_positions,
         )
         push!(cbs, switch_cb)
     end
     return cbs
-end
-
-function construct_ic_predefined_prob_func(
-    p::TraceParticlesParameters,
-    fields_itp
-)
-    u0, tspan, params = create_diffeq_ic(
-        p.ic_file,
-        p.tf,
-        fields_itp;
-        f=p.eom
-    )
-    return PredefinedICs(u0, tspan, params)
 end
 
 function determine_output_func(p::TraceParticlesParameters)
@@ -279,13 +191,17 @@ function determine_reduction(p::TraceParticlesParameters, effective_batchsize)
         )
 end
 
+#= The template parameters and ODE problem below only fix *types*; `prob_func`
+overwrites every value per particle. They therefore take their precision from
+`p.mass` and `p.tf` rather than imposing one, so that consistently
+single-precision input stays single precision. =#
 function define_parameters(p::TraceParticlesParameters, fields_itp)
     if p.eom == guidingcentreapproximation!
         return GCAParams(
             charge=p.charge,
             mass=p.mass,
             electromagneticfield=fields_itp,
-            magneticmoment = p.precision(0.0)
+            magneticmoment = zero(p.mass)
         )
     elseif p.eom == lorentzforce!
         return FullOrbitParams(
@@ -298,7 +214,7 @@ function define_parameters(p::TraceParticlesParameters, fields_itp)
             charge=p.charge,
             mass=p.mass,
             electromagneticfield=fields_itp,
-            magneticmoment = p.precision(0.0),
+            magneticmoment = zero(p.mass),
             initialeomid=p.initialeomid
         )
     elseif p.eom == hybridgcafo!
@@ -306,11 +222,11 @@ function define_parameters(p::TraceParticlesParameters, fields_itp)
             charge=p.charge,
             mass=p.mass,
             electromagneticfield=fields_itp,
-            magneticmoment = p.precision(0.0),
+            magneticmoment = zero(p.mass),
             initialeomid=p.initialeomid
         )
     else
-        throw(ArgumentError("Unknown prob_func for f=$eom."))
+        throw(ArgumentError("Unknown prob_func for f=$(p.eom)."))
     end
 end
 
@@ -320,8 +236,10 @@ function define_odeproblem(p::TraceParticlesParameters, fields_itp)
     odeprob = ODEProblem(
         p.eom,
         # I think the important thing is the type of u0, not the length
-        zeros(p.precision, 1),
-        (p.t0start, p.tf),
+        zeros(typeof(p.mass), 1),
+        # Only the type of the time span matters here; `prob_func` overwrites
+        # the values with each particle's own initial time.
+        (zero(p.tf), p.tf),
         odeparams
     )
 end

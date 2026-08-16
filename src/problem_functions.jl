@@ -3,14 +3,23 @@
 #
 #           problem_functions.jl
 #-------------------------------------------------------------------------------
-# Contains problem functions to be used as the keyword-argument `prob_func` in 
-# an `EnsembleProblem` from SciMl.
+# Contains problem functions to be used as the keyword-argument `prob_func` in
+# an `EnsembleProblem` from SciML.
+#
+# Also contains functions that intitialises problem functions from
+# `TraceParticlesParameters`. These functions are called by the
+# `TraceParticlesProblem` constructor.
+#
+# Adding a new way of generating initial conditions to `TraceParticleProblem`
+# means adding a specification struct and one `init_probfunc` method.
+#
+# Available problem functors:
+# - PredefinedICs
 #-------------------------------------------------------------------------------
 
 """
     struct PredefinedICs
         u0
-        mu0
         tspan
         params
 # Methods
@@ -51,132 +60,32 @@ function (self::PredefinedICs)(prob, ctx)
     )
 end
 
-"""
-    struct MHDSampling
-        proposal_distr
-        target_distr
-        tg_itp
-        xbounds
-        ybounds
-        zbounds
-        t0bounds
-        tf
-        max_value
-        eomid
-        hybrid
+#-------------------------------------------------------------------------------
+# Problem functions built on a sampler
+# One per equation of motion.
+#-------------------------------------------------------------------------------
 
-# Methods
-    (::MHDSampling)(prob, _)
-Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
-rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
-with a temperature given by `tg_itp(x,y,z)`. Evaluates the importance weight of
-the particle using the `target_distr`ibution. Depending on the `eomid` and
-whether the a `hybrid` scheme is used, xalculates the corresponding guiding
-centre, magnetic moment, and parallel velocity and remakes the problem
-with `GCAParams`.
 """
-struct MHDSampling{
-    T1,T2,T3,T4<:Tuple{Real,Real},T5<:Real,T6<:Real,T7<:Enum{Int32},T8<:Enum{Int32}
-}
-    proposal_distr::T1
-    target_distr::T2
-    tg_itp::T3
-    xbounds::T4
-    ybounds::T4
-    zbounds::T4
-    t0bounds::T4
-    tf::T5
-    max_value::T6
-    eomid::T7
-    hybridscheme::T8
+    SampleFullOrbit(sampler, tf)
+
+An `EnsembleProblem` problem function for full-orbit particles whose initial
+state vector is drawn from `sampler`, integrated until `tf`.
+"""
+struct SampleFullOrbit{T,F}
+    sampler::T
+    tf::F
 end
-function (self::MHDSampling)(prob, ctx)
-    x, y, z, vx, vy, vz, t, weight, nrejections = mhdsample(
-        prob.p.mass,
-        ctx.rng,
-        self.proposal_distr,
-        self.target_distr,
-        self.tg_itp,
-        self.xbounds,
-        self.ybounds,
-        self.zbounds,
-        self.t0bounds,
-        self.max_value,
+function (self::SampleFullOrbit)(prob, ctx)
+    x, y, z, vx, vy, vz, t, weight, nrejections =
+        self.sampler(prob.p.mass, ctx.rng)
+    u0 = [x, y, z, vx, vy, vz]
+    params = FullOrbitParams(
+        charge=prob.p.charge,
+        mass=prob.p.mass,
+        electromagneticfield=prob.p.electromagneticfield,
+        weight=weight,
+        nrejections=nrejections,
     )
-
-    # Initialise the type, size and size of the state vector
-    if self.hybridscheme == HybridScheme.No
-        if self.eomid == EoMID.GuidingCentreApproximation
-            u0 = Vector{Float64}(undef, 4)
-        elseif self.eomid == EoMID.FullOrbit
-            u0 = Vector{Float64}(undef, 6)
-        end
-    else
-        if self.eomid == EoMID.GuidingCentreApproximation
-            # Hybrid scheme with GCA equations initially will only set the
-            # first 4 variables of the state vector, possibly leaving the
-            # fifth and sixth variable NaN, which the DiffEq-solver does not
-            # like in its state vector, hence we initialise the state-vector to
-            # zero in this case.
-            u0 = zeros(Float64, 6)
-        elseif self.eomid == EoMID.FullOrbit
-            u0 = Vector{Float64}(undef, 6)
-        end
-    end
-
-    if self.eomid == EoMID.FullOrbit
-        u0 .= [x, y, z, vx, vy, vz]
-        magneticmoment = NaN
-    elseif self.eomid == EoMID.GuidingCentreApproximation
-        magneticmoment = getu0_guidingcentre!(
-            u0, x, y, z, vx, vy, vz, t,
-            prob.p.mass, prob.p.charge, prob.p.electromagneticfield
-        )
-    else
-        error("Invalid initialeomid: $(self.initialeomid).")
-    end
-
-    if self.hybridscheme == HybridScheme.Yes
-        params = HybridParams(
-            charge=prob.p.charge,
-            mass=prob.p.mass,
-            electromagneticfield=prob.p.electromagneticfield,
-            magneticmoment=magneticmoment,
-            weight=weight,
-            nrejections=nrejections,
-            initialeomid=self.eomid,
-            rng=ctx.rng
-        )
-    elseif self.hybridscheme == HybridScheme.YesSaveSwitches
-        params = HybridParamsWithDetection(
-            charge=prob.p.charge,
-            mass=prob.p.mass,
-            electromagneticfield=prob.p.electromagneticfield,
-            magneticmoment=magneticmoment,
-            weight=weight,
-            nrejections=nrejections,
-            initialeomid=self.eomid,
-            rng=ctx.rng
-        )
-    elseif self.eomid == EoMID.FullOrbit
-        params = FullOrbitParams(
-            charge=prob.p.charge,
-            mass=prob.p.mass,
-            electromagneticfield=prob.p.electromagneticfield,
-            weight=weight,
-            nrejections=nrejections,
-        )
-    elseif self.eomid == EoMID.GuidingCentreApproximation
-        params = GCAParams(
-            charge=prob.p.charge,
-            mass=prob.p.mass,
-            electromagneticfield=prob.p.electromagneticfield,
-            magneticmoment=magneticmoment,
-            weight=weight,
-            nrejections=nrejections,
-        )
-    end
-
     #=
     # This is not thread-safe if `safetycopy=false`
     # because I'm modifying the arguments of the problem function. This leads
@@ -201,61 +110,275 @@ function (self::MHDSampling)(prob, ctx)
 end
 
 """
-    mhdsample(
-        mass::Real,
-        rng::AbstractRNG,
-        proposal_distr,
-        target_distr,
-        tg_itp,
-        xbounds::Tuple{Real,Real},
-        ybounds::Tuple{Real,Real},
-        zbounds::Tuple{Real,Real},
-        temporalbounds::Tuple{Real,Real},
-        max_value::Real,
-    )
-Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
-rejection sampling. Draws the 3D velocity vector from a Maxwellian distribution
-with a temperature given by `tg_itp(x,y,z)`. Evaluates the statistical
-importance weight of the particle using the `target_distr`ibution.
+    SampleGCA(sampler, tf)
+
+An `EnsembleProblem` problem function for guiding-centre particles whose
+initial state vector is drawn from `sampler`, integrated until `tf`.
 """
-function mhdsample(
-    mass::Real,
-    rng::AbstractRNG,
-    proposal_distr,
-    target_distr,
-    tg_itp,
-    xbounds::T,
-    ybounds::T,
-    zbounds::T,
-    temporalbounds::T,
-    max_value::Real,
-) where {T<:Tuple{Real,Real}}
-    # Extract spatial and temporal limits
-    x0, xf = xbounds
-    y0, yf = ybounds
-    z0, zf = zbounds
-    tmin, tmax = temporalbounds
-    # Sample osition and time from the proposal distrubution using rejection
-    # sampling.
-    x, y, z, t, nrejections = rejectionsample(
-        rng,
-        proposal_distr,
-        max_value,
-        x0, xf,
-        y0, yf,
-        z0, zf,
-        tmin, tmax,
-    )
-    weight = eltype(mass)(
-        target_distr(x, y, z, t) / proposal_distr(x, y, z, t)
-    )
-    # Sample velocity components from a Maxwell-Boltzmann distribution.
-    temperature = tg_itp(x, y, z, t)
-    vx = maxwellianvelocitysample(rng, temperature, mass)
-    vy = maxwellianvelocitysample(rng, temperature, mass)
-    vz = maxwellianvelocitysample(rng, temperature, mass)
-    return x, y, z, vx, vy, vz, t, weight, nrejections
+struct SampleGCA{T,F<:Real}
+    sampler::T
+    tf::F
 end
+function (self::SampleGCA)(prob, ctx)
+    x, y, z, vx, vy, vz, t, weight, nrejections =
+        self.sampler(prob.p.mass, ctx.rng)
+    u0 = Vector{typeof(x)}(undef, 4)
+    magneticmoment = getu0_guidingcentre!(
+        u0, x, y, z, vx, vy, vz, t,
+        prob.p.mass, prob.p.charge, prob.p.electromagneticfield
+    )
+    params = GCAParams(
+        charge=prob.p.charge,
+        mass=prob.p.mass,
+        electromagneticfield=prob.p.electromagneticfield,
+        magneticmoment=magneticmoment,
+        weight=weight,
+        nrejections=nrejections,
+    )
+    return remake(
+        prob;
+        u0=u0,
+        tspan=(t, self.tf),
+        p=params
+    )
+end
+
+
+"""
+    SampleHybrid(sampler, tf, initialeomid, hybridscheme)
+
+An `EnsembleProblem` problem function for hybrid GCA/full-orbit particles whose
+initial state vector is drawn from `sampler`, integrated until `tf`.
+
+`initialeomid` selects which equations of motion a particle starts on, and
+`hybridscheme` whether the switches are recorded (see
+[`HybridParamsWithDetection`](@ref)) or not.
+"""
+struct SampleHybrid{T,F,T2<:EoMID.T,T3<:HybridScheme.T}
+    sampler::T
+    tf::F
+    initialeomid::T2
+    hybridscheme::T3
+end
+function (self::SampleHybrid)(prob, ctx)
+    x, y, z, vx, vy, vz, t, weight, nrejections =
+        self.sampler(prob.p.mass, ctx.rng)
+    # Hybrid scheme with GCA equations initially will only set the
+    # first 4 variables of the state vector, possibly leaving the
+    # fifth and sixth variable NaN, which the DiffEq-solver does not
+    # like in its state vector, hence we initialise the state-vector to
+    # zero in this case.
+    u0 = zeros(typeof(x), 6)
+
+    if self.initialeomid == EoMID.FullOrbit
+        u0 .= [x, y, z, vx, vy, vz]
+        #= `HybridParams` requires the magnetic moment to have the same type as
+        the charge and the mass, so this placeholder must not be a bare
+        `Float64` `NaN`. =#
+        magneticmoment = oftype(prob.p.mass, NaN)
+    elseif self.initialeomid == EoMID.GuidingCentreApproximation
+        magneticmoment = getu0_guidingcentre!(
+            u0, x, y, z, vx, vy, vz, t,
+            prob.p.mass, prob.p.charge, prob.p.electromagneticfield
+        )
+    else
+        error("Invalid initialeomid: $(self.initialeomid).")
+    end
+
+    if self.hybridscheme == HybridScheme.Default
+        params = HybridParams(
+            charge=prob.p.charge,
+            mass=prob.p.mass,
+            electromagneticfield=prob.p.electromagneticfield,
+            magneticmoment=magneticmoment,
+            weight=weight,
+            nrejections=nrejections,
+            initialeomid=self.initialeomid,
+            rng=ctx.rng
+        )
+    elseif self.hybridscheme == HybridScheme.SaveSwitches
+        params = HybridParamsWithDetection(
+            charge=prob.p.charge,
+            mass=prob.p.mass,
+            electromagneticfield=prob.p.electromagneticfield,
+            magneticmoment=magneticmoment,
+            weight=weight,
+            nrejections=nrejections,
+            initialeomid=self.initialeomid,
+            rng=ctx.rng
+        )
+    else
+        error("Invalid hybridscheme: $(self.hybridscheme).")
+    end
+    return remake(
+        prob;
+        u0=u0,
+        tspan=(t, self.tf),
+        p=params
+    )
+end
+
+
+"""
+    init_probfunc(
+        prob_func,
+        p::TraceParticlesParameters,
+        itp_wrapper,
+        fields_itp
+    )
+
+Resolve `prob_func` into a function that `EnsembleProblem` can call as
+`(prob, ctx)`.
+
+Anything that is not a recognised specification is returned unchanged, so a
+user-supplied problem function needs no method here.
+See [`MHDSample`](@ref) and [`ICsFromFile`](@ref) examples of  specifications
+that are recognised.
+"""
+function init_probfunc end
+
+init_probfunc(pf::Any, _, _, _) = pf
+
+
+"""
+    ICsFromFile(; ic_file::String)
+Take the initial conditions from `ic_file`, an HDF5 file in the layout
+[`create_diffeq_ic`](@ref) reads. Resolves into a [`PredefinedICs`](@ref).
+"""
+Base.@kwdef struct ICsFromFile
+    ic_file::String
+end
+
+function init_probfunc(pf::ICsFromFile, p, _, fields_itp)
+    u0, tspan, params = create_diffeq_ic(
+        pf.ic_file,
+        p.tf,
+        fields_itp;
+        f=p.eom
+    )
+    return PredefinedICs(u0, tspan, params)
+end
+
+
+"""
+    SampleICsFromMHD(;
+        tg_file::String,
+        target_distr_file::String,
+        xbounds, ybounds, zbounds,
+        t0bounds = (0.0, 0.0),
+        proposal_distr_file::String = "",
+    )
+
+Sample initial conditions from an MHD environment.
+
+Positions and time are drawn from a proposal distr. by rejection sampling within
+the given bounds. The particles are given a statistical weigth that represents
+the ratio of probailities to be drawn from the target and proposal distribution,
+weight = P_target/P_proposal. The default  proposal distribution is the target
+distribution, giving particles weight=1.
+
+Particle velocities are drawn from a Maxwellian distribution corresponding to
+the temperature of the drawn position. The temperature is given by the
+`tg_file`.
+
+Only filenames of the distributions are stored; the interpolators are loaded by
+[`init_probfunc`](@ref) when the problem is assembled in `TraceParticleProblem`, 
+which is also where the equations of motion decide whether the resulting problem
+function is a [`SampleFullOrbit`](@ref), [`SampleGCA`](@ref) or
+[`SampleHybrid`](@ref).
+"""
+struct SampleICsFromMHD
+    tg_file::String
+    target_distr_file::String
+    proposal_distr_file::String
+    xbounds
+    ybounds
+    zbounds
+    t0bounds
+    precision::DataType
+end
+function SampleICsFromMHD(
+    ;
+    tg_file::String,
+    target_distr_file::String,
+    xbounds::Tuple{Real,Real},
+    ybounds::Tuple{Real,Real},
+    zbounds::Tuple{Real,Real},
+    t0bounds::Tuple{Real,Real}=(0.0,0.0),
+    proposal_distr_file::String="",
+)
+    # Validate bounds
+    for (name, bound) in (
+        (:xbounds, xbounds), (:ybounds, ybounds),
+        (:zbounds, zbounds), (:t0bounds, t0bounds),
+    )
+        if bound[1] > bound[2]
+            throw(ArgumentError(
+                "`MHDSample` $name has lower bound $(bound[1]) > upper bound "*
+                "$(bound[2])."
+            ))
+        end
+    end
+    # Sampler uses random numbers that must be given the correct floating point
+    # precision to not loose precision or promote samples incorrectly. Here we
+    # select the highest precision given by the bounds.
+    precision = float(promote_type(
+        typeof(xbounds[1]), typeof(xbounds[2]),
+        typeof(ybounds[1]), typeof(ybounds[2]),
+        typeof(zbounds[1]), typeof(zbounds[2]),
+        typeof(t0bounds[1]), typeof(t0bounds[2]),
+       ))
+    promote_bounds(bounds) = (precision(bounds[1]), precision(bounds[2]))
+    return SampleICsFromMHD(
+        tg_file,
+        target_distr_file,
+        proposal_distr_file,
+        promote_bounds(xbounds),
+        promote_bounds(ybounds),
+        promote_bounds(zbounds),
+        promote_bounds(t0bounds),
+        precision
+    )
+end
+
+function init_probfunc(pf::SampleICsFromMHD, p, itp_wrapper, _)
+    tg_itp = itp_wrapper(load_object(pf.tg_file))
+    target_distr = itp_wrapper(load_object(pf.target_distr_file))
+    proposal_distr = if isempty(pf.proposal_distr_file)
+        target_distr
+    else
+        itp_wrapper(load_object(pf.proposal_distr_file))
+    end
+    sampler = MHDSampler(
+        target_distr,
+        proposal_distr,
+        tg_itp,
+        pf.xbounds,
+        pf.ybounds,
+        pf.zbounds,
+        pf.t0bounds,
+        maximum(proposal_distr),
+        pf.precision
+    )
+    if p.eom == lorentzforce!
+        return SampleFullOrbit(sampler, p.tf)
+    elseif p.eom == guidingcentreapproximation!
+        return SampleGCA(sampler, p.tf)
+    elseif p.eom == hybridgcafo!
+        scheme = p.save_switchinfo ?
+            HybridScheme.SaveSwitches : HybridScheme.Default
+        return SampleHybrid(sampler, p.tf, p.initialeomid, scheme)
+    else
+        throw(ArgumentError(
+            "`MHDSample` has no problem function for eom=$(p.eom)."
+        ))
+    end
+end
+
+#-------------------------------------------------------------------------------
+# Functions for saving initial conditions to file
+#-------------------------------------------------------------------------------
+
 
 """
     initialconditions_mhdsampling(
@@ -341,7 +464,7 @@ function getu0_fullorbit!(
     _,
 )
     u0 .= [x, y, z, vx, vy, vz]
-    return NaN
+    return float(typeof(x))(NaN)
 end
 
 """

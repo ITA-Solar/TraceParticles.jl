@@ -37,12 +37,14 @@ end
 
 """
     HybridScheme
-No              = 0
-Yes             = 1
-YesSaveSwitches = 2
+Default      = 0
+SaveSwitches = 1
+
+Whether a hybrid GCA/full-orbit run records each switch between the two sets of
+equations. `SaveSwitches` selects [`HybridParamsWithDetection`](@ref) over
+[`HybridParams`](@ref); it is chosen by `save_switchinfo` in the parameters.
 """
 @enumx HybridScheme begin
-    No              # = 0
-    Yes             # = 1
-    YesSaveSwitches # = 2
+    Default      # = 0
+    SaveSwitches # = 1
 end
