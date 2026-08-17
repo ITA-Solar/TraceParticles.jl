@@ -77,9 +77,9 @@ if analytical_field
         emfields_itp[i] = (x, y, z) -> emfields(x, y, z)[i]
     end
 else
-    xx, yy, zz, dx, dy, dz = TraceParticles.create3Daxes(xi0, xif, ni)
+    xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
     Efield = zeros(Float64, numdims, ni...)
-    Bfield = stack(TraceParticles.discretise(
+    Bfield = stack(discretise(
         (x, y, z) -> magneticdipolefield(x, y, z, M),
         xx,
         yy,
@@ -104,8 +104,8 @@ emfields_itp = ElectromagneticFieldInterpolator(
 # PARTICLE CREATION
 # Set initial position and velocities
 E, B = emfields_itp(R0[1], R0[2], R0[3])
-μ = TraceParticles.magneticmoment(vperp, mass, norm(B))
-u0 = TraceParticles.get_fullorbit(B, E, R0, vparal, μ, charge, mass, pi / 2)
+μ = TP.magneticmoment(vperp, mass, norm(B))
+u0 = TP.get_fullorbit(B, E, R0, vparal, μ, charge, mass, pi / 2)
 u0 = [u0[1], u0[2], u0[3], u0[4], u0[5], u0[6]]  # Make not static
 
 fo_params = (charge=charge, mass=mass, electromagneticfield=emfields_itp)

@@ -21,6 +21,9 @@ using Interpolations
 using OrdinaryDiffEq
 using Test
 using TraceParticles
+import TraceParticles as TP
+
+include("../test_utils.jl")
 
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS
@@ -36,8 +39,8 @@ tspan = (0, tf)   # timespan                           |
 
 #...............................................
 # PARTICLE TYPE
-mass = TraceParticles.m_p
-charge = TraceParticles.e
+mass = TP.m_p
+charge = TP.e
 
 #...............................................
 # INITIAL CONDITIONS
@@ -82,11 +85,11 @@ Ez = -a
 #
 #-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
-xx, yy, zz, dx, dy, dz = TraceParticles.create3Daxes(xi0, xif, ni)
+xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
 Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
 Efield = zeros(size(Bfield))
 Efield[3, :, :, :] .= Ez
-Bfield = stack(TraceParticles.discretise(
+Bfield = stack(discretise(
     (x, y, z) -> speiserBfield(x),
     xx,
     yy,

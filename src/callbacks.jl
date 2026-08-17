@@ -405,39 +405,3 @@ function relativisticaffect!(integrator)
     integrator.p.terminationcode = TerminationCode.Relativistic
     terminate!(integrator)
 end
-
-#-------------------------------------------------------------------------------
-# Other functions
-#-------------------------------------------------------------------------------
-"""
-    set_limit!(
-        condition::Union{
-            RelativisticConditionGCA,
-            RelativisticConditionGCA_2Dxz
-        };
-        mass,
-        fraction,
-)
-Sets the energy limit for the the relativistic condition.
-"""
-function set_limit!(
-    condition::RelativisticConditionGCA,
-    mass,
-    fraction,
-)
-    condition.energylimit = fraction * mass * csqrd
-end
-
-"""
-    set_tol!(
-        condition,
-        tol
-    )
-Sets the tolerance for the GCABreakDownCondition.
-"""
-function set_tol!(
-    condition,
-    tol
-)
-    condition.tolerance = tol
-end

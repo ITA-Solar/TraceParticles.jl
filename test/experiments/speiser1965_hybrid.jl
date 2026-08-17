@@ -17,11 +17,14 @@ oscillation. Should yield an eject time of πm/(qηb) (≈ 1.3e-4 sec with curre
 parameters).
 """
 
-using TraceParticles
 using OrdinaryDiffEq
 using Interpolations
 using StaticArrays
 using Test
+using TraceParticles
+import TraceParticles as TP
+
+include("../test_utils.jl")
 
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS
@@ -38,8 +41,8 @@ tspan = (t0, tf)   # timespan                           |
 
 #...............................................
 # PARTICLE TYPE
-mass = TraceParticles.m_p
-charge = TraceParticles.e
+mass = TP.m_p
+charge = TP.e
 
 #...............................................
 # INITIAL CONDITIONS
@@ -86,11 +89,11 @@ Ez = -a
 #
 #-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
-xx, yy, zz, dx, dy, dz = TraceParticles.create3Daxes(xi0, xif, ni)
+xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
 Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
 Efield = zeros(size(Bfield))
 Efield[3, :, :, :] .= Ez
-Bfield = stack(TraceParticles.discretise(
+Bfield = stack(discretise(
     (x, y, z) -> speiserBfield(x),
     xx,
     yy,
@@ -151,8 +154,8 @@ gcaprob = ODEProblem(
 )
 
 hcb = DiscreteCallback(
-    HybridSwitchCondition(1e-2, 1e-2, Inf, 0.9),
-    hybridswitchaffect_withdetection!
+    TP.HybridSwitchCondition(1e-2, 1e-2, Inf, 0.9),
+    TP.hybridswitchaffect_withdetection!
 )
 #...............................................................................
 # RUN SIMULATION

@@ -6,6 +6,7 @@ using StaticArrays
 using Statistics
 using Test
 using TraceParticles
+import TraceParticles as TP
 import DiffEqCallbacks as CB
 
 #-------------------------------------------------------------------------------
@@ -31,8 +32,8 @@ Ey = 0.02Bz / (tf / 10)
 Ez = 0.0
 
 # Particle conditions
-q = -TraceParticles.e  # Electron charge
-m = TraceParticles.m_e # Electron mass
+q = -TP.e  # Electron charge
+m = TP.m_e # Electron mass
 # Set initial position and velocities
 Evec = [Ex, Ey, Ez]
 Bvec = [Bx, By, Bz]
@@ -82,8 +83,8 @@ vperp = norm(gyrationvel)
 vparal = dot(vel, Bvec)
 # Magnetic moments of particles
 μ = m * vperp^2 / (2norm(Bvec))
-q = -TraceParticles.e  # Electron charge
-m = TraceParticles.m_e # Electron mass
+q = -TP.e  # Electron charge
+m = TP.m_e # Electron mass
 # Set initial position and velocities
 E, B = emfields_itp(x0, y0, z0)
 R, vparal, mu = get_guidingcentre([x0, y0, z0], [vx, vy, vz], B, E, q, m)
@@ -107,8 +108,8 @@ params = (
     rng=[Xoshiro(1), Xoshiro(2)],
     getphase=(integrator) -> π / 2,
     initialeomid=[
-                  TraceParticles.EoMID.FullOrbit,
-                  TraceParticles.EoMID.GuidingCentreApproximation,
+                  EoMID.FullOrbit,
+                  EoMID.GuidingCentreApproximation,
                 ]
 )
 
@@ -124,7 +125,7 @@ cb = CB.PresetTimeCallback(
         12period,
         16period,
     ],
-    hybridswitchaffect!
+    TP.hybridswitchaffect!
 )
 #cb = CB.PresetTimeCallback(
 #    [
@@ -134,7 +135,7 @@ cb = CB.PresetTimeCallback(
 #        4 / 6 * tf,
 #        5 / 6 * tf,
 #    ],
-#    TraceParticles.switch_affect!
+#    TP.switch_affect!
 #)
 #-------------------------------------------------------------------------------
 # RUN SIMULATION
@@ -151,7 +152,7 @@ prob_func(prob, ctx) = begin
             mass=prob.p.mass,
             electromagneticfield=prob.p.electromagneticfield,
             magneticmoment=params.magneticmoment[ctx.sim_id],
-            terminationcode=TraceParticles.TerminationCode.NotTerminated,
+            terminationcode=TerminationCode.NotTerminated,
             rng=params.rng[ctx.sim_id],
             initialeomid=params.initialeomid[ctx.sim_id],
             getphase=prob.p.getphase,
@@ -168,7 +169,7 @@ foprob = remake(
         charge=prob.p.charge,
         mass=prob.p.mass,
         electromagneticfield=prob.p.electromagneticfield,
-        terminationcode=TraceParticles.TerminationCode.NotTerminated,
+        terminationcode=TerminationCode.NotTerminated,
     )
 )
 gcaprob = remake(
@@ -179,7 +180,7 @@ gcaprob = remake(
         charge=prob.p.charge,
         mass=prob.p.mass,
         electromagneticfield=prob.p.electromagneticfield,
-        terminationcode=TraceParticles.TerminationCode.NotTerminated,
+        terminationcode=TerminationCode.NotTerminated,
         magneticmoment=μ
     )
 )

@@ -11,6 +11,9 @@ using StaticArrays
 using Statistics
 using Test
 using TraceParticles
+import TraceParticles as TP
+
+include("test_utils.jl")
 
 if !isdefined(Main, :verbose)
     verbose = 3

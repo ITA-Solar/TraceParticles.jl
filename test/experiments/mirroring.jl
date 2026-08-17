@@ -19,6 +19,9 @@ using OrdinaryDiffEq
 using StaticArrays
 using Test
 using TraceParticles
+import TraceParticles as TP
+
+include("../test_utils.jl")
 
 """
     magneticmirrorfield(
@@ -104,10 +107,10 @@ analytical_field = false
 if analytical_field
     emfields_itp = (x, y, z) -> (zeros(3), magneticmirrorfield(x, y, z, B0, L))
 else
-    xx, yy, zz, dx, dy, dz = TraceParticles.create3Daxes(xi0, xif, ni)
+    xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
     Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
     Efield = zeros(size(Bfield))
-    Bfield = stack(TraceParticles.discretise(
+    Bfield = stack(discretise(
         (x, y, z) -> magneticmirrorfield(x, y, z, B0, L),
         xx,
         yy,
@@ -137,7 +140,7 @@ numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
 # PARTICLE CREATION
 # Set initial position and velocities
 E, B = emfields_itp(pos0...)
-R0, vparal, μ = TraceParticles.get_guidingcentre(
+R0, vparal, μ = TP.get_guidingcentre(
     pos0,
     vel0,
     B,
