@@ -140,6 +140,26 @@ end
         ).prob_func === custom
     end
 
+    @testset verbose = verbose ≥ 5 "output_func" begin
+        p = TraceParticlesParameters(; baseparams...)
+        @test isnothing(p.output_func)
+
+        custom = (sol, ctx) -> (sol, false)
+        @test TraceParticlesParameters(;
+            baseparams..., output_func=custom
+        ).output_func === custom
+    end
+
+    @testset verbose = verbose ≥ 5 "reduction" begin
+        p = TraceParticlesParameters(; baseparams...)
+        @test isnothing(p.reduction)
+
+        custom = (u, data, I) -> (append!(u, data), false)
+        @test TraceParticlesParameters(;
+            baseparams..., reduction=custom
+        ).reduction === custom
+    end
+
     @testset verbose = verbose ≥ 5 "show" begin
         p = TraceParticlesParameters(; baseparams...)
         str = sprint(show, MIME"text/plain"(), p)

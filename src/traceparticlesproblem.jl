@@ -71,7 +71,6 @@ function TraceParticlesProblem(
         )
         logtimed(time_taken, "EM-field loaded")
 
-
         # Resolve `p.prob_func` into the function that gives each particle its
         # initial state.
         prob_func = init_probfunc(p.prob_func, p, itp_wrapper, fields_itp)
@@ -164,6 +163,7 @@ function create_callbacks(p::TraceParticlesParameters)
 end
 
 function determine_output_func(p::TraceParticlesParameters)
+    isnothing(p.output_func) || return p.output_func
     if p.eom == hybridgcafo!
         return p.save_switchinfo ?
             output_func = (sol, ctx) -> (sol, false) :
@@ -173,10 +173,16 @@ function determine_output_func(p::TraceParticlesParameters)
             output_func_max_lightweight : output_func_lightweight
     elseif p.eom == lorentzforce!
         return output_func_lightweight_fo
+    else
+        throw(ArgumentError(
+        """Could not infer `output_func` from the equations of motion.
+           Please provide one as a parameter."""
+        ))
     end
 end
 
 function determine_reduction(p::TraceParticlesParameters, effective_batchsize)
+    isnothing(p.reduction) || return p.reduction
     nbatches = ceil(Int, p.npart / effective_batchsize)
     return (p.eom == hybridgcafo! && p.save_switchinfo) ?
         (u, data, I) -> (append!(u, data), false) :

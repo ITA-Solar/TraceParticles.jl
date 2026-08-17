@@ -355,6 +355,10 @@ end
             output_func_lightweight,
             output_func_lightweight_fo,
         )
+
+        # Test custom output_function
+        custom = (sol, ctx) -> (sol, false)
+        @test determine_output_func(makeparams(output_func = custom)) === custom
     end
 
     @testset verbose = verbose ≥ 5 "determine_reduction" begin
@@ -372,6 +376,10 @@ end
         @test !(determine_reduction(
             makeparams(eom=hybridgcafo!, save_switchinfo=true), 5
         ) isa SaveBatchAsHDF5)
+
+        # Test custom output_function
+        custom = (u, data, I) -> (append!(u, data), false)
+        @test determine_reduction(makeparams(reduction = custom), 1) === custom
     end
 
     @testset verbose = verbose ≥ 5 "define_parameters" begin

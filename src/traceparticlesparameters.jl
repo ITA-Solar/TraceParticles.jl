@@ -26,6 +26,14 @@ Providing single-precision input consistently gives a single-precision run.
   `EnsembleProblem` can call as `(prob, ctx)`.
 
 # Optional fields (not a complete list)
+- `output_func`: The output the integrator is to save from each particle
+   trajectory. If given it is directly passed as a keyword argument to the
+   `SciMLBase.EnsembleProblem`. The default is to use
+   `output_func_lightweight` or `output_func_lightweight_hybrid` depending on
+   the equations of motion.
+- `reduction`: The data reduction of each batch of particles. The default is
+   `SaveBatchAsHDF5`, which requires the batch to be transformable into a
+   dataframe via `DataFrame(batch)`.
 - `callback_specs`: tuple of callback specifications, empty by default,
 - `batchsize`: number of particles per reduction batch, defaults to `npart`,
 - `datadir`: where the experiment directory is created,
@@ -76,6 +84,8 @@ Base.@kwdef struct TraceParticlesParameters
     emfield_file::String
     prob_func::Any
     # Optional parameters
+    output_func::Any = nothing
+    reduction::Any = nothing
     callback_specs::Tuple = ()
     batchsize::Int = npart
     safetycopy::Bool = false
