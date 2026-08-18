@@ -8,8 +8,7 @@ function SciMLBase.solve(
         logger = nothing,
         seed = params.seed
 )
-    logger = isnothing(logger) ? prob.logger : logger
-    with_logger(logger) do
+    with_logger(something(logger, prob.logger, current_logger())) do
         (; datadir, expname, abstol, reltol, maxiters, alg) = params
         if params.paramsbackup
             create_paramsbackup(datadir, expname)
@@ -94,7 +93,7 @@ Start time: $(string(now()))
 Running an ensemble of $(@sprintf "%.1E" trajectories) particles
 Random seed: $seed
 Equations of motion: $(get_eom(prob))
-Max iterations per particle: $maxiters
+Max iterations per particle: $(@sprintf "%.1E" maxiters)
 Problem function: $(typeof(get_prob_func(prob)).name.name)
 Output function: $(typeof(get_output_func(prob)).name.name)
 Reduction: $(typeof(get_reduction(prob)).name.name)

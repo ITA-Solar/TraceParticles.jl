@@ -19,7 +19,6 @@ if !isdefined(Main, :verbose)
     verbose = 3
 end
 
-logfilepath = "runtests.log.txt"
 if "debug" in ARGS
     loglevel = Logging.Debug
 elseif "info" in ARGS
@@ -27,29 +26,22 @@ elseif "info" in ARGS
 else
     loglevel = Logging.Warn
 end
+logfilepath = joinpath(mktempdir(), "runtests.log.txt")
 logger = TraceParticles.logger2fileandstderr(loglevel, logfilepath)
 
-if "fast_tests" in ARGS
-    @testset verbose = verbose ≥ 1 "Tests" begin
-        with_logger(logger) do
+with_logger(logger) do
+    if "fast_tests" in ARGS
+        @testset verbose = verbose ≥ 1 "Tests" begin
             include("fast_tests.jl")
+            @test isfile(logfilepath)
         end
-        targetfile = joinpath(@__DIR__,"fast_tests.log.txt")
-        include("test_log.jl")
-        testlog(loglevel, logfilepath, targetfile, verbose)
-    end
-elseif "blank" in ARGS
-    nothing
-else
-    @testset verbose = verbose ≥ 1 "Tests" begin
-        with_logger(logger) do
+    elseif "blank" in ARGS
+        nothing
+    else
+        @testset verbose = verbose ≥ 1 "Tests" begin
             include("fast_tests.jl")
             include("slow_tests.jl")
-        end
-        targetfile = joinpath(@__DIR__,"all_tests.log.txt")
-        include("test_log.jl")
-        testlog(loglevel, logfilepath, targetfile, verbose)
-    end # testset all test
+            @test isfile(logfilepath)
+        end # testset all test
+    end
 end
-
-if loglevel == Logging.Info rm(logfilepath) end

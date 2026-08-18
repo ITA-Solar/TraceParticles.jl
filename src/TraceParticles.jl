@@ -100,7 +100,7 @@ export
 # reduction_functions.jl
 export
     SaveBatchAsHDF5,
-    get_filename,
+    get_filename
 # odeparameters.jl
 export
     FullOrbitParams,
@@ -116,7 +116,9 @@ export
     h5_getenergies,
     h5_getenergies_gca,
     h5_getinitialstate,
+    h5_getinitialstate_gca,
     h5_getfinalstate,
+    h5_getfinalstate_gca,
     h5_getobservables,
     create_bifrost_itps,
     create_diffeq_ic

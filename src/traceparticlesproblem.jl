@@ -1,5 +1,5 @@
 """
-    TraceParticlesProblem(p::TraceParticlesParameters; logger=nothing)
+    TraceParticlesProblem(p::TraceParticlesParameters; logger)
 
 An assembled test-particle simulation, ready to be handed to `solve`.
 
@@ -30,23 +30,16 @@ See also [`TraceParticlesParameters`](@ref).
     ensemble_prob::ProbType
     callbackset::CallbacksetType
     trajectories::I
-    batch_size::T = nothing
-    logger::L = global_logger()
+    batch_size::T
+    logger::L
 end
 
 function TraceParticlesProblem(
     p::TraceParticlesParameters;
-    logger=nothing
+    logger=current_logger()
 )
     create_expdir(p.datadir, p.expname)
-    logger = if isnothing(logger)
-        logger2fileandstderr(
-            p.loglevel,
-            joinpath(p.datadir, p.expname, p.expname*".log.txt")
-        )
-    else
-        logger
-    end
+    logger = determine_logger(logger, p)
     with_logger(logger) do
 
         # Construct a wrapper that wraps the interpolator in a function with a
@@ -244,6 +237,17 @@ function define_odeproblem(p::TraceParticlesParameters, fields_itp)
         (zero(p.tf), p.tf),
         odeparams
     )
+end
+
+function determine_logger(logger, p::TraceParticlesParameters)
+    if p.log2file
+        return logger2fileandstderr(
+            p.loglevel,
+            joinpath(p.datadir, p.expname, p.expname*".log.txt")
+        )
+    else
+        return logger
+    end
 end
 
 function get_eom(prob::TraceParticlesProblem)

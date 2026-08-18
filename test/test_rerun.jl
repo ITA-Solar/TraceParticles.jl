@@ -105,9 +105,10 @@ function seed_experiment(dir; npart=4, expname="seed", kwargs...)
         prob_func = PredefinedICs(u0, tspans, odeparams),
         verbose = false,
         paramsbackup = false,
+        log2file=false,
         kwargs...
     )
-    solve(TraceParticlesProblem(params), params)
+    solve(TraceParticlesProblem(params; logger=current_logger()), params)
     # The file `SaveBatchAsHDF5` writes, which is what a rerun reads back.
     return params, joinpath(dir, expname, expname*".h5")
 end

@@ -109,6 +109,7 @@ Base.@kwdef struct TraceParticlesParameters
     switch_save_positions::Tuple{Bool,Bool} = (true, true)
     save_switchinfo::Bool = false
     paramsbackup::Bool = true
+    log2file::Bool = true
 
     #= This inner constructor intercepts the positional call that
     `Base.@kwdef` generates, so that every instance is validated without having

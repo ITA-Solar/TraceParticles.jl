@@ -5,6 +5,7 @@
 # Script for running fast tests.
 #-------------------------------------------------------------------------------
 
+
 @testset verbose = verbose ≥ 2 "Fast tests" begin
 
     @testset verbose = verbose ≥ 3 "Unit tests" begin

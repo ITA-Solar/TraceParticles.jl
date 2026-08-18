@@ -6,7 +6,7 @@
             include("experiments/dipoleloop.jl")
         end # testset dipole
 
-        @testset verbose = verbose ≥ 4 "2D coronal jet" begin
+        @testset verbose = verbose ≥ 4 "2D fan-spine" begin
             include("experiments/2Dfanspine/test_2Dfanspine.jl")
         end # testset 2D coronal jet
 

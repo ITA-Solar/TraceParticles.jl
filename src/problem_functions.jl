@@ -71,9 +71,9 @@ end
 An `EnsembleProblem` problem function for full-orbit particles whose initial
 state vector is drawn from `sampler`, integrated until `tf`.
 """
-struct SampleFullOrbit{T,F}
+struct SampleFullOrbit{T,TF<:Real}
     sampler::T
-    tf::F
+    tf::TF
 end
 function (self::SampleFullOrbit)(prob, ctx)
     x, y, z, vx, vy, vz, t, weight, nrejections =
@@ -115,9 +115,9 @@ end
 An `EnsembleProblem` problem function for guiding-centre particles whose
 initial state vector is drawn from `sampler`, integrated until `tf`.
 """
-struct SampleGCA{T,F<:Real}
+struct SampleGCA{T,TF<:Real}
     sampler::T
-    tf::F
+    tf::TF
 end
 function (self::SampleGCA)(prob, ctx)
     x, y, z, vx, vy, vz, t, weight, nrejections =
@@ -154,9 +154,9 @@ initial state vector is drawn from `sampler`, integrated until `tf`.
 `hybridscheme` whether the switches are recorded (see
 [`HybridParamsWithDetection`](@ref)) or not.
 """
-struct SampleHybrid{T,F,T2<:EoMID.T,T3<:HybridScheme.T}
+struct SampleHybrid{T,TF<:Real,T2<:EoMID.T,T3<:HybridScheme.T}
     sampler::T
-    tf::F
+    tf::TF
     initialeomid::T2
     hybridscheme::T3
 end

@@ -27,6 +27,7 @@ function rerun(
     idxs::AbstractVector,
     datafile::String,
     params::TraceParticlesParameters;
+    logger=current_logger(),
     paramsbackup=true,
     otherparamchanges...
 )
@@ -43,6 +44,6 @@ function rerun(
         otherparamchanges...
     )
 
-    prob = TraceParticlesProblem(new_params)
+    prob = TraceParticlesProblem(new_params; logger=logger)
     return solve(prob, new_params)
 end

@@ -44,3 +44,9 @@ const si2cgs_currentdensity = 1e-5c_cgs # = 2.99792458e5. A/m^2 => StatA/cm^2
 const si2cgs_electricfield = 1e6 / c_cgs # 3.33564095e-5. V/m => StatV/cm
 const cgs2si_electricfield = 1/si2cgs_electricfield # = 2.99792458e4. To V/m
 const cgs2si_velocity = 1e-2 # 1 cm * 0.01 m/cm
+
+# Particles
+const electron_mass = m_e
+const electron_charge = -e
+const proton_mass = m_p
+const proton_charge = e

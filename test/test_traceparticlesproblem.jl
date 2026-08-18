@@ -13,6 +13,7 @@
 using HDF5
 using Interpolations
 using JLD2
+using Logging
 using OrdinaryDiffEq
 using Random
 using SciMLBase
@@ -148,6 +149,7 @@ end
         emfield_file = "emfield.jld2",
         prob_func = ICsFromFile(ic_file="ic.h5"),
         verbose = false,
+        log2file=false,
     )
     makeparams(; kwargs...) = TraceParticlesParameters(;
         baseparams..., eom=lorentzforce!, kwargs...
@@ -222,6 +224,7 @@ end
 
     @testset verbose = verbose ≥ 5 "SampleICsFromMHD" begin
         mktempdir() do dir
+
             spec = write_test_sample(dir)
             @test spec isa SampleICsFromMHD
             # No importance sampling by default.
@@ -460,7 +463,7 @@ end
                 prob_func = ICsFromFile(ic_file=write_test_icfile(dir, npart)),
                 callback_specs = (OutOfBounds(x=(-1.0, 2.0)),),
             )
-            tpprob = TraceParticlesProblem(params)
+            tpprob = TraceParticlesProblem(params; logger=current_logger())
 
             @test tpprob isa TraceParticlesProblem
             @test tpprob.trajectories == npart
@@ -502,7 +505,7 @@ end
                 emfield_file = write_test_emfield(dir),
                 prob_func = write_test_sample(dir),
             )
-            tpprob = TraceParticlesProblem(params)
+            tpprob = TraceParticlesProblem(params; logger=current_logger())
             @test tpprob.ensemble_prob.prob_func isa SampleGCA
             @test tpprob.ensemble_prob.prob_func.sampler isa MHDSampler
         end
@@ -519,7 +522,10 @@ end
                 emfield_file = write_test_emfield(dir),
                 prob_func = ICsFromFile(ic_file=write_test_icfile(dir, npart)),
             )
-            @test TraceParticlesProblem(params).batch_size == npart
+            @test TraceParticlesProblem(
+                    params; logger=current_logger()
+                ).batch_size == npart
+
         end
     end
 
