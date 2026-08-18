@@ -195,17 +195,16 @@ function determine_reduction(p::TraceParticlesParameters, effective_batchsize)
         )
 end
 
-#= The template parameters and ODE problem below only fix *types*; `prob_func`
-overwrites every value per particle. They therefore take their precision from
-`p.mass` and `p.tf` rather than imposing one, so that consistently
-single-precision input stays single precision. =#
-function define_parameters(p::TraceParticlesParameters, fields_itp)
+function define_parameters(
+    p::TraceParticlesParameters, fields_itp;
+    magneticmoment=zero(p.mass)
+)
     if p.eom == guidingcentreapproximation!
         return GCAParams(
             charge=p.charge,
             mass=p.mass,
             electromagneticfield=fields_itp,
-            magneticmoment = zero(p.mass)
+            magneticmoment = magneticmoment
         )
     elseif p.eom == lorentzforce!
         return FullOrbitParams(
@@ -218,7 +217,7 @@ function define_parameters(p::TraceParticlesParameters, fields_itp)
             charge=p.charge,
             mass=p.mass,
             electromagneticfield=fields_itp,
-            magneticmoment = zero(p.mass),
+            magneticmoment = magneticmoment,
             initialeomid=p.initialeomid
         )
     elseif p.eom == hybridgcafo!
@@ -226,7 +225,7 @@ function define_parameters(p::TraceParticlesParameters, fields_itp)
             charge=p.charge,
             mass=p.mass,
             electromagneticfield=fields_itp,
-            magneticmoment = zero(p.mass),
+            magneticmoment = magneticmoment,
             initialeomid=p.initialeomid
         )
     else
@@ -239,10 +238,9 @@ function define_odeproblem(p::TraceParticlesParameters, fields_itp)
     ## Define the type of ODEProblem
     odeprob = ODEProblem(
         p.eom,
-        # I think the important thing is the type of u0, not the length
-        zeros(typeof(p.mass), 1),
         # Only the type of the time span matters here; `prob_func` overwrites
         # the values with each particle's own initial time.
+        zeros(typeof(p.mass), 1),
         (zero(p.tf), p.tf),
         odeparams
     )
@@ -270,6 +268,17 @@ end
 
 function get_filename(prob::TraceParticlesProblem)
     return get_filename(prob.ensemble_prob.reduction)
+end
+
+"""
+    experimentname(prob::TraceParticlesProblem)
+The name of the experiment, taken from the file its reduction writes. A
+reduction that writes no file of its own, has no name to give.
+"""
+function experimentname(prob::TraceParticlesProblem)
+    reduction = get_reduction(prob)
+    applicable(get_filename, reduction) || return "(unnamed)"
+    return first(splitext(basename(get_filename(reduction))))
 end
 
 function get_reductiontype(prob::TraceParticlesProblem)

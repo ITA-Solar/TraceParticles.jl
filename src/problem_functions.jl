@@ -249,14 +249,36 @@ Base.@kwdef struct ICsFromFile
     ic_file::String
 end
 
-function init_probfunc(pf::ICsFromFile, p, _, fields_itp)
-    u0, tspan, params = create_diffeq_ic(
-        pf.ic_file,
-        p.tf,
+function init_probfunc(probfunc::ICsFromFile, params, _, fields_itp)
+    u0, tspans, odeparams = create_diffeq_ic(
+        probfunc.ic_file,
+        params.tf,
         fields_itp;
-        f=p.eom
+        f=params.eom
     )
-    return PredefinedICs(u0, tspan, params)
+    return PredefinedICs(u0, tspans, odeparams)
+end
+
+Base.@kwdef struct Rerun{T<:AbstractVector}
+    datafile::String
+    idxs::T
+end
+
+function init_probfunc(probfunc::Rerun, params, _, fields_itp)
+    tspans = tspans_idxs(probfunc.datafile, probfunc.idxs)
+    if params.eom == guidingcentreapproximation!
+        u0, mu0 = initialstate_idxs_gca(probfunc.datafile, probfunc.idxs)
+    else
+        u0, mu0 = initialstate_idxs(probfunc.datafile, probfunc.idxs)
+    end
+    odeparamstype = typeof(define_parameters(params, fields_itp))
+    odeparams = Vector{odeparamstype}(undef, length(probfunc.idxs))
+    for i in eachindex(probfunc.idxs)
+        odeparams[i] = define_parameters(
+            params, fields_itp; magneticmoment=mu0[i]
+        )
+    end
+    return PredefinedICs(u0, tspans, odeparams)
 end
 
 

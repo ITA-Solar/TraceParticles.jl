@@ -13,6 +13,7 @@ using TraceParticles:
     guidingcentreapproximation!,
     hybridgcafo!,
     lorentzforce!,
+    setparameters,
     validate
 
 if !isdefined(Main, :verbose)
@@ -158,6 +159,32 @@ end
         @test TraceParticlesParameters(;
             baseparams..., reduction=custom
         ).reduction === custom
+    end
+
+    @testset verbose = verbose ≥ 5 "setparameters" begin
+        p = TraceParticlesParameters(; baseparams..., npart=10, batchsize=5)
+
+        # Only the named fields change; everything else is carried over.
+        varied = setparameters(p; npart=20, eom=guidingcentreapproximation!)
+        @test varied.npart == 20
+        @test varied.eom === guidingcentreapproximation!
+        @test varied.batchsize == 5
+        @test varied.expname == p.expname
+        @test varied.prob_func === p.prob_func
+        # The original is left alone, so it can be varied again.
+        @test p.npart == 10
+        @test p.eom === lorentzforce!
+
+        # No changes gives back the same values.
+        unchanged = setparameters(p)
+        for name in fieldnames(TraceParticlesParameters)
+            @test getfield(unchanged, name) == getfield(p, name)
+        end
+
+        # A misspelled field is caught here rather than silently ignored.
+        @test_throws ArgumentError setparameters(p; nparticles=20)
+        # The copy is validated like any other instance.
+        @test_throws ArgumentError setparameters(p; npart=0)
     end
 
     @testset verbose = verbose ≥ 5 "show" begin

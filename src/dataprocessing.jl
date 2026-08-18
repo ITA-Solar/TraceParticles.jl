@@ -173,6 +173,23 @@ function finalstate_idxs(
 end
 
 """
+    tspans_idxs(fname, idxs)
+Return the tspans `(t0, tf)` for all particles of index in `idxs`.
+"""
+function tspans_idxs(
+    fname::String,
+    idxs::AbstractVector;
+    mask=nothing
+)
+    data = h5_getdataset(fname, [:t0, :tf])
+    tspans = [(t0, tf) for (t0, tf) in zip(data.t0, data.tf)]
+    if !isnothing(mask)
+        tspans = tspans[mask]
+    end
+    return tspans[idxs]
+end
+
+"""
     replace_finalstates(fname_original, fname_replacement, original_idxs)
     replace_finalstates(fname_original, fname_replacement, original_idxs;
         replace_keys=names)

@@ -11,7 +11,9 @@ function SciMLBase.solve(
     logger = isnothing(logger) ? prob.logger : logger
     with_logger(logger) do
         (; datadir, expname, abstol, reltol, maxiters, alg) = params
-        create_paramsbackup(datadir, expname)
+        if params.paramsbackup
+            create_paramsbackup(datadir, expname)
+        end
         sim = solve(
             prob,
             alg,
@@ -30,7 +32,7 @@ function SciMLBase.solve(
                         get_electromagneticfield(prob);
                         eom=get_eom(prob)
                     )
-                    logtimed(timed_taken, "Energies computed")
+                    logtimed(time_taken, "Energies computed")
                 catch e
                     @error "Failed to save energies" exception=e
                 end
@@ -84,7 +86,7 @@ function SciMLBase.solve(
 ------------------------------------------------------------------------
 TraceParticles.jl package version: $(pkgversion(TraceParticles))
 Program: $PROGRAM_FILE
-Experiment name: $(first(splitext(basename(get_filename(prob)))))
+Experiment name: $(experimentname(prob))
 Parallelisation: $paral_msg
 Host name : $(gethostname())
 Start time: $(string(now()))
@@ -118,5 +120,3 @@ Number of batches: $(get_nofbatches(prob))
 
     return sim
 end
-
-

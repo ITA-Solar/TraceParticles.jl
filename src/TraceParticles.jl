@@ -132,6 +132,9 @@ export
     particlemask,
     replaceparticles,
     generate_probdistr
+# rerun.jl
+export
+    rerun,
 # gcastate.jl
 export
     GCAState

@@ -13,6 +13,7 @@
         include("test_callback_specifiers.jl")
         include("test_traceparticlesparameters.jl")
         include("test_traceparticlesproblem.jl")
+        include("test_rerun.jl")
     end
 
     @testset verbose = verbose ≥ 3 "Regression tests" begin

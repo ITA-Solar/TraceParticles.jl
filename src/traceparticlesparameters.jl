@@ -38,6 +38,8 @@ Providing single-precision input consistently gives a single-precision run.
 - `batchsize`: number of particles per reduction batch, defaults to `npart`,
 - `datadir`: where the experiment directory is created,
 - `seed`: random seed for the ensemble.
+- `paramsbackup::Bool=true`: Whether to create a backup of the experiment
+   parameters.
 
 # Example
 ```julia
@@ -106,6 +108,7 @@ Base.@kwdef struct TraceParticlesParameters
     switchback_tolerance::Real = 0.9
     switch_save_positions::Tuple{Bool,Bool} = (true, true)
     save_switchinfo::Bool = false
+    paramsbackup::Bool = true
 
     #= This inner constructor intercepts the positional call that
     `Base.@kwdef` generates, so that every instance is validated without having
@@ -149,6 +152,23 @@ function validate(p::TraceParticlesParameters)
     end
 
     return nothing
+end
+
+"""
+    setparameters(p::TraceParticlesParameters; changes...)
+Copy `p` with the fields named in `changes` replaced by the given values.
+"""
+function setparameters(p::TraceParticlesParameters; changes...)
+    names = fieldnames(TraceParticlesParameters)
+    unknown = setdiff(keys(changes), names)
+    if !isempty(unknown)
+        throw(ArgumentError(
+            "`TraceParticlesParameters` has no field $(join(unknown, ", "))."
+        ))
+    end
+    return TraceParticlesParameters(;
+        (name => get(changes, name, getfield(p, name)) for name in names)...
+    )
 end
 
 function Base.show(io::IO, ::MIME"text/plain", p::TraceParticlesParameters)

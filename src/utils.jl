@@ -158,10 +158,10 @@ end
 Find and drop all axes with one point.
 """
 function squeeze(arr::AbstractArray)
-    meshsize = size(arr)
-    idxs = findall(x -> x == 1, meshsize)
-    for dim in idxs
-        arr = dropdims(arr, dims=dim)
+    singular_axes = findall(x -> x == 1, size(arr))
+    while !(isempty(singular_axes))
+        arr = dropdims(arr, dims=first(singular_axes))
+        singular_axes = findall(x -> x == 1, size(arr))
     end
     return arr
 end
