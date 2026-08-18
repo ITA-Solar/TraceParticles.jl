@@ -72,22 +72,23 @@ params = TraceParticlesParameters(
 See also [`TraceParticlesProblem`](@ref), [`validate`](@ref).
 """
 Base.@kwdef struct TraceParticlesParameters
+    expname::String
     eom::Function
     npart::Int
     tf::Real
     mass::Real
     charge::Real
+    emfield_file::String
+    prob_func::Any
     alg::SciMLBase.AbstractODEAlgorithm
     maxiters::Int
     reltol::Real
     abstol::Real
-    expname::String
-    datadir::String = "data"
-    emfield_file::String
-    prob_func::Any
     # Optional parameters
+    datadir::String = "data"
     output_func::Any = nothing
     reduction::Any = nothing
+    solver_options::NamedTuple = (;)
     callback_specs::Tuple = ()
     batchsize::Int = npart
     safetycopy::Bool = false

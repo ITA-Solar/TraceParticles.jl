@@ -102,6 +102,11 @@ fanspineparameters(expname; seed=5) = TraceParticlesParameters(
     abstol=1e0,
     maxiters=10_000_000,
     verbose=false,
+    log2file=false,
+    solver_options = (;
+        save_idxs = [1,2,3,4], # Just for testing, this is the default
+        save_everystep=true    # Just for testing, this is the default
+    ),
 
     # Initial conditions: sampled from the snapshot during the run.
     prob_func=SampleICsFromMHD(

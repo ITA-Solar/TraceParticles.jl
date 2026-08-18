@@ -15,11 +15,12 @@ function SciMLBase.solve(
         end
         sim = solve(
             prob,
-            alg,
-            abstol,
-            reltol,
-            maxiters,
-            seed
+            alg;
+            abstol=abstol,
+            reltol=reltol,
+            maxiters=maxiters,
+            seed=seed,
+            params.solver_options...
         )
 
         if params.compute_initial_and_final_energy
@@ -50,12 +51,8 @@ particles using `save_energy`.
 """
 function SciMLBase.solve(
     prob::TraceParticlesProblem,
-    alg::SciMLBase.AbstractODEAlgorithm,
-    abstol::Real,
-    reltol::Real,
-    maxiters::Number,
-    seed::Number,
-    kwargs...
+    alg::SciMLBase.AbstractODEAlgorithm;
+    solver_kwargs...
 )
     # Find the number of processes working in parellel.
     np = nprocs()
@@ -80,9 +77,11 @@ function SciMLBase.solve(
     # START OF SIMULATION
     # Unpack struct fields
     (; ensemble_prob, callbackset, trajectories, batch_size) = prob
-
+    seed = haskey(solver_kwargs, :seed) ? solver_kwargs[:seed] : "DEFAULT"
+    maxiters = haskey(solver_kwargs, :maxiters) ?
+        solver_kwargs[:maxiters] : "DEFAULT"
     @info """
-------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 TraceParticles.jl package version: $(pkgversion(TraceParticles))
 Program: $PROGRAM_FILE
 Experiment name: $(experimentname(prob))
@@ -91,15 +90,14 @@ Host name : $(gethostname())
 Start time: $(string(now()))
 
 Running an ensemble of $(@sprintf "%.1E" trajectories) particles
-Random seed: $seed
+Random seed: $(seed)
 Equations of motion: $(get_eom(prob))
 Max iterations per particle: $(@sprintf "%.1E" maxiters)
 Problem function: $(typeof(get_prob_func(prob)).name.name)
 Output function: $(typeof(get_output_func(prob)).name.name)
 Reduction: $(typeof(get_reduction(prob)).name.name)
 Number of batches: $(get_nofbatches(prob))
-------------------------------------------------------------------------------"""
-
+-----------------------------------------------------------------------------"""
 
     time_taken = @timed sim = SciMLBase.solve(
         ensemble_prob,
@@ -107,13 +105,9 @@ Number of batches: $(get_nofbatches(prob))
         ensemble_algorithm
         ;
         trajectories=trajectories,
-        reltol=reltol,
-        abstol=abstol,
-        maxiters=maxiters,
         batch_size=batch_size,
         callback=callbackset,
-        seed=seed,
-        kwargs...
+        solver_kwargs...
     );
     logtimed(time_taken, "Ensemble solved")
 
