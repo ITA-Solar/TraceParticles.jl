@@ -3,10 +3,10 @@
 [docs-dev-url]: https://ITA-Solar.github.io/TraceParticles.jl/dev
 [ci-img]: https://github.com/ITA-Solar/TraceParticles.jl/actions/workflows/test.yml/badge.svg?branch=develop
 [ci-url]: https://github.com/ITA-Solar/TraceParticles.jl/actions/workflows/test.yml
+[dep-img]: https://github.com/ITA-Solar/TraceParticles.jl/actions/workflows/dependabot/dependabot-updates/badge.svg
+[dep-url]: https://github.com/ITA-Solar/TraceParticles.jl/actions/workflows/dependabot/dependabot-updates
 
-| Documentation                    | Continuous integration | 
-|    :---:                         |     :----:
-|[![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url]  |
+[![][docs-dev-img]][docs-dev-url] [![][ci-img]][ci-url] [![][dep-img]][dep-url]
 
 TraceParticles.jl provides tools for sampling and simulating charged particles in
 an electromagnetic field using
