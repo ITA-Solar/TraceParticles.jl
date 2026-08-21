@@ -629,7 +629,7 @@ end
         snap::Integer,
         itp_type::Interpolations.InterpolationType,
         itp_bc::Interpolations.BoundaryCondition;
-        filename::String,
+        name::String,
         units::String,
         variables::Vector{String}
     )
@@ -651,9 +651,9 @@ function create_bifrost_itps(
         Interpolations.BoundaryCondition,
         NTuple{N,Interpolations.BoundaryCondition} where N
     },
-    filename::String,
-    units,
     variables;
+    units::String,
+    name=missing,
     normalise=fill(false, length(variables)),
     destagger=fill(false, length(variables)),
     xzinterpolation=false,
@@ -666,7 +666,7 @@ function create_bifrost_itps(
         ))
     end
     tstamp = length(snaps) == 1 ?
-             "_t$snaps" : "_t$(first(snaps))-$(last(snaps))"
+             "t$snaps" : "t$(first(snaps))-t$(last(snaps))"
     if length(snaps) == 1
         if xzinterpolation
             wrapper = StaticXZInterpolation
@@ -678,6 +678,18 @@ function create_bifrost_itps(
     else
         wrapper = nothing
     end
+
+    itpstr =
+        if itp_type == BSpline(Linear())
+            "linear"
+        elseif itp_type == BSpline(Cubic())
+            "cubicspline"
+        else
+            missing
+        end
+    postfix = join(skipmissing([units, itpstr]), "_")*".itp.jld2"
+    prefix = join(skipmissing([name, tstamp]), "_")
+
     # Create interpolator for the electromagnetic field
     if "BE" ∈ variables
         interpolator = get_br_emfield_vecof_interpolators(
@@ -692,7 +704,7 @@ function create_bifrost_itps(
         if !isnothing(wrapper)
             interpolator = [wrapper(itp) for itp in interpolator]
         end
-        @save string(filename, tstamp, "_BE.jld2") interpolator
+        @save join([prefix, "BE", postfix], "_") interpolator
         # Remove "BE" from the variables
         mask = variables .!= "BE"
         variables = variables[mask]
@@ -724,8 +736,9 @@ function create_bifrost_itps(
         if !isnothing(wrapper)
             interpolator = wrapper(interpolator)
         end
-        @save string(
-            filename, tstamp, "_$(var)_norm$(norm).jld2"
+        @save join(skipmissing(
+            [prefix, var, norm ? "normalised" : missing, postfix]
+           ), "_"
         ) interpolator
         if deallocateafterwritten
             interpolator = nothing
