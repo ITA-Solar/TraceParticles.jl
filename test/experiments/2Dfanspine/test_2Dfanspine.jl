@@ -48,17 +48,17 @@ create_bifrost_itps(
     1,
     BSpline(Cubic()),
     Flat(),
-    joinpath(outdir, "cs"),
-    "si",
     ["BE", "tg", "r"];
+    name=joinpath(outdir, "test"),
+    units="si",
     normalise=[false, false, false],
     destagger=[true, false, false],
     xzinterpolation=true,
 )
 
-emfield_file = joinpath(outdir, "cs_t1_BE.jld2")
-tg_file = joinpath(outdir, "cs_t1_tg_normfalse.jld2")
-target_distr_file = joinpath(outdir, "cs_t1_r_normfalse.jld2")
+emfield_file = joinpath(outdir, "test_t1_BE_si_cubicspline.itp.jld2")
+tg_file = joinpath(outdir, "test_t1_tg_si_cubicspline.itp.jld2")
+target_distr_file = joinpath(outdir, "test_t1_r_si_cubicspline.itp.jld2")
 
 # Bounds of the snapshot, except a 40 km edge on both sides.
 xbounds = (1.5822270393371582e7, 1.6318359375e7)
