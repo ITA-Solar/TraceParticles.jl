@@ -66,7 +66,10 @@ function TraceParticlesProblem(
 
         # Resolve `p.prob_func` into the function that gives each particle its
         # initial state.
-        prob_func = init_probfunc(p.prob_func, p, itp_wrapper, fields_itp)
+        time_taken = @timed prob_func = init_probfunc(
+            p.prob_func, p, itp_wrapper, fields_itp
+        )
+        logtimed(time_taken, "prob_func constructed")
 
         cbs = create_callbacks(p)
         # Set batchsize to npart if the npart < batchsize

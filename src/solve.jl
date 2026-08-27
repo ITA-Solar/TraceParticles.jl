@@ -5,6 +5,8 @@ Solve a `TraceParticlesProblem` given a `TraceParticlesParameters` instance.
 function SciMLBase.solve(
         prob::TraceParticlesProblem,
         params::TraceParticlesParameters;
+        trajectories=prob.trajectories,
+        batch_size=prob.batch_size,
         logger = nothing,
         seed = params.seed
 )
@@ -16,6 +18,8 @@ function SciMLBase.solve(
         sim = solve(
             prob,
             alg;
+            trajectories=trajectories,
+            batch_size=batch_size,
             abstol=abstol,
             reltol=reltol,
             maxiters=maxiters,
@@ -52,6 +56,8 @@ particles using `save_energy`.
 function SciMLBase.solve(
     prob::TraceParticlesProblem,
     alg::SciMLBase.AbstractODEAlgorithm;
+    trajectories=prob.trajectories,
+    batch_size=prob.batch_size,
     solver_kwargs...
 )
     # Find the number of processes working in parellel.
@@ -76,12 +82,12 @@ function SciMLBase.solve(
     #==========================================================================#
     # START OF SIMULATION
     # Unpack struct fields
-    (; ensemble_prob, callbackset, trajectories, batch_size) = prob
+    (; ensemble_prob, callbackset) = prob
     seed = haskey(solver_kwargs, :seed) ? solver_kwargs[:seed] : "DEFAULT"
     maxiters = haskey(solver_kwargs, :maxiters) ?
         solver_kwargs[:maxiters] : "DEFAULT"
     @info """
------------------------------------------------------------------------------
+-----------------------------------------------------------------------
 TraceParticles.jl package version: $(pkgversion(TraceParticles))
 Program: $PROGRAM_FILE
 Experiment name: $(experimentname(prob))
