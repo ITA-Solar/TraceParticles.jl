@@ -80,7 +80,7 @@ Base.@kwdef struct TraceParticlesParameters
     charge::Real
     emfield_file::String
     prob_func::Any
-    alg::SciMLBase.AbstractODEAlgorithm
+    alg::Union{SciMLBase.AbstractODEAlgorithm, Nothing}
     maxiters::Int
     reltol::Real
     abstol::Real

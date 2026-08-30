@@ -55,7 +55,7 @@ particles using `save_energy`.
 """
 function SciMLBase.solve(
     prob::TraceParticlesProblem,
-    alg::SciMLBase.AbstractODEAlgorithm;
+    alg::Union{SciMLBase.AbstractODEAlgorithm, Nothing};
     trajectories=prob.trajectories,
     batch_size=prob.batch_size,
     solver_kwargs...
