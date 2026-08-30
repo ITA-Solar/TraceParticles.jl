@@ -221,37 +221,43 @@ end
 
 """
     init_probfunc(
-        prob_func,
+        probfunc_specifier,
         p::TraceParticlesParameters,
         itp_wrapper,
         fields_itp
     )
 
-Resolve `prob_func` into a function that `EnsembleProblem` can call as
+Resolve `probfunc_specifier` into a `prob_func` that `EnsembleProblem` can call as
 `(prob, ctx)`.
 
 Anything that is not a recognised specification is returned unchanged, so a
 user-supplied problem function needs no method here.
-See [`MHDSample`](@ref) and [`ICsFromFile`](@ref) examples of  specifications
+See [`SampleICsFromMHD`](@ref) and [`ICsFromFile`](@ref) examples of  specifications
 that are recognised.
 """
 function init_probfunc end
 
-init_probfunc(pf::Any, _, _, _) = pf
+init_probfunc(pfs::Any, _, _, _) = pfs
 
 
 """
     ICsFromFile(; ic_file::String)
-Take the initial conditions from `ic_file`, an HDF5 file in the layout
-[`create_diffeq_ic`](@ref) reads. Resolves into a [`PredefinedICs`](@ref).
+Take the initial conditions from `ic_file`, an HDF5 file. Resolves into a
+[`PredefinedICs`](@ref).
+
+## Arguments
+-`ic_file` is assumed to be a JLD2 file containing
+the initial positions, initial velocities, initial times, charge, mass, magnetic
+moment, statistical weight, and number of rejections (from sampling the condition)
+for the particles to simulate.
 """
 Base.@kwdef struct ICsFromFile
     ic_file::String
 end
 
-function init_probfunc(probfunc::ICsFromFile, params, _, fields_itp)
+function init_probfunc(probfuncspec::ICsFromFile, params, _, fields_itp)
     u0, tspans, odeparams = create_diffeq_ic(
-        probfunc.ic_file,
+        probfuncspec.ic_file,
         params.tf,
         fields_itp;
         f=params.eom
@@ -264,45 +270,45 @@ Base.@kwdef struct Rerun{T<:AbstractVector}
     idxs::T
 end
 
-function init_probfunc(probfunc::Rerun, params, _, fields_itp)
-    x0 = h5_getdataset(probfunc.datafile, "x0")
-    y0 = h5_getdataset(probfunc.datafile, "y0")
-    z0 = h5_getdataset(probfunc.datafile, "z0")
-    t0 = h5_getdataset(probfunc.datafile, "t0")
-    tf = h5_getdataset(probfunc.datafile, "tf")
-    tspans = [(t0[i], tf[i]) for i in probfunc.idxs]
+function init_probfunc(pfs::Rerun, params, _, fields_itp)
+    x0 = h5_getdataset(pfs.datafile, "x0")
+    y0 = h5_getdataset(pfs.datafile, "y0")
+    z0 = h5_getdataset(pfs.datafile, "z0")
+    t0 = h5_getdataset(pfs.datafile, "t0")
+    tf = h5_getdataset(pfs.datafile, "tf")
+    tspans = [(t0[i], tf[i]) for i in pfs.idxs]
     if params.eom == guidingcentreapproximation!
-        vparal0 = h5_getdataset(probfunc.datafile, "vparal0")
-        u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in probfunc.idxs]
-        mu0 = h5_getdataset(probfunc.datafile, "magneticmoment")[probfunc.idxs]
+        vparal0 = h5_getdataset(pfs.datafile, "vparal0")
+        u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in pfs.idxs]
+        mu0 = h5_getdataset(pfs.datafile, "magneticmoment")[pfs.idxs]
     elseif params.eom == lorentzforce!
-        vx0 = h5_getdataset(probfunc.datafile, "vx0")
-        vy0 = h5_getdataset(probfunc.datafile, "vy0")
-        vz0 = h5_getdataset(probfunc.datafile, "vz0")
-        mu0 = Vector{Bool}(undef, length(probfunc.idxs))
+        vx0 = h5_getdataset(pfs.datafile, "vx0")
+        vy0 = h5_getdataset(pfs.datafile, "vy0")
+        vz0 = h5_getdataset(pfs.datafile, "vz0")
+        mu0 = Vector{Bool}(undef, length(pfs.idxs))
         u0 = [
            [x0[i], y0[i], z0[i], vx0[i], vy0[i], vz0[i]]
-           for i in probfunc.idxs
+           for i in pfs.idxs
         ]
     elseif params.eom == hybridgcafo!
-        x0 = h5_getdataset(probfunc.datafile, "x0")
-        y0 = h5_getdataset(probfunc.datafile, "y0")
-        z0 = h5_getdataset(probfunc.datafile, "z0")
-        vx0 = h5_getdataset(probfunc.datafile, "vx0")
-        vy0 = h5_getdataset(probfunc.datafile, "vy0")
-        vz0 = h5_getdataset(probfunc.datafile, "vz0")
-        mu0 = h5_getdataset(probfunc.datafile, "magneticmoment")[probfunc.idxs]
+        x0 = h5_getdataset(pfs.datafile, "x0")
+        y0 = h5_getdataset(pfs.datafile, "y0")
+        z0 = h5_getdataset(pfs.datafile, "z0")
+        vx0 = h5_getdataset(pfs.datafile, "vx0")
+        vy0 = h5_getdataset(pfs.datafile, "vy0")
+        vz0 = h5_getdataset(pfs.datafile, "vz0")
+        mu0 = h5_getdataset(pfs.datafile, "magneticmoment")[pfs.idxs]
         u0 = [
            [x0[i], y0[i], z0[i], vx0[i], vy0[i], vz0[i]]
-           for i in probfunc.idxs
+           for i in pfs.idxs
         ]
     else
         @error "Cannot initialise `Rerun` problem function with uknown EoM:
             $(params.eom)"
     end
     odeparamstype = typeof(define_parameters(params, fields_itp))
-    odeparams = Vector{odeparamstype}(undef, length(probfunc.idxs))
-    for i in eachindex(probfunc.idxs)
+    odeparams = Vector{odeparamstype}(undef, length(pfs.idxs))
+    for i in eachindex(pfs.idxs)
         odeparams[i] = define_parameters(
             params, fields_itp; magneticmoment=mu0[i]
         )
@@ -333,10 +339,9 @@ the temperature of the drawn position. The temperature is given by the
 `tg_file`.
 
 Only filenames of the distributions are stored; the interpolators are loaded by
-[`init_probfunc`](@ref) when the problem is assembled in `TraceParticleProblem`, 
-which is also where the equations of motion decide whether the resulting problem
-function is a [`SampleFullOrbit`](@ref), [`SampleGCA`](@ref) or
-[`SampleHybrid`](@ref).
+when the problem is assembled in `TraceParticleProblem`, which is also where the
+equations of motion decide whether the resulting problem function is a
+[`SampleFullOrbit`](@ref), [`SampleGCA`](@ref) or [`SampleHybrid`](@ref).
 """
 struct SampleICsFromMHD
     tg_file::String
@@ -365,7 +370,7 @@ function SampleICsFromMHD(
     )
         if bound[1] > bound[2]
             throw(ArgumentError(
-                "`MHDSample` $name has lower bound $(bound[1]) > upper bound "*
+                "`SampleICsFromMHD` $name has lower bound $(bound[1]) > upper bound "*
                 "$(bound[2])."
             ))
         end
@@ -421,7 +426,7 @@ function init_probfunc(pf::SampleICsFromMHD, p, itp_wrapper, _)
         return SampleHybrid(sampler, p.tf, p.initialeomid, scheme)
     else
         throw(ArgumentError(
-            "`MHDSample` has no problem function for eom=$(p.eom)."
+            "`SampleICsFromMHD` has no problem function for eom=$(p.eom)."
         ))
     end
 end

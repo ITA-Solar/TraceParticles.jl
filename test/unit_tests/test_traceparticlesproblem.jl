@@ -269,16 +269,17 @@ end
                 target_distr,
                 target_distr,
                 load_object(spec.tg_file),
-                spec.xbounds,
-                spec.ybounds,
-                spec.zbounds,
-                spec.t0bounds,
+                spec.xbounds[1], spec.xbounds[2],
+                spec.ybounds[1], spec.ybounds[2],
+                spec.zbounds[1], spec.zbounds[2],
+                spec.t0bounds[1], spec.t0bounds[2],
                 maximum(target_distr),
                 spec.precision
             )
             @test sampler.proposal_distr === sampler.target_distr
             @test sampler.max_value == 1e-10
-            @test sampler.xbounds === (0.0, 1.0)
+            @test sampler.xmin === 0.0
+            @test sampler.xmax === 1.0
             @test sampler.precision === Float64
 
             # Calling it draws a position, a velocity and a weight.

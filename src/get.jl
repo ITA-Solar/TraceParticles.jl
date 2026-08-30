@@ -73,6 +73,7 @@ function get_observable(
     t=nothing,
     kwargs...
 )
+    # Observables independent of time
     if sym == :t0
         return [last(u.t) for u in sol]
     elseif sym == :tf
@@ -190,7 +191,7 @@ function get_observable(
         :pitchangle => get_pitchangle;
         :energy => get_energy;
         [:magneticmoment, :mu] .=>
-            (sol, t; kwargs...) -> get_magneticmoment(sol, t)
+            (sol, t; magneticmoment, kwargs...) -> magneticmoment;
         :gyrofrequency => (sol, t, kwargs...) -> get_gyrofrequency(sol, t);
         :gyroperiod => (sol, t, kwargs...) -> get_gyroperiod(sol, t)
     ])
@@ -252,7 +253,7 @@ function get_observable(
         obs = times
     elseif sym == :eomid
         obs = [get_eomid(sol, t) for t in times]
-        # Next, check if user is requesting a standard observable
+    # Next, check if user is requesting a standard observable
     elseif haskey(observables, sym)
         func = observables[sym]
         # These observables requires knowledge of the EoM and possibly

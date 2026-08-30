@@ -43,7 +43,7 @@ outdir = mktempdir()
 #-------------------------------------------------------------------------------
 # Create interpolation objects from the Bifrost snapshot.
 brxp = BifrostExperiment("testsnap", expdir)
-create_bifrost_itps(
+TP.create_bifrost_itps(
     brxp,
     1,
     BSpline(Cubic()),
@@ -155,10 +155,10 @@ e0, ef = h5_getenergies(fname)
 relativisticenergy = relativisticfraction * params.mass *
                      TraceParticles.csqrd * TraceParticles.J2eV
 # Termination codes as they are stored in the results
-notterminated = Int32(TerminationCode.NotTerminated)
-outofbounds = Int32(TerminationCode.OutOfBounds)
-magneticgradient = Int32(TerminationCode.MagneticGradient)
-relativistic = Int32(TerminationCode.Relativistic)
+notterminated = Int32(TP.TerminationCode.NotTerminated)
+outofbounds = Int32(TP.TerminationCode.OutOfBounds)
+magneticgradient = Int32(TP.TerminationCode.MagneticGradient)
+relativistic = Int32(TP.TerminationCode.Relativistic)
 
 """
     isinsidedomain(x, z)
@@ -335,7 +335,7 @@ end
 
 @testset "Energies" begin
     # `save_energy` and `save_gcastates` must agree on the energies
-    @test (e0, ef) == h5_getenergies_gca(fname)
+    @test (e0, ef) == TP.h5_getenergies_gca(fname)
     @test all(isfinite, e0)
     @test all(isfinite, ef)
     @test all(>(0), e0)
@@ -433,7 +433,7 @@ end
         # Both particles start out above the energy limit and must be killed
         # by the relativistic callback at the first step.
         for i in 1:2
-            @test sol.u[i].prob.p.terminationcode == TerminationCode.Relativistic
+            @test sol.u[i].prob.p.terminationcode == TP.TerminationCode.Relativistic
             @test sol.u[i].retcode == SciMLBase.ReturnCode.Terminated
             @test last(sol.u[i].t) < tf
             @test energy(sol.u[i], first(sol.u[i].t)) > relativisticenergy
@@ -450,9 +450,9 @@ end
         # A thermal particle is not relativistic, and either survives to the
         # end of the simulation or leaves the domain.
         s = sol.u[3]
-        @test s.prob.p.terminationcode != TerminationCode.Relativistic
+        @test s.prob.p.terminationcode != TP.TerminationCode.Relativistic
         @test energy(s, last(s.t)) < relativisticenergy
-        if s.prob.p.terminationcode == TerminationCode.NotTerminated
+        if s.prob.p.terminationcode == TP.TerminationCode.NotTerminated
             @test last(s.t) == tf
             @test isinsidedomain(last(s.u)[1], last(s.u)[3])
         end

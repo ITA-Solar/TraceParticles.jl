@@ -10,8 +10,13 @@ The particles are the ones at index `idxs` in `datafile`, the HDF5-file the
 experiment wrote, and `params` are the parameters it was run with. Any of those
 parameters can be changed for the rerun by passing it as a keyword argument.
 
-The particle data in `datafile` is assumed to callable with
-[`h5_getinitialstate`](@ref) and [`h5_getinitialstate_gca`](@ref).
+The particle data in `datafile` is assumed to callable with be an HDF4 file with
+groups that contains the datasets:
+- `(x0, y0, z0, vparal0, magneticmoment)` when running the EoM
+  `guidingcentreapproximation!`,
+- `(x0, y0, z0, vx0, vy0, vz0)` when running the EoM `lorentzforce!`,
+- `(x0, y0, z0, vx0, vy0, vz0, magneticmoment)` when running the EoM
+  `hybridgcafo!`.
 
 This is the tool for asking *how* a particle gained its energy: the returned
 solutions can be fed to [`get_observable`](@ref) to time-integrate the

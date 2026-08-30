@@ -276,6 +276,18 @@ end
 Callback affect that checks the `switch` parameter and switches the EoM, either
 from full orbit integration to the guiding centre approximation or the
 opposite.
+
+If the switch is from full orbit to the guiding centre approximation,
+the parallel velocity and the magnetic moment is comptuted from the particle
+state vector and the local magnetic field.
+
+If the switch is from the guiding centre approximation to full orbit solution,
+the particle is given a gyration phase angle according to
+`integrator.p.getphase(integrator)` (probably random), and a velocity vector
+computed from the magnetic moment, parallel velocity, local magnetic field, and
+the given gyration phase.
+
+See also [`get_guidingcentre`](@ref) and [`get_fullorbit`](@ref).
 """
 function hybridswitchaffect!(integrator)
     if integrator.p.eomid == EoMID.GuidingCentreApproximation

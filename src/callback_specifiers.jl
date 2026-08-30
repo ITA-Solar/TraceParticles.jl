@@ -114,7 +114,7 @@ end
 
 
 # `OutOfBoundsCondition` wants the state-vector indices as a vector.
-function create_callback(s::OutOfBounds, p)
+function create_callback(s::OutOfBounds, _)
     return DiscreteCallback(
         OutOfBoundsCondition(s.bounds, collect(s.u_idxs)),
         outofboundsaffect!,

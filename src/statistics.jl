@@ -186,12 +186,12 @@ end
         max_value
         precision
     )
-A convenience functor for doing repeated [`mhdsample`](@ref)s from the same MHD
+Construct a functor for doing repeated [`mhdsample`](@ref)s from the same MHD
 environment.
 
 # Methods
     (::MHDSampler)(mass, rng)
-Returns `x`, `y`, `z`, `vx`, `vy`, `vz`, `t`, `weight` and `nrejections`.
+Return an `mhdsample`; `(x, y, z, vx, vy, vz, t, weight, nrejections)`.
 """
 struct MHDSampler{T1,T2,T3,T4<:AbstractFloat,T5<:Real,T6<:DataType}
     target_distr::T1
@@ -345,7 +345,7 @@ function binmap(
         @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbins) * 100)
     end
 
-    return xedges, binvalues
+    return (; edges=xedges, weights=binvalues)
 end
 
 
@@ -427,7 +427,7 @@ function binmap(
     if emptybins != 0
         @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy) * 100)
     end
-    return binvalues, (xedges, yedges)
+    return (; edges=(xedges, yedges), weights=binvalues)
 end
 
 
@@ -527,7 +527,7 @@ function binmap(
     if emptybins != 0
         @info @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy * nbinsz) * 100)
     end
-    return binvalues, (xedges, yedges, zedges)
+    return (; edges=(xedges, yedges, zedges), weights=binvalues)
 end
 
 """

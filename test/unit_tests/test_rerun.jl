@@ -30,10 +30,9 @@ using TraceParticles:
     TraceParticlesParameters,
     TraceParticlesProblem,
     guidingcentreapproximation!,
-    initialstate_idxs_gca,
     rerun,
     solve,
-    tspans_idxs
+    h5_getdataset
 
 if !isdefined(Main, :verbose)
     verbose = 4
@@ -134,7 +133,12 @@ end
 
             # Each particle starts from the state and magnetic moment the
             # experiment recorded for it, in the order asked for.
-            u0, mu0 = initialstate_idxs_gca(datafile, idxs)
+            x0 = h5_getdataset(datafile, "x0")
+            y0 = h5_getdataset(datafile, "y0")
+            z0 = h5_getdataset(datafile, "z0")
+            vparal0 = h5_getdataset(datafile, "vparal0")
+            u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in idxs]
+            mu0 = h5_getdataset(datafile, "magneticmoment")[idxs]
             for (i, idx) in enumerate(idxs)
                 @test sol.u[i].u[1] ≈ u0[i]
                 @test sol.u[i].prob.p.magneticmoment == mu0[i]
@@ -144,9 +148,11 @@ end
             end
 
             # And over the time span the experiment gave it.
-            for (i, tspan) in enumerate(tspans_idxs(datafile, idxs))
-                @test sol.u[i].t[1] == tspan[1]
-                @test sol.u[i].t[end] ≈ tspan[2]
+            t0 = h5_getdataset(datafile, :t0)[idxs]
+            tf = h5_getdataset(datafile, :tf)[idxs]
+            for i in eachindex(t0)
+                @test sol.u[i].t[1] == t0[i]
+                @test sol.u[i].t[end] ≈ tf[i]
             end
 
             # Uniform B: the guiding centre slides along the field line at a
