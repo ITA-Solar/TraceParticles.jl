@@ -548,19 +548,29 @@ end
 # Creating interpolation objects from Bifrost input (MHD snapshots)
 #
 """
-    create_bifrost_interpolators(
+    create_bifrost_itps(
         brxp::BifrostExperiment,
-        snap::Integer,
+        snaps::Union{Integer,AbstractVector},
         itp_type::Interpolations.InterpolationType,
-        itp_bc::Interpolations.BoundaryCondition;
-        name::String,
+        itp_bc::Interpolations.BoundaryCondition,
+        variables::Vector{String};
         units::String,
-        variables::Vector{String}
+        name=missing,
+        kwargs...
     )
 Create interpolation objects from the MHD variables in a Bifrost snapshot
 and save them as JLD2-files.
 
+Pass `"BE"` in `variables` to get the 6-element electromagnetic field vector
+`[bx, by, bz, ex, ey, ez]` that `emfield_file` expects.
+
+Each file is named `<name>_t<snap0>-t<snapf>_<var>_<units>_<itp>.itp.jld2`,
+where `<itp>` is `linear` or `cubicspline`.
+
 ### Keyword arguments
+- `units::String`: unit system the variables are converted to, e.g. `"si"`.
+- `name`: prefix of the generated filenames, including any directory. Omitted
+    from the name when left `missing`.
 - `normalise::Vector{Bool}`
 - `destagger::Vector{Bool}`
 - `xzinterpolation::Bool`: If true, wrap 2D interpolators in a struct that

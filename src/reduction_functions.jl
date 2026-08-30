@@ -42,9 +42,8 @@ $(@sprintf "Standard deviation of steps: %.1f" std(batch.nt))
 $(@sprintf "Fewest number of steps:      %i" minimum(batch.nt))
 $(@sprintf "Most number of steps:        %i" maximum(batch.nt))
 $(@sprintf "Total number of timesteps:   %.2E" sum(batch.nt))
-$(@sprintf "Initial time:                %.5f" batch.t0[1])
-$(@sprintf "Oldest particle:             %.5f" maximum(batch.tf))
-$(@sprintf "Average end time:            %.5f" mean(batch.tf))
+$(@sprintf "Average start time           %.3E" mean(batch.t0))
+$(@sprintf "Average end time:            %.3E" mean(batch.tf))
 
         Termination statistics
 $(@sprintf "Nof. maxiters:               %i (%.2f%%)" nmaxiters nmaxiters * c1)
