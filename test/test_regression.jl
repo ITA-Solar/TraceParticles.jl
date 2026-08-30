@@ -1,21 +1,4 @@
-#-------------------------------------------------------------------------------
-# Created 10.01.23
-# Author: e.s.oyre@astro.uio.no
-#-------------------------------------------------------------------------------
-# Script for running fast tests.
-#-------------------------------------------------------------------------------
-
-
-@testset verbose = verbose ≥ 2 "Fast tests" begin
-
-    @testset verbose = verbose ≥ 3 "Unit tests" begin
-        include("test_physics.jl")
-        include("test_callbacks.jl")
-        include("test_callback_specifiers.jl")
-        include("test_traceparticlesparameters.jl")
-        include("test_traceparticlesproblem.jl")
-        include("test_rerun.jl")
-    end
+@testset verbose = verbose ≥ 2 "Long tests" begin
 
     @testset verbose = verbose ≥ 3 "Regression tests" begin
 
@@ -43,6 +26,14 @@
             include("experiments/speiser1965_hybrid.jl")
         end # testset Hybrid switch
 
+        @testset verbose = verbose ≥ 4 "2D fan-spine" begin
+            include("experiments/2Dfanspine/test_2Dfanspine.jl")
+        end # testset 2D coronal jet
+
+        @testset verbose = verbose ≥ 4 "Dipole" begin
+            include("experiments/dipoleloop.jl")
+        end # testset dipole
+
     end # testset Experiments
 
-end # testset All test
+end # testset long tests

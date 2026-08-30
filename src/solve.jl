@@ -54,8 +54,8 @@ Solve a `TraceParticlesProblem` and compute the initial and final energy of the
 particles using `save_energy`.
 """
 function SciMLBase.solve(
-    prob::TraceParticlesProblem,
-    alg::Union{SciMLBase.AbstractODEAlgorithm, Nothing};
+    prob::TraceParticlesProblem;
+    alg = nothing,
     trajectories=prob.trajectories,
     batch_size=prob.batch_size,
     solver_kwargs...

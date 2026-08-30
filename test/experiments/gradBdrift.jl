@@ -22,7 +22,7 @@ using Test
 using TraceParticles
 import TraceParticles as TP
 
-include("../test_utils.jl")
+include("../utils.jl")
 
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS

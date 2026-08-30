@@ -65,24 +65,13 @@ include("rerun.jl")
 #____/\______/\_________________________________________________________________
 
 
-# utils.jl
-export
-    ElectromagneticFieldInterpolator,
-    StaticInterpolation,
-    XZInterpolation,
-    StaticXZInterpolation
 # equations_of_motion.jl
 export
     guidingcentreapproximation!,
     lorentzforce!,
     hybridgcafo!
-# statistics.jl
-export
-    binmap
 # enums.jl
-export
-    TerminationCode,
-    EoMID
+export EoMID
 # problem_functions.jl
 export
     SampleICsFromMHD,
@@ -90,11 +79,11 @@ export
     PredefinedICs,
     SampleFullOrbit,
     SampleGCA,
-    SampleHybrid,
-    initialconditions_mhdsampling
+    SampleHybrid
 # output_functions.jl
 export
-    output_func_lightweight,
+    output_func_lightweight_gca,
+    output_func_lightweight_fo,
     output_func_lightweight_hybrid,
     output_func_max_lightweight
 # reduction_functions.jl
@@ -113,40 +102,12 @@ export
     h5_getall,
     h5_getbatch,
     h5_getdataset,
-    h5_getenergies,
-    h5_getenergies_gca,
-    h5_getinitialstate,
-    h5_getinitialstate_gca,
-    h5_getfinalstate,
-    h5_getfinalstate_gca,
-    h5_getobservables,
-    create_bifrost_itps,
-    create_diffeq_ic
-# dataprocessing.jl
-export
-    initialstate_terminationcode,
-    finalstate_terminationcode,
-    initialstate_nonthermals,
-    initialstate_maxiters,
-    initialstate_idxs,
-    finalstate_idxs,
-    particlemaskfunction,
-    particlemask,
-    replaceparticles,
-    generate_probdistr
+    h5_getenergies
 # rerun.jl
 export
-    rerun,
-# gcastate.jl
-export
-    GCAState
-# get.jl
-export
-    get_observable
+    rerun
 # callback_specifiers.jl
 export
-    CallbackSpec,
-    create_callback,
     OutOfBounds,
     Relativistic,
     HighMagneticGradient
@@ -156,5 +117,19 @@ export
 # traceparticlesproblem.jl
 export
     TraceParticlesProblem
+# dataprocessing.jl
+export
+    GCAState,
+    get_observable
+# physics
+export
+    get_fullorbit,
+    get_guidingcentre
+# constants
+export
+    electron_mass,
+    electron_charge,
+    proton_mass,
+    proton_charge
 #-------------------------------------------------------------------------------
 end

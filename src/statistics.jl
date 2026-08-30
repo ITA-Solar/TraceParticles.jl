@@ -345,7 +345,7 @@ function binmap(
         @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbins) * 100)
     end
 
-    return xedges, binvalues
+    return (; edges=xedges, weights=binvalues)
 end
 
 
@@ -427,7 +427,7 @@ function binmap(
     if emptybins != 0
         @warn @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy) * 100)
     end
-    return binvalues, (xedges, yedges)
+    return (; edges=(xedges, yedges), weights=binvalues)
 end
 
 
@@ -527,7 +527,7 @@ function binmap(
     if emptybins != 0
         @info @sprintf("%.2f %% of the bins are empty.", emptybins / (nbinsx * nbinsy * nbinsz) * 100)
     end
-    return binvalues, (xedges, yedges, zedges)
+    return (; edges=(xedges, yedges, zedges), weights=binvalues)
 end
 
 """

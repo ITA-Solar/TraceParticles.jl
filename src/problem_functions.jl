@@ -232,7 +232,7 @@ Resolve `prob_func` into a function that `EnsembleProblem` can call as
 
 Anything that is not a recognised specification is returned unchanged, so a
 user-supplied problem function needs no method here.
-See [`MHDSample`](@ref) and [`ICsFromFile`](@ref) examples of  specifications
+See [`SampleICsFromMHD`](@ref) and [`ICsFromFile`](@ref) examples of  specifications
 that are recognised.
 """
 function init_probfunc end
@@ -333,10 +333,9 @@ the temperature of the drawn position. The temperature is given by the
 `tg_file`.
 
 Only filenames of the distributions are stored; the interpolators are loaded by
-[`init_probfunc`](@ref) when the problem is assembled in `TraceParticleProblem`, 
-which is also where the equations of motion decide whether the resulting problem
-function is a [`SampleFullOrbit`](@ref), [`SampleGCA`](@ref) or
-[`SampleHybrid`](@ref).
+when the problem is assembled in `TraceParticleProblem`, which is also where the
+equations of motion decide whether the resulting problem function is a
+[`SampleFullOrbit`](@ref), [`SampleGCA`](@ref) or [`SampleHybrid`](@ref).
 """
 struct SampleICsFromMHD
     tg_file::String
@@ -365,7 +364,7 @@ function SampleICsFromMHD(
     )
         if bound[1] > bound[2]
             throw(ArgumentError(
-                "`MHDSample` $name has lower bound $(bound[1]) > upper bound "*
+                "`SampleICsFromMHD` $name has lower bound $(bound[1]) > upper bound "*
                 "$(bound[2])."
             ))
         end
@@ -421,7 +420,7 @@ function init_probfunc(pf::SampleICsFromMHD, p, itp_wrapper, _)
         return SampleHybrid(sampler, p.tf, p.initialeomid, scheme)
     else
         throw(ArgumentError(
-            "`MHDSample` has no problem function for eom=$(p.eom)."
+            "`SampleICsFromMHD` has no problem function for eom=$(p.eom)."
         ))
     end
 end

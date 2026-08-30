@@ -58,16 +58,16 @@ function output_func_max_lightweight(sol, _)
     false
 end
 
-
 """
-    output_func_lightweight(sol, _)
-Output function for ensemble simulations using `EnsembleProblem` from SciML.
+    output_func_lightweight_gca(sol, _)
+Output function for ensemble simulations using `EnsembleProblem` from SciML
+with the `guidingcentreapproximation!` equation.
 
 Returns only the initial and final state of the particle, in addition to its
-charge, mass and magnetic moment. We set the required "rerun" return argument
-to false.
+charge, mass, magnetic moment, statistical weight, sampling-rejections,
+SciML-returncode, and [`TraceParticles.TerminationCode`](@ref).
 """
-function output_func_lightweight(sol, _)
+function output_func_lightweight_gca(sol, _)
     x0, y0, z0, vparal0 = first(sol.u)
     xf, yf, zf, vparalf = last(sol.u)
     return (
@@ -87,6 +87,15 @@ function output_func_lightweight(sol, _)
     false
 end
 
+"""
+    output_func_lightweight_fo(sol, _)
+Output function for ensemble simulations using `EnsembleProblem` from SciML
+with the `lorentzforce!` equation.
+
+Returns only the initial and final state of the particle, in addition to its
+charge, mass, magnetic moment, statistical weight, sampling-rejections,
+SciML-returncode, and [`TraceParticles.TerminationCode`](@ref)
+"""
 function output_func_lightweight_fo(sol, _)
     x0, y0, z0, vx0, vy0, vz0 = first(sol.u)
     xf, yf, zf, vxf, vyf, vzf = last(sol.u)
@@ -106,6 +115,16 @@ function output_func_lightweight_fo(sol, _)
     false
 end
 
+"""
+    output_func_lightweight_hybrid(sol, _)
+Output function for ensemble simulations using `EnsembleProblem` from SciML
+with the `hybridgcafo!` equation.
+
+Returns only the initial and final state of the particle, in addition to its
+charge, mass, magnetic moment, statistical weight, sampling-rejections,
+SciML-returncode, [`TraceParticles.TerminationCode`](@ref), initial and final
+[`EoMID`](@ref), and the number of switches.
+"""
 function output_func_lightweight_hybrid(sol, _)
     x0, y0, z0, vx0, vy0, vz0 = first(sol.u)
     xf, yf, zf, vxf, vyf, vzf = last(sol.u)

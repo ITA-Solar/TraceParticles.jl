@@ -13,7 +13,7 @@ using Test
 using TraceParticles
 import TraceParticles as TP
 
-include("test_utils.jl")
+include("utils.jl")
 
 if !isdefined(Main, :verbose)
     verbose = 3
@@ -30,17 +30,17 @@ logfilepath = joinpath(mktempdir(), "runtests.log.txt")
 logger = TraceParticles.logger2fileandstderr(loglevel, logfilepath)
 
 with_logger(logger) do
-    if "fast_tests" in ARGS
+    if "units" in ARGS
         @testset verbose = verbose ≥ 1 "Tests" begin
-            include("fast_tests.jl")
+            include("test_units.jl")
             @test isfile(logfilepath)
         end
     elseif "blank" in ARGS
         nothing
     else
         @testset verbose = verbose ≥ 1 "Tests" begin
-            include("fast_tests.jl")
-            include("slow_tests.jl")
+            include("test_units.jl")
+            include("test_regression.jl")
             @test isfile(logfilepath)
         end # testset all test
     end
