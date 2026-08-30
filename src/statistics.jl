@@ -73,14 +73,10 @@ end
         precision::DataType,
         target::Any,
         maxvalue::Real,
-        x0::Real,
-        xf::Real,
-        y0::Real,
-        yf::Real,
-        z0::Real,
-        zf::Real,
-        t0::Real,
-        tf::Real,
+        xmin::Real, xmax::Real,
+        ymin::Real, ymax::Real,
+        zmin::Real, zmax::Real,
+        tmin::Real, tmax::Real,
     )
 Sample a point from the 4D `target`-distribution using rejection sampling. The
 `target` function must be callable with the signature (x, y, z, t). The
@@ -100,28 +96,24 @@ function rejectionsample(
     precision::DataType,
     target::Any,
     maxvalue::Real,
-    x0::Real,
-    xf::Real,
-    y0::Real,
-    yf::Real,
-    z0::Real,
-    zf::Real,
-    t0::Real,
-    tf::Real,
+    xmin::Real, xmax::Real,
+    ymin::Real, ymax::Real,
+    zmin::Real, zmax::Real,
+    tmin::Real, tmax::Real
 )
     numrejections = 0
-    x = rand(rng, precision, x0, xf)
-    y = rand(rng, precision, y0, yf)
-    z = rand(rng, precision, z0, zf)
-    t = rand(rng, precision, t0, tf)
+    x = rand(rng, precision, xmin, xmax)
+    y = rand(rng, precision, ymin, ymax)
+    z = rand(rng, precision, zmin, zmax)
+    t = rand(rng, precision, tmin, tmax)
     u = rand(rng, precision, 0.0, maxvalue)
     v = target(x, y, z, t)
     while u > v
         numrejections += 1
-        x = rand(rng, precision, x0, xf)
-        y = rand(rng, precision, y0, yf)
-        z = rand(rng, precision, z0, zf)
-        t = rand(rng, precision, t0, tf)
+        x = rand(rng, precision, xmin, xmax)
+        y = rand(rng, precision, ymin, ymax)
+        z = rand(rng, precision, zmin, zmax)
+        t = rand(rng, precision, tmin, tmax)
         u = rand(rng, precision, 0.0, maxvalue)
         v = target(x, y, z, t)
     end
@@ -135,10 +127,10 @@ end
         proposal_distr,
         target_distr,
         tg_itp,
-        xbounds::Tuple{Real,Real},
-        ybounds::Tuple{Real,Real},
-        zbounds::Tuple{Real,Real},
-        temporalbounds::Tuple{Real,Real},
+        xmin::Real, xmax::Real,
+        ymin::Real, ymax::Real,
+        zmin::Real, zmax::Real,
+        tmin::Real, tmax::Real,
         max_value::Real,
     )
 Draw `x`, `y`, `z` positions and time `t` from a `proposal_distr`ibution using
@@ -152,18 +144,13 @@ function mhdsample(
     proposal_distr,
     target_distr,
     tg_itp,
-    xbounds::T,
-    ybounds::T,
-    zbounds::T,
-    temporalbounds::T,
+    xmin::Real, xmax::Real,
+    ymin::Real, ymax::Real,
+    zmin::Real, zmax::Real,
+    tmin::Real, tmax::Real,
     max_value::Real;
-    precision=typeof(mass),
-) where {T<:Tuple{Real,Real}}
-    # Extract spatial and temporal limits
-    x0, xf = xbounds
-    y0, yf = ybounds
-    z0, zf = zbounds
-    tmin, tmax = temporalbounds
+    precision=typeof(mass)
+)
     # Sample osition and time from the proposal distrubution using rejection
     # sampling.
     x, y, z, t, nrejections = rejectionsample(
@@ -171,9 +158,9 @@ function mhdsample(
         precision,
         proposal_distr,
         max_value,
-        x0, xf,
-        y0, yf,
-        z0, zf,
+        xmin, xmax,
+        ymin, ymax,
+        zmin, zmax,
         tmin, tmax,
     )
     weight = precision(
@@ -192,8 +179,8 @@ end
         target_distr
         proposal_distr
         tg_itp
-        xbounds
-        ybounds
+        x0 xf y0 yf z0 zf
+        tmin tmax
         zbounds
         t0bounds
         max_value
@@ -210,10 +197,14 @@ struct MHDSampler{T1,T2,T3,T4<:AbstractFloat,T5<:Real,T6<:DataType}
     target_distr::T1
     proposal_distr::T2
     tg_itp::T3
-    xbounds::Tuple{T4,T4}
-    ybounds::Tuple{T4,T4}
-    zbounds::Tuple{T4,T4}
-    t0bounds::Tuple{T4,T4}
+    xmin::T4
+    xmax::T4
+    ymin::T4
+    ymax::T4
+    zmin::T4
+    zmax::T4
+    tmin::T4
+    tmax::T4
     max_value::T5
     precision::T6
 end
@@ -224,10 +215,10 @@ function (self::MHDSampler)(mass, rng)
         self.proposal_distr,
         self.target_distr,
         self.tg_itp,
-        self.xbounds,
-        self.ybounds,
-        self.zbounds,
-        self.t0bounds,
+        self.xmin, self.xmax,
+        self.ymin, self.ymax,
+        self.zmin, self.zmax,
+        self.tmin, self.tmax,
         self.max_value;
         precision=self.precision
     )

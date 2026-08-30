@@ -404,10 +404,10 @@ function init_probfunc(pf::SampleICsFromMHD, p, itp_wrapper, _)
         target_distr,
         proposal_distr,
         tg_itp,
-        pf.xbounds,
-        pf.ybounds,
-        pf.zbounds,
-        pf.t0bounds,
+        pf.xbounds[1], pf.xbounds[2],
+        pf.ybounds[1], pf.ybounds[2],
+        pf.zbounds[1], pf.zbounds[2],
+        pf.t0bounds[1], pf.t0bounds[2],
         maximum(proposal_distr),
         pf.precision
     )
