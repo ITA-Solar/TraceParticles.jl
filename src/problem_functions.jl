@@ -265,11 +265,40 @@ Base.@kwdef struct Rerun{T<:AbstractVector}
 end
 
 function init_probfunc(probfunc::Rerun, params, _, fields_itp)
-    tspans = tspans_idxs(probfunc.datafile, probfunc.idxs)
+    x0 = h5_getdataset(probfunc.datafile, "x0")
+    y0 = h5_getdataset(probfunc.datafile, "y0")
+    z0 = h5_getdataset(probfunc.datafile, "z0")
+    t0 = h5_getdataset(probfunc.datafile, "t0")
+    tf = h5_getdataset(probfunc.datafile, "tf")
+    tspans = [(t0[i], tf[i]) for i in probfunc.idxs]
     if params.eom == guidingcentreapproximation!
-        u0, mu0 = initialstate_idxs_gca(probfunc.datafile, probfunc.idxs)
+        vparal0 = h5_getdataset(probfunc.datafile, "vparal0")
+        u0 = [[x0[i], y0[i], z0[i], vparal0[i]] for i in probfunc.idxs]
+        mu0 = h5_getdataset(probfunc.datafile, "magneticmoment")[probfunc.idxs]
+    elseif params.eom == lorentzforce!
+        vx0 = h5_getdataset(probfunc.datafile, "vx0")
+        vy0 = h5_getdataset(probfunc.datafile, "vy0")
+        vz0 = h5_getdataset(probfunc.datafile, "vz0")
+        mu0 = Vector{Bool}(undef, length(probfunc.idxs))
+        u0 = [
+           [x0[i], y0[i], z0[i], vx0[i], vy0[i], vz0[i]]
+           for i in probfunc.idxs
+        ]
+    elseif params.eom == hybridgcafo!
+        x0 = h5_getdataset(probfunc.datafile, "x0")
+        y0 = h5_getdataset(probfunc.datafile, "y0")
+        z0 = h5_getdataset(probfunc.datafile, "z0")
+        vx0 = h5_getdataset(probfunc.datafile, "vx0")
+        vy0 = h5_getdataset(probfunc.datafile, "vy0")
+        vz0 = h5_getdataset(probfunc.datafile, "vz0")
+        mu0 = h5_getdataset(probfunc.datafile, "magneticmoment")[probfunc.idxs]
+        u0 = [
+           [x0[i], y0[i], z0[i], vx0[i], vy0[i], vz0[i]]
+           for i in probfunc.idxs
+        ]
     else
-        u0, mu0 = initialstate_idxs(probfunc.datafile, probfunc.idxs)
+        @error "Cannot initialise `Rerun` problem function with uknown EoM:
+            $(params.eom)"
     end
     odeparamstype = typeof(define_parameters(params, fields_itp))
     odeparams = Vector{odeparamstype}(undef, length(probfunc.idxs))

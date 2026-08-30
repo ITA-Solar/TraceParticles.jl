@@ -249,11 +249,18 @@ end
     @test h5_getall(fname, 1) == df[1:params.batchsize, :]
     @test h5_getdataset(fname, "x0") == df.x0
 
-    x0, y0, z0, vparal0, mu0 = h5_getinitialstate_gca(fname)
-    @test (x0, y0, z0, vparal0, mu0) ==
+    x0 = h5_getdataset(fname, "x0")
+    y0 = h5_getdataset(fname, "y0")
+    z0 = h5_getdataset(fname, "z0")
+    vparal0 = h5_getdataset(fname, "vparal0")
+    mu = h5_getdataset(fname, "magneticmoment")
+    @test (x0, y0, z0, vparal0, mu) ==
           (df.x0, df.y0, df.z0, df.vparal0, df.magneticmoment)
-    xf, yf, zf, vparalf, muf = h5_getfinalstate_gca(fname)
-    @test (xf, yf, zf, vparalf, muf) ==
+    xf = h5_getdataset(fname, "xf")
+    yf = h5_getdataset(fname, "yf")
+    zf = h5_getdataset(fname, "zf")
+    vparalf = h5_getdataset(fname, "vparalf")
+    @test (xf, yf, zf, vparalf, mu) ==
           (df.xf, df.yf, df.zf, df.vparalf, df.magneticmoment)
 
     # Particle properties are those requested in the parameters
