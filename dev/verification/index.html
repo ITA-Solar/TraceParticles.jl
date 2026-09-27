@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Verification gallery · TraceParticles.jl</title><meta name="title" content="Verification gallery · TraceParticles.jl"/><meta property="og:title" content="Verification gallery · TraceParticles.jl"/><meta property="twitter:title" content="Verification gallery · TraceParticles.jl"/><meta name="description" content="Documentation for TraceParticles.jl."/><meta property="og:description" content="Documentation for TraceParticles.jl."/><meta property="twitter:description" content="Documentation for TraceParticles.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="TraceParticles.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">TraceParticles.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../concepts/">Concepts</a></li><li><a class="tocitem" href="../examples/">Examples</a></li><li class="is-active"><a class="tocitem" href>Verification gallery</a><ul class="internal"><li><a class="tocitem" href="#mirror-verifaction"><span>Magnetic mirroring</span></a></li><li><a class="tocitem" href="#dipole-verification"><span>Magnetic dipole</span></a></li><li><a class="tocitem" href="#speiser-verification"><span>Dynamics at a current sheet (Speiser orbit)</span></a></li></ul></li><li><a class="tocitem" href="../api/">API</a></li><li><a class="tocitem" href="../index_list/">Index</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Verification gallery</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Verification gallery</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ITA-Solar/TraceParticles.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ITA-Solar/TraceParticles.jl/blob/develop/docs/src/verification.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Verification-gallery"><a class="docs-heading-anchor" href="#Verification-gallery">Verification gallery</a><a id="Verification-gallery-1"></a><a class="docs-heading-anchor-permalink" href="#Verification-gallery" title="Permalink"></a></h1><h2 id="mirror-verifaction"><a class="docs-heading-anchor" href="#mirror-verifaction">Magnetic mirroring</a><a id="mirror-verifaction-1"></a><a class="docs-heading-anchor-permalink" href="#mirror-verifaction" title="Permalink"></a></h2><p>Below we simulate a charge particle mirroring in a magnetic bottle.</p><h4 id="Theory"><a class="docs-heading-anchor" href="#Theory">Theory</a><a id="Theory-1"></a><a class="docs-heading-anchor-permalink" href="#Theory" title="Permalink"></a></h4><p>When a charge particle experiences changing magnetic field strength, the gyration radius changes. If there is a magnetic field strength gradient in the plane of the gyration, it gives rise to a drift in the direction <span>$\nabla B\times\mathbf{B}$</span>. If the gradient is perpendicular to the gyration (parallel to the magnetic field), the paricle might be mirrored. Why? If the magnetic moment of the particle is conserved as the magnetic field gets stronger, the particle has to gain perpendicular velocity as the Larmor radius decreases. And if the total energy is conserved too, for example if there is no electric field, the parallel velocity must decrease following the increased perpendicular velocity. When the magnetic field becomes strong enough, all the energy will be transfered from the parallel component into the perpendicular, and the particle will be reflected. In other words, in a field with a magnet gradient that i paralell its direction, a charged particle will experience a force in the opposite direction, <span>$F_\text{mirror} \propto \nabla B \cdot \mathbf{B}$</span>.</p><pre><code class="language-julia hljs">using OrdinaryDiffEq
+using LinearAlgebra
+using TraceParticles
+using CairoMakie
+
+function magneticbottle(x, y, z; B0, L)
+    a = B0 * z / L^2
+    return [-x * a, -y * a, B0 + z * a]
+end
+
+B0 = 10.0
+L = 0.1
+# The electromagnetic field
+emfield(x, y, z, t) = zeros(3), magneticbottle(x, y, z; B0=B0, L=L)
+
+# Particle parameters
+tf = 1.5
+tspan = (0, tf)
+mass = 1
+charge = 10
+
+# Initial conditions
+vel0 = [0.0, 0.4, 0.4]
+rL = mass * √(vel0[1]^2 + vel0[2]^2) / (charge * B0)
+pos0 = [-1rL, 0.0, 0.0]
+E, B = emfield(pos0..., 0)
+R0, vparal, μ = get_guidingcentre(pos0, vel0, B, E, charge, mass)
+
+# Create problems
+prob_FO = ODEProblem(
+    lorentzforce!,
+    [pos0; vel0],
+    tspan,
+    (charge=charge, mass=mass, electromagneticfield=emfield),
+)
+prob_GCA = ODEProblem(
+    guidingcentreapproximation!,
+    [R0; vparal],
+    tspan,
+    (
+        charge=charge,
+        mass=mass,
+        magneticmoment=μ,
+        electromagneticfield=emfield
+    )
+)
+
+# Run simulation
+sol_FO = solve(prob_FO)
+sol_GCA = solve(prob_GCA)
+
+# Analytical solution
+function z_analytical(t; μ, m, B0, L, A, ϕ)
+    ω = √(2μ * B0 / (m* L^2))
+    return @. A * sin(ω * t + ϕ)
+end
+Bmax = B0 * norm(vel0)^2 / (vel0[1]^2 + vel0[2]^2)
+zmax = L * √(Bmax / B0 - 1)
+ϕ = 0
+times = range(0.0, tf, length=1000)
+analytical = z_analytical(times; μ=μ, m=mass, B0=B0, L=L, A=zmax, ϕ=ϕ)
+
+# Plot
+fig = Figure()
+ax = Axis(fig[1,1])
+lines!(ax, [sol_FO(t)[3] for t in times], [sol_FO(t)[1] for t in times],
+    label=&quot;Full orbit&quot;, linewidth=0.5
+)
+lines!(ax, sol_GCA[3,:], sol_GCA[1,:];
+    label=&quot;GCA&quot;, linewidth=2.0
+)
+lines!(ax, analytical, [0.0 for _ in analytical];
+    linestyle=:dash, label=&quot;Analytical solution&quot;, linewidth=1.0
+)
+ax.aspect = DataAspect()
+ax.limits = ((nothing, nothing), (-0.01,0.03))
+ax.yticks = ([-0.01,0.00,0.01])
+axislegend(ax, position=:ct, orientation=:horizontal, framevisible=false)
+fig</code></pre><img src="fac1cdd9.png" alt="Example block output"/><h2 id="dipole-verification"><a class="docs-heading-anchor" href="#dipole-verification">Magnetic dipole</a><a id="dipole-verification-1"></a><a class="docs-heading-anchor-permalink" href="#dipole-verification" title="Permalink"></a></h2><p>A magnetic dipole features magnetic gradient both parallel and perpendicular to the magnetic field direction. The parallell gradients make charge particles mirror from pole to pole, and the perpendicular gradients cause an azimuthal drift. The magnetic curvature further adds drifts in the azimuthal direction. In this example we compare the results of a direct solution to the <a href="../api/#eom-api"><code>lorentzforce!</code></a> and a solution to the <code>guidingcentreapproximation!</code> with an analytical approximation to the azimuthal drift.</p><pre><code class="language-julia hljs">using OrdinaryDiffEq: ODEProblem, solve
+using LinearAlgebra: norm
+using TraceParticles
+using CairoMakie
+using Printf
+
+function magneticdipole(x, y, z; M)
+    a = M / (x^2 + y^2 + z^2)^(5 / 2)
+    return [3a * z * x, 3a * z * y, a * (2z^2 - x^2 - y^2)]
+end
+
+# Analytical period for drifting around the whole dipole
+function T_dipole(; q, m, M, R0, v0, α)
+    return @. 2π * q * M / (m * v0^2 * R0) * (1 - 1 / 3 * sin(α)^0.62)
+end
+
+# Parameters
+tf = 80.0
+tspan = (0.0, tf)
+mass = 1.0
+charge = 1.0
+
+# Initial position is such that vperp is 1 and the guiding centre is
+# at x⃗ = [1, 0, 0]. It is also assumed that the GCA is valid such that B is equal
+# to B(x⃗) = 2M, directed in -ẑ. We may then compare with the Walt (1994)
+# approximation of the azimuthal drift-period.
+R0 = [1.0, 0, 0]
+vparal = 0.5
+vperp = 1.0
+# Magnetic dipole strength
+M = 40 * mass / charge
+
+&quot;&quot;&quot;
+    dipolesimulation(dipolestrength)
+Given a `dipolestrength`, solve the Lorentz equation and the guiding centre
+approximation. Also return the analytical drift
+&quot;&quot;&quot;
+function dipolesimulation(dipolestrength)
+    # Dipole-specific field and initial conditions
+    emfield(x, y, z, t) = zeros(3), magneticdipole(x, y, z; M=dipolestrength)
+    E, B = emfield(R0..., 0)
+    μ = TraceParticles.magneticmoment(vperp, mass, norm(B))
+    rL = TraceParticles.larmorradius(mass, vperp, charge, norm(B))
+    u0 = get_fullorbit(B, E, R0, vparal, μ, charge, mass, pi / 2)
+
+    # Create problems
+    fo_prob = ODEProblem(
+        lorentzforce!,
+        u0,
+        tspan,
+        (charge=charge, mass=mass, electromagneticfield=emfield)
+    )
+    gca_prob = ODEProblem(
+        guidingcentreapproximation!,
+        [R0...; vparal],
+        tspan,
+        (
+            charge=charge,
+            mass=mass,
+            magneticmoment=μ,
+            electromagneticfield=emfield
+        )
+    )
+
+    # Run simulation
+    fo_sim = solve(fo_prob; reltol=1e-7, abstol=1e-9)
+    gca_sim = solve(gca_prob)
+
+    # Analytical result
+    v0 = norm(u0[4:6])
+    # Initial pitch angle
+    α = atan(vperp / vparal)
+    R0x = R0[1]
+    T = T_dipole(; q=charge, m=mass, M=dipolestrength, R0=R0x, v0=v0, α=α)
+    angularfreq = 2π / T
+    # ϕ is the angle the particle position has with respect to the x-axis when
+    # projected onto the xy-plane
+    phi_final_analytical = 2π * tf / T
+
+    # Return positions and analytical drift
+    times0 = range(0.0, tf, length=100)
+    times1 = range(0.0, tf, length=1_000)
+    times2 = range(0.0, tf, length=10_000)
+    return (
+        length(fo_sim.t),
+        length(gca_sim.t),
+        fo_sim(times2),
+        gca_sim(times1),
+        R0x * cos.(angularfreq * times0),
+        R0x * sin.(angularfreq * times0),
+        phi_final_analytical,
+        rL
+    )
+end
+
+nt_fo, nt_gca, pos_fo, pos_gca, driftx, drifty, _, _ = dipolesimulation(M)
+
+# Plot
+fig = Figure()
+ax = Axis3(fig[1:2,1:2]; aspect=:data)
+lines!(ax, pos_fo[1, :], pos_fo[2, :], pos_fo[3, :]; label=&quot;Lorentz force&quot;)
+lines!(
+    ax, pos_gca[1, :], pos_gca[2, :], pos_gca[3, :];
+    label=&quot;GCA&quot;, linewidth=1
+)
+lines!(
+    ax, driftx, drifty, [0.0 for _ in driftx];
+    label=&quot;Analytical drift&quot;, linewidth=1
+)
+Legend(fig[3,2], ax)
+ax.xlabel = &quot;x&quot;
+ax.ylabel = &quot;y&quot;
+
+ax2 = Axis(fig[3,1]; aspect=DataAspect())
+lines!(ax2, pos_gca[1, :], pos_gca[2, :]; color=Makie.wong_colors()[2])
+lines!(ax2, driftx, drifty; color=Makie.wong_colors()[3])
+ax2.xlabel = &quot;x&quot;
+ax2.ylabel = &quot;y&quot;
+
+@printf(&quot;&quot;&quot;
+Number of integration steps (Lorentz force): %i
+Number of integration steps (GCA):           %i
+&quot;&quot;&quot;, nt_fo, nt_gca
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Number of integration steps (Lorentz force): 10416
+Number of integration steps (GCA):           225</code></pre><pre><code class="language-julia hljs">fig</code></pre><img src="07d35d80.png" alt="Example block output"/><p>The results show that guiding centre approximation holds fine for this magnitisation. Below we rerun the simulation with varying magnetisation and compare the differences in final drift.</p><pre><code class="language-julia hljs"># Varying magnetisation
+qMm = 10:5:60
+dipolestrength = qMm * mass / charge
+# (... see source file for all the code ...)</code></pre><pre><code class="language-julia hljs">fig2</code></pre><img src="78a92879.png" alt="Example block output"/><h2 id="speiser-verification"><a class="docs-heading-anchor" href="#speiser-verification">Dynamics at a current sheet (Speiser orbit)</a><a id="speiser-verification-1"></a><a class="docs-heading-anchor-permalink" href="#speiser-verification" title="Permalink"></a></h2><p>Speiser (1965) developed analytical expressions describing the motion of charge particles in simple current sheets. These expressions can be compared with numerical simulations. In the field</p><p class="math-container">\[\begin{equation}
+\begin{split}
+    \mathbf{B}(x) &amp;= -b(x/d) \hat{y} \\
+    \mathbf{E} &amp;= -a\hat{z}
+\end{split}
+\end{equation}\]</p><p>the particle drifts towards the magnetic null on either side. At the null, it becomes demagnetised, and will oscillate around the magnetic field reversal line wwhile being accelerated by the electrical field along the current sheet in the <span>$z$</span>-direction. The oscillation is damped and Speiser derived that the amplitude evolves as <span>$1/t^{1/4}.$</span> He also found that when an extra component is added to the magnetic field, perpendicular to the current sheet</p><p class="math-container">\[\begin{equation}
+    \mathbf{B}(x) = -b(x/d) \hat{y} + b\eta\hat{x},
+\end{equation}\]</p><p>the particle will be ejected out of the current sheet when the oscillation is bent by 90 degrees. The ejection time was approximated to be <span>$\tau = m\pi/qb\eta$</span> and the <span>$y$</span>-velocity at the ejection (for <span>$\dot{y} \ll c$</span>) would be <span>$\dot{y}(\tau) \approx -2a/b\eta$</span>. In this example, we simulate the &quot;Speiser-orbit&quot; of a proton using both <code>lorentzforce!</code>, <code>hybridgcafo!</code> and <code>guidingcentreapproximation!</code>.</p><p>First, we define the current sheet electromagneticfield, and the proton&#39;s initial conditions.</p><pre><code class="language-julia hljs">&quot;&quot;&quot;
+    linearisedharrisheet(x; η, d, g, b)
+- η: Strength of component normal to the current sheet: η*b
+- d: Current sheet width: |B/∇B| = d (with η = 0)
+- g: The guide field strength: g*b
+- B0: Characteristic field strength
+)
+A magnetic field configuration with a y-component that reverses at x=0.
+Equivalent to the Harris current sheet in the regime x/d &lt;&lt; 1.
+
+                   ||| || | |  | | || |||
+      y            ||| || | |  | | || |||
+      ^            ||| || | |  | | || |||
+      |            ||| || | |  | | || |||
+      |/           ^^^ ^^ ^ ^  v v vv vvv
+     -|-----&gt; x    ||| || | |  | | || |||
+     /             ||| || | |  | | || |||   η = 0
+    /              ||| || | |  | | || |||
+   z               ||| || | |  | | || |||
+
+
+&quot;&quot;&quot;
+function linearisedharrisheet(x; η, d, g, b)
+    return [η, -x / d, g] * b
+end
+
+b = 1e-2 # [Tesla]
+η = 0.025
+d = 1e-4 # [meter]
+g = 0.0
+
+v0 = 1e7
+a = 1e-2 * v0 * b # [V/m]
+
+function currentsheet(x, _, _, _)
+    return [0, 0, -a], linearisedharrisheet(x; η=η, d=d, g=g, b=b)
+end
+
+mass = proton_mass # [kg]
+charge = proton_charge # [C]
+
+t_eject = π * mass / (charge * η * b) # [s]
+velyτ = - 2.0 * a / (η * b) # [m/s]
+
+L0 = 1e4 # [m]
+vel0 = [0.0, 0.0, 0.0] # [m/s]
+pos0 = [4e-6, 1e-10, 1e-10] * L0
+
+t0 = 0.0 # [s]
+tf = 2.2 * t_eject # [s]
+tspan = (t0, tf)</code></pre><p>Next, we define a function that builds all three ODE-problems and solve them.</p><pre><code class="language-julia hljs">function run()
+    # Direct solution
+    prob = ODEProblem(
+        lorentzforce!,
+        [pos0; vel0],
+        tspan,
+        (
+            charge=charge,
+            mass=mass,
+            electromagneticfield=currentsheet
+        )
+    )
+
+    # Hybrid scheme
+    hprob = ODEProblem(
+        hybridgcafo!,
+        [pos0; vel0],
+        tspan,
+        # This parameter-struct allocates arrays for information on the
+        # EoM-switching. E.g. time at switch, magnetic moment after switch,
+        # EoMID after switch.
+        HybridParamsWithDetection(
+            charge=charge,
+            mass=mass,
+            electromagneticfield=currentsheet,
+            getphase=(integrator) -&gt; π / 2,
+            initialeomid=EoMID.FullOrbit,
+        )
+    )
+
+    # Guiding centre approimation
+    R, vparal, mu = get_guidingcentre(
+        pos0,
+        vel0,
+        currentsheet(pos0..., t0)[2],
+        currentsheet(pos0..., t0)[1],
+        charge,
+        mass
+    )
+    gcaprob = ODEProblem(
+        guidingcentreapproximation!,
+        [R..., vparal],
+        tspan,
+        (
+            charge=charge,
+            mass=mass,
+            electromagneticfield=currentsheet,
+            magneticmoment=mu,
+        )
+    )
+    hcb = DiscreteCallback(
+        # Arguments of the condition represent:
+        # magnetic gradient tolerance, magnetic curvature tolerance, parallel
+        # elctric field strength tolerance, and switchback tolerance.
+        HybridSwitchCondition(2e-3, 2e-3, Inf, 0.9),
+        TraceParticles.hybridswitchaffect_withdetection!
+    )
+
+    # Solve the problems
+    # Avoid implicit solvers for `lorentzforce!`- and the
+    # `hybridgcafo!`-equations the gyrating motion is oscillatory, not
+    # necessarily stiff.
+    @time fosol = solve(
+        prob,
+        Vern9(),
+        reltol=1e-7
+    )
+    # Avoid stiff-detecting solvers for the `hybridgcafo!`-equations explicitly
+    # because its design (setting `u[5:6] = 0.0` when switching to the GCA) will
+    # trigger stiffness-detection. Pin an explicitic solver.
+    #
+    # Also,  turn`lazy=false` if you want to interpolate the solution with
+    # `sol(t)`. With `lazy=true` the interpolation will evaluate
+    # `f(..., t, p...)` post-simulation and the mutated `p` will not match `t`.
+    @time hsol = solve(
+        hprob,
+        Vern9(lazy=false),
+        reltol=1e-7,
+        callback=hcb,
+    )
+    gcasol = solve(gcaprob)
+    return fosol, hsol, gcasol
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">run (generic function with 1 method)</code></pre><p>Now we run the simulation,</p><pre><code class="language-julia hljs">fosol, hsol, gcasol = run()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">  7.030628 seconds (61.58 M allocations: 2.535 GiB, 16.79% gc time, 61.98% compilation time)
+ 14.203004 seconds (77.48 M allocations: 3.531 GiB, 11.60% gc time, 79.61% compilation time)</code></pre><p>compute the evolution of the kinetic energy and the magnetic moment (using <code>TraceParticles.get_observable</code>),</p><pre><code class="language-julia hljs"># Energy in MeV
+t = range(t0, tf, 1_000)
+foenergy = get_observable(fosol, :energy, times=t, EoM=&quot;FO&quot;) / 1e6
+henergy = get_observable(hsol, :energy, times=t) / 1e6
+# Magnetic moment
+fomagneticmoment = get_observable(fosol, :magneticmoment, times=t, EoM=&quot;FO&quot;)
+hmagneticmoment = get_observable(hsol, :magneticmoment, times=t)</code></pre><p>and finally plot the result – displaying the evolution of the proton&#39;s position, kinetic energy, and magnetic momentum. The number of integration steps used is shown in the lower left panel.</p><pre><code class="language-julia hljs">fig = plotspeiserorbit(
+    fosol,
+    hsol,
+    gcasol,
+    foenergy,
+    henergy,
+    fomagneticmoment,
+    hmagneticmoment,
+    t,
+)</code></pre><img src="f85854f6.png" alt="Example block output"/><p>From the evolution of the <span>$x$</span>-position, we see the accelerating <span>$\mathbf{E}\times\mathbf{B}$</span>-drift towards the magnetic field reversal line, where the proton starts to accelerate in the <span>$z$</span>-direction and oscillate in <span>$x$</span>.</p><p>At this point, the guiding centre approximations fails to follow the full orbit trajectory, and the hybrid scheme starts to burn through integration steps at the same speed as the direct solution. This indicates that the proton is demagnetised, and that the hybrid scheme switches away from the GCA at an appropriate time.</p><p>The oscillation in <span>$x$</span> is due to the magnetic force, and Speiser derived the particle acceleration to be</p><p class="math-container">\[\begin{equation}
+\begin{split}
+    \ddot{x} &amp;= -kx \\
+    \ddot{y} &amp;= b \frac{q}{m}\eta \dot{z} \\
+    \ddot{z} &amp;= -a\frac{q}{m} - \frac{q}{m}\frac{b}{d} x\dot{x} - b\frac{q}{m}\eta\dot{y}
+\end{split}
+\end{equation}\]</p><p>where the &quot;spring constant&quot; is <span>$k = (q/m)(b/d)\dot{z}$</span>. With an initial <span>$\dot{y} = 0$</span>, <span>$\dot{z}$</span> becomes negative and falls like <span>$~t$</span>. This makes the <span>$x$</span>-oscillation to damped. However, <span>$B_x$</span> (which is significant in the current sheet) makes the proton accelerate in <span>$y$</span>. The <span>$y$</span>-acceleration redirects the energy away from the <span>$z$</span>-component, and <span>$\ddot{z}$</span> – having a term proportional to <span>$- \eta \dot{y}$</span> – eventually becomes zero and negative. Consequently, <span>$\dot{z}$</span> decreases towards zero. When it hits zero, the <span>$x$</span>-oscillation turns unstable and the proton is ejected out of the current sheet with an increased energy in the <span>$y$</span>-component.</p><p>The hybrid solution show good agreement with the direct solution in all state variables shown in the plot. The only visible mismatch is the final magnetic moment, which demonstrate the hybrid scheme&#39;s sensitivity to the switching tolerances. The longer the hybrid scheme tolerates the guiding centre approximation, the more erroneous the magnetic moment will be. On the other hand, the benefit of using a hybrid scheme is clear from the lower left panel, where the number of integration steps are decreased by ~1000x in the guiding centre regime, reducing the number of steps by half, overall.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../examples/">« Examples</a><a class="docs-footer-nextpage" href="../api/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Sunday 27 September 2026 16:05">Sunday 27 September 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

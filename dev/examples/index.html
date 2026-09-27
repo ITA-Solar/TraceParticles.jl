@@ -1,174 +1,368 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Examples · TraceParticles.jl</title><meta name="title" content="Examples · TraceParticles.jl"/><meta property="og:title" content="Examples · TraceParticles.jl"/><meta property="twitter:title" content="Examples · TraceParticles.jl"/><meta name="description" content="Documentation for TraceParticles.jl."/><meta property="og:description" content="Documentation for TraceParticles.jl."/><meta property="twitter:description" content="Documentation for TraceParticles.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="TraceParticles.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">TraceParticles.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Usage</a></li><li><a class="tocitem" href="../index_list/">Index</a></li><li class="is-active"><a class="tocitem" href>Examples</a><ul class="internal"><li><a class="tocitem" href="#Basic-use-of-with-analytical-fields"><span>Basic use of with analytical fields</span></a></li><li><a class="tocitem" href="#Gridded-fields-and-statistical-sampling"><span>Gridded fields and statistical sampling</span></a></li><li class="toplevel"><a class="tocitem" href="#used-to-draw-new-particle-initial-conditions."><span>used to draw new particle initial conditions.</span></a></li></ul></li><li><a class="tocitem" href="../api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Examples</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Examples</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ITA-Solar/TraceParticles.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ITA-Solar/TraceParticles.jl/blob/develop/docs/src/examples.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h1><h2 id="Basic-use-of-with-analytical-fields"><a class="docs-heading-anchor" href="#Basic-use-of-with-analytical-fields">Basic use of with analytical fields</a><a id="Basic-use-of-with-analytical-fields-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-use-of-with-analytical-fields" title="Permalink"></a></h2><p>This example demonstrates the most basic use of <code>TraceParticles</code>. The electromagnetic fields are analytically prescribed, and the initial conditions of the particle ensemble are pre-determined. In this case, the only tool that is needed from <code>TraceParticles</code> are the equations of motion for the particles. The rest is setup for solving an <code>EnsembleProblem</code> from <code>DifferentialEquations</code>.</p><pre><code class="language-julia hljs">using TraceParticles: lorentzforce!
-using DifferentialEquations
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Examples · TraceParticles.jl</title><meta name="title" content="Examples · TraceParticles.jl"/><meta property="og:title" content="Examples · TraceParticles.jl"/><meta property="twitter:title" content="Examples · TraceParticles.jl"/><meta name="description" content="Documentation for TraceParticles.jl."/><meta property="og:description" content="Documentation for TraceParticles.jl."/><meta property="twitter:description" content="Documentation for TraceParticles.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="TraceParticles.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">TraceParticles.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../concepts/">Concepts</a></li><li class="is-active"><a class="tocitem" href>Examples</a><ul class="internal"><li><a class="tocitem" href="#equations-example"><span>Using the equations of motion</span></a></li><li><a class="tocitem" href="#callbacks-example"><span>Using callbacks</span></a></li><li><a class="tocitem" href="#sampling-example"><span>Using statistical sampling of initial conditions</span></a></li><li><a class="tocitem" href="#ensembles-example"><span>Efficient storage of particle ensembles</span></a></li><li><a class="tocitem" href="#interface-example"><span>High-level interface</span></a></li><li><a class="tocitem" href="#post-processing-example"><span>Post-processing tools</span></a></li></ul></li><li><a class="tocitem" href="../verification/">Verification gallery</a></li><li><a class="tocitem" href="../api/">API</a></li><li><a class="tocitem" href="../index_list/">Index</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Examples</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Examples</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ITA-Solar/TraceParticles.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ITA-Solar/TraceParticles.jl/blob/develop/docs/src/examples.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h1><h2 id="equations-example"><a class="docs-heading-anchor" href="#equations-example">Using the <a href="../api/#eom-api">equations of motion</a></a><a id="equations-example-1"></a><a class="docs-heading-anchor-permalink" href="#equations-example" title="Permalink"></a></h2><h3 id="The-Lorentz-force-and-the-guiding-centre-approximation"><a class="docs-heading-anchor" href="#The-Lorentz-force-and-the-guiding-centre-approximation">The Lorentz force and the guiding centre approximation</a><a id="The-Lorentz-force-and-the-guiding-centre-approximation-1"></a><a class="docs-heading-anchor-permalink" href="#The-Lorentz-force-and-the-guiding-centre-approximation" title="Permalink"></a></h3><p>This example demonstrates</p><ul><li>an electron&#39;s trajectory in a static, homogeneous electromagnetic field,</li><li>an electron&#39;s trajectory in a static, homogenrous electric field with a magnetic gradient,</li><li>solving the <code>lorentzforce!</code>, </li><li>solving the <code>guidingcentreapproximation!</code>,</li><li>using both analytical and gridded fields.</li></ul><pre><code class="language-julia hljs">using TraceParticles: electron_mass, electron_charge
 
-&quot;&quot;&quot;
-We will in this example simulate two charged particles embedded in an
-electromagnetic field.
-&quot;&quot;&quot;
-eom = lorentzforce! # The equations of motion of charge particles
-                    # in a collisionless electromagntic field is the
-                    # Lorentz force.
-# Here we define the initial conditions of our two particles. The initial
-# conditions are 3 position- and 3 velocity-components, which could be
-# represented in a 6-component state vector.
-ic = [[0.0, 1.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.5, 0.0, -0.5, 0.0, 0.0]]
-# The parameters of the Lorentz equation is the particle&#39;s charge, mass and
-# functor a giving the electromagnetic fields at the particle position.
-mass = 1
-charge = [1, -1]
-struct StaticUniformElectromagneticField
-    bx::Real
-    by::Real
-    bz::Real
-    ex::Real
-    ey::Real
-    ez::Real
-end
-function (field::StaticUniformElectromagneticField)(x,y,z)
-    return [field.bx, field.by, field.bz, field.ex, field.ey, field.ez]
-end
-emfield = StaticUniformElectromagneticField(0,0,1,0,1,0)
-tspan = (0,10) # Define the simulation time-span
-npart = 2     # Define the number of particles in the simulation
-prob = ODEProblem(eom, ic[1], tspan) # Create an initial ODE-problem
+# The electromagnetic field should to be a callable with signature
+# (x,y,z,t), returning two 3D vectors: (E, B).
+B0 = 5e-4  # Tesla
+E0 = 1e2  # V/m
+emfield(x, y, z, t) = [0.0, E0, 0.0], [0.0, 0.0, B0]
 
-# Define a problem function, which will define a new ODE-problem for each
-# particle.
-function prob_func(prob, i, repeat)
-    remake(prob, u0=ic[i], p=(mass, charge[i], emfield))
-end
-# Define an output function - what to be saved from each particle solution
-# The ODESolution type contains a lot of metadata, including alogorithm
-# choice, number of algorithm switches, etc. In a large ensemble, this
-# overhead will quickly consume a lot of memory.
-#
-# In this output function we save only the initial and final state of the
-# particle, in addition to its timesteps. We set the required &quot;rerun&quot; return
-# argument to false.
-function output_func(sol,i)
-    return ([first(sol), last(sol)], sol.t), false
-end
-# Define an Ensamble-problem, to simulate the ensemble of particles
-ensamble_prob = EnsembleProblem(
-    prob # Initial problem
-    ;
-    prob_func=prob_func,
-    output_func=output_func
-)
+charge = electron_charge # Coloumb
+mass = electron_mass     # kg
+gyroperiod = 2π * mass / abs(charge * B0) # Seconds</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">7.144773505756421e-8</code></pre><p>First, we solve the lorentz force directly:</p><pre><code class="language-julia hljs">using TraceParticles: lorentzforce!
+using OrdinaryDiffEq: ODEProblem, solve
+using CairoMakie
 
-# Run the simulation
-sol = DifferentialEquations.solve(
-    ensamble_prob, 
-    EnsembleSerial()
-    ;
-    trajectories=npart
-)</code></pre><h2 id="Gridded-fields-and-statistical-sampling"><a class="docs-heading-anchor" href="#Gridded-fields-and-statistical-sampling">Gridded fields and statistical sampling</a><a id="Gridded-fields-and-statistical-sampling-1"></a><a class="docs-heading-anchor-permalink" href="#Gridded-fields-and-statistical-sampling" title="Permalink"></a></h2><p>The following example demonstrates a more complex test particle simulation, using</p><ul><li>interpolated electromagnetic field,</li><li>initial positions drawn from a proposal probability density distribution.</li><li>importance weights corresponding to a target distribution,</li><li>initial velocities drawn from Maxwell-Boltzmann distributions,</li><li>the guiding centre approximation (GCA) as equations of motion,</li><li>callbacks terminating the particle if the GCA is invalid or the particle is out of bounds,</li><li>a reduction and output function that stores the initial and final state of the solution to an HDF5-file, along with some observables,</li><li>a large particle ensemble.</li></ul><p>This script assumes you have the external electromangetic field and temperature of the system, and the  as interpolation objects stored in JLD2 files. <code>target_itp</code> and <code>proposal_itp</code> are probability density distributions</p><h1 id="used-to-draw-new-particle-initial-conditions."><a class="docs-heading-anchor" href="#used-to-draw-new-particle-initial-conditions.">used to draw new particle initial conditions.</a><a id="used-to-draw-new-particle-initial-conditions.-1"></a><a class="docs-heading-anchor-permalink" href="#used-to-draw-new-particle-initial-conditions." title="Permalink"></a></h1><p>n </p><pre><code class="language-julia hljs">using TraceParticles
-using DifferentialEquations
-using Interpolations
-using JLD2
+# The initial conditions is a 6D state vector: [x, y, z, vx, vy, vz]
+u0 = [0.0, 0.0, 0.0, 1.0e6, 0.0, 0.0] # [m, m, m, m/s, m/s, m/s]
 
-JLD2.@load &quot;electromagneticfield.jld2&quot; em_fields_itp
-JLD2.@load &quot;temperature.jld2&quot; temperature_itp
-JLD2.@load &quot;target_distribution&quot; target_itp
-JLD2.@load &quot;proposal_distribution&quot; proposal_itp
-
-tspan = (0, 1)                 # Temporal bounds of the simulation [s]
-xbounds = (0.0, 31.958047e6)   # Spatial bounds [m]
-zbounds = (-32e6, 0.00)        # This is a 2.5D simulation
-
-# Particle parameters
-charge = -TraceParticles.e      # Charge of particles
-mass = TraceParticles.m_e       # Mass of particles
-eom = TraceParticles.gca_2Dxz!  # Equation of motion
-npart = 10_000_000
-rng = MersenneTwister()        # Random number generator
-alg = Rosenbrock23()           # Numerical integration algorithm
-
-# Parameters for saving data
-expname = &quot;test&quot;
-datadir = &quot;data&quot;
-
-# Size of a &quot;particle batch&quot;
-batch_size = 1_000_000
-nbatches = ceil(Int, npart / batch_size)
-
-# Maximum value of the proposal distribution is needed for the rejection 
-# algorithm
-maxval = maximum(propdistr.itp.itp.coefs)
-samplingdomain = [xbounds, zbounds]
-
-#
-# Define Callbacks
-#
-# Terminate particle when it is outside bounds
-out_cb = DiscreteCallback(
-    tp.OutOfDomainCondition_2Dxz(xbounds, zbounds),
-    tp.outofdomainaffect!
-)
-# Terminate the particle when EoM is invalid
-gca_cb = tp.GCABreakDownCB(&quot;lowmem&quot;, &quot;2Dxz&quot;, tolerance=0.001)
-cbset = CallbackSet(out_cb, gca_cb)
-
-# Define the problem function that draws particle initial conditions.
-# `DposMBvel` draws position from the proposal distribition and velocity from
-# a Maxwell-Boltzmann distribution at the position. It also gives the particle
-# a statistical weight according to the ratio between the proposal distribution
-# and the target distribution (importance weighing).
-prob_func = DposMBvel(
-    rng, proposal_itp, target_itp, samplingdomain, maxval, temperature_itp
-)
-output_func = output_func_max_lightweight
-# The output function determines what to with each particle solution.
-# `output_func_max_lightweight` keeps only the initial and final state of the
-# solution, together with a crude estimate of the largest experienced Larmor
-# radius, smallest experienced characteristic length scale of the magnetic
-# field, and largest experiences ration between them.
-
-# The reduciton determines what to with each particle batch.
-# `SaveBatchAsHDF5` saves each batch in seperate directories in an HDF5-file.
-# It also prints some summary statistics for each batch.
-reduction = SaveBatchAsHDF5(datadir, expname, batch_size, nbatches)
-
-#
-# Define the ODE- and ensemble problem and solve
-#
-# See the documentation of DifferentialEquations.jl for more keyword arguments
-# and solver options
-#
 prob = ODEProblem(
-    eom,
-    zeros(4), # Dummy initial condition
-    ( # Parameters
+    lorentzforce!,
+    u0,
+    (0.0, 8gyroperiod), # Time span of simulation [seconds]
+    (; charge=charge, mass=mass, electromagneticfield=emfield),
+)
+sol = solve(prob)
+
+# We can interpolate the dense solution to any tᵢ with sol(tᵢ)
+t = range(0.0, 8gyroperiod, length=2000)
+fig, ax, _ = lines(
+    1e3 .* [sol(tᵢ)[1] for tᵢ in t], # x-position in mm
+    1e3 .* [sol(tᵢ)[2] for tᵢ in t]; # y-position in mm
+    axis=(
+        xlabel=&quot;x [mm]&quot;,
+        ylabel=&quot;y [mm]&quot;,
+        title=&quot;An electron gyrating and E×B-drifting&quot;
+    ),
+)
+fig</code></pre><img src="534e1225.png" alt="Example block output"/><p>Next, we solve the equations in the guiding centre approximation. <code>get_guidingcentre</code> converts the full-orbit state into the 4-component guiding centre state <code>[Rx, Ry, Rz, v∥]</code>, and returns the magnetic moment:</p><pre><code class="language-julia hljs">using TraceParticles: guidingcentreapproximation!, get_guidingcentre
+
+E, B = emfield(u0[1], u0[2], u0[3], 0.0)
+R0, vparal0, μ = get_guidingcentre(
+    [u0[1], u0[2], u0[3]],   # position
+    [u0[4], u0[5], u0[6]],   # velocity
+    B, E, charge, mass,
+)
+
+prob_gca = ODEProblem(
+    guidingcentreapproximation!,
+    [R0..., vparal0],
+    (0.0, 8gyroperiod),
+    (;
         charge=charge,
         mass=mass,
-        fields=em_fields_itp,
-        magneticmoment=nothing # Dummy magnetic moment
+        electromagneticfield=emfield,
+        magneticmoment=μ
+    ),
+)
+sol_gca = solve(prob_gca)
+
+lines!(ax, 1e3 .* [sol_gca(tᵢ)[1] for tᵢ in t],
+            1e3 .* [sol_gca(tᵢ)[2] for tᵢ in t],
+       linewidth=3, label=&quot;GCA&quot;)
+axislegend(ax, position=:lt)
+fig</code></pre><img src="9ebadeb3.png" alt="Example block output"/><p>If the electromagnetic field is gridded, we can <a href="https://github.com/JuliaMath/Interpolations.jl">Interpolations.jl</a> to create a callable with the required signature. We do this below in a modified electromagnetic field (adding a spatial, magnetic gradient).</p><pre><code class="language-julia hljs">using Interpolations
+
+xaxis = 0:0.01:1
+yaxis = 0:0.01:1
+
+# Gridded components
+ey = [E0 for x in xaxis, y in yaxis]
+# Add a strong gradient to the magnetic field
+bz = [B0*(1 - 4.2*x) for x in xaxis, y in yaxis]
+bz_itp = linear_interpolation((xaxis, yaxis), bz, extrapolation_bc=Flat())
+ey_itp = linear_interpolation((xaxis, yaxis), ey, extrapolation_bc=Flat())
+
+emfield(x, y, _, _) = [0, ey_itp(x, y), 0], [0, 0, bz_itp(x, y)]
+
+sol = solve(prob; reltol=1e-8)
+sol_gca = solve(prob_gca)
+
+fig, ax, _ = lines(
+    1e3 .* [sol(tᵢ)[1] for tᵢ in t],
+    1e3 .* [sol(tᵢ)[2] for tᵢ in t];
+    axis=( #
+        xlabel=&quot;x [mm]&quot;,
+        ylabel=&quot;y [mm]&quot;,
+        title=&quot;E×B- and ∇B-drift&quot;
+    ), label=&quot;Full orbit&quot;
+lines!(ax, 1e3 .* [sol_gca(tᵢ)[1] for tᵢ in t],
+            1e3 .* [sol_gca(tᵢ)[2] for tᵢ in t],
+# (...)
+fig</code></pre><img src="514ce426.png" alt="Example block output"/><p>We can see that the <span>$\nabla B = -4.2B_0x$</span> adds a small gradient-drift in the positive <span>$y$</span>-direction. In addition, as <span>$x$</span> increases due to the <span>$\mathbf{E}\times\mathbf{B}$</span>-drift, the magnetic field strengt approaches zero, increasing the Larmor radius. Eventually, the Larmor radius becomes comparable to <span>$|\nabla B/\mathbf{B}|$</span>, causing the magnetic field to change significantly during the gyration. At this point the guiding centre drifts fails to approximate the full orbit. In the <a href="../verification/#speiser-verification">Speiser-orbit verification</a>, we demonstrate how the hybrid-equations-scheme (<a href="../api/#eom-api"><code>hybridgcafo!</code></a>) handles such scenarios by switching from the guiding centre equations to a direct solution whenever necessary.  The Speiser-orbit simulation also shows how a proton behaves when it enters a <em>current sheet</em>.</p><h3 id="hybrid-example"><a class="docs-heading-anchor" href="#hybrid-example">Using the hybrid equations scheme</a><a id="hybrid-example-1"></a><a class="docs-heading-anchor-permalink" href="#hybrid-example" title="Permalink"></a></h3><p>The hybrid equations <a href="../api/#eom-api"><code>hybridgcafo!</code></a> combine solving the <code>lorentzforce!</code> and the <code>guidingcentreapproximation!</code>. This is useful when trajectories traverse regimes where a direct solution of the Lorentz force is impractical, and through regimes where the guiding centre approximation breaks down. For example, a particle approaching a current sheet might we strongly magnetised far away from the sheet, but is demagnetised inside the sheet (see the <a href="../verification/#speiser-verification">Speiser-orbit verification</a>. The <code>hybridgcafo!</code> function expects the parameter <code>p.eomid::EoMID.T</code>, that indicates which set of equations to solve, either <code>EoMID.FullOrbit</code> or <code>EoMID.GuidingCentreApproximation</code>. The function <a href="../api/#callbacks-api"><code>hybridswitchaffect!</code></a> is used to mutate this parameter, as well as to transform a <code>lorentzforce!</code> state into a <code>guidingcentreapproximation!</code>, and vica versa. When switching to the <code>lorentzforce!</code>-equations, the gyration phase is freely determined. <code>hybridswitchaffect!</code> uses (and expects) the particle parameter <code>p.getphase</code> with call signature <code>(integrator)</code>. The functor <a href="../api/#callbacks-api"><code>HybridSwitchCondition</code></a> determines whether the guiding-centre approximation is applicable or not, and together they work as a <a href="https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/"><code>DifferentialEquations.jl</code> callback</a> pair, demonstrated in the <a href="../verification/#speiser-verification">Speiser-orbit verification</a>. Here, we test <code>hybridgcafo!</code> and <code>hybridswitchaffect!</code> with preset switching times in a static, homogeneous field.</p><pre><code class="language-julia hljs">using TraceParticles
+using OrdinaryDiffEq: ODEProblem, solve
+using DiffEqCallbacks: PresetTimeCallback
+using CairoMakie
+
+# The electromagnetic field should be a callable with signature
+# (x,y,z,t), returning two 3D vectors: (E, B).
+B0 = 5e-4  # Tesla
+E0 = 1e2  # V/m
+emfield(x, y, z, t) = [0.0, E0, 0.0], [0.0, 0.0, B0]
+
+charge = electron_charge # Coloumb
+mass = electron_mass     # kg
+gyroperiod = 2π * mass / abs(charge * B0) # Seconds
+vperp0 = 1.0e6
+
+u0 = [0.0, 0.0, 0.0, vperp0, 0.0, 0.0] # [m, m, m, m/s, m/s, m/s]
+tspan = (0.0, 12gyroperiod)
+
+switchtimes = [3gyroperiod, 6gyroperiod, 9gyroperiod]
+
+# The hybrid particle&#39;s parameters must be mutable. We could also use
+# TraceParticles.HybridParams
+mutable struct Hparams
+    charge
+    mass
+    electromagneticfield
+    magneticmoment
+    eomid
+    nswitches
+    getphase
+end
+
+sol_hyb = solve(
+    ODEProblem(
+        hybridgcafo!,
+        copy(u0),
+        tspan,
+        Hparams(
+            charge,
+            mass,
+            emfield,
+            nothing,
+            EoMID.FullOrbit,
+            0,
+            integrator -&gt; π / 2,
+        )
+    );
+    callback=PresetTimeCallback(switchtimes, hybridswitchaffect!))
+
+# We solve the Lorentz force for the whole time-span in addition for comparison
+sol_ref = solve(
+    ODEProblem(
+        lorentzforce!,
+        copy(u0),
+        tspan,
+        (; charge=charge, mass=mass, electromagneticfield=emfield)
     )
 )
 
-ensemble_prob = EnsembleProblem(
-    prob;
-    prob_func=prob_func,
-    output_func=output_func,
-    reduction=reduction,
-    safetycopy=false
+t = range(tspan..., length=1000)
+fig, ax, l1 = lines(
+    [sol_ref(t_i)[1] for t_i in t],
+    [sol_ref(t_i)[2] for t_i in t];
+    label=&quot;Direct solution&quot;
+)
+lines!(ax,
+    [sol_hyb(t_i)[1] for t_i in t],
+    [sol_hyb(t_i)[2] for t_i in t];
+    label=&quot;Hybrid scheme&quot;
+)
+ax.title = &quot;Direct solution vs hybrid in static, uniform EM-field&quot;
+ax.xlabel = &quot;x [m]&quot;
+ax.ylabel = &quot;y [m]&quot;
+axislegend(ax, position=:rt)
+fig</code></pre><img src="6e0402ba.png" alt="Example block output"/><h2 id="callbacks-example"><a class="docs-heading-anchor" href="#callbacks-example">Using <a href="../api/#callbacks-api">callbacks</a></a><a id="callbacks-example-1"></a><a class="docs-heading-anchor-permalink" href="#callbacks-example" title="Permalink"></a></h2><p><code>TraceParticles.jl</code> provides a set of <a href="../api/#callbacks-api">conditions and affects</a> that can be used with <a href="https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/"><code>DiscreteCallback</code></a>s to handle events along the particle trajectory. The following code creates a callback that terminates the particle when specified state variables are outside a specific domain.</p><pre><code class="language-julia hljs"># This condition triggers when the particle&#39;s x or z position is outside (0,1)
+condition = OutOfBoundsCondition(( (0,1, (0,1) ), [1,3])
+callback = DiscreteCallback(condition, terminate!;
+    save_positions=(false, true)
+)</code></pre><p>The custom callback-affect <code>outofboundsaffect!</code> will set the particle parameter <code>p.terminationcode</code> to <code>TraceParticles.TerinationCode.OutOfBounds</code>, making it easier to diagnose why the particle was terminated. Defining a callback with a <a href="../api/#callbackspec-api">callback specification</a> automatically matches useful condition-affect pairs. The specifier <code>OutOfBounds</code> matches <code>OutOfBoundsCondition</code> with <code>outofboundsaffect!</code>. Below, we run the same guiding centre particle as above with a <code>OutOfBounds</code>-callback. Instead of a <code>NamedTuple</code> we use the mutable struct <a href="../api/#params-api"><code>GCAParams</code></a> as a parameter container, because it is mutable and contains a field called <code>terminationcode</code>.</p><pre><code class="language-julia hljs">using TraceParticles: OutOfBounds, create_callback, GCAParams
+using Printf
+
+callback = create_callback(OutOfBounds(; x=(-0.05, 0.05)), nothing)
+prob_gca = ODEProblem(
+    guidingcentreapproximation!,
+    [R0..., vparal0],
+    (0.0, 8gyroperiod),
+    GCAParams(
+        charge=charge,
+        mass=mass,
+        electromagneticfield=emfield,
+        magneticmoment=μ
+    ),
+)
+sol = solve(prob_gca; callback=callback)
+
+@printf(&quot;&quot;&quot;
+retcode          = %s\nterminationcode  = %s
+stopped at t     = %.2E
+x at stop        = %.4f
+&quot;&quot;&quot;, sol.retcode, sol.prob.p.terminationcode, last(sol.t), sol.u[end][1]
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">retcode          = Terminated
+terminationcode  = OutOfBounds
+stopped at t     = 3.30E-07
+x at stop        = 0.0792</code></pre><h2 id="sampling-example"><a class="docs-heading-anchor" href="#sampling-example">Using statistical sampling of initial conditions</a><a id="sampling-example-1"></a><a class="docs-heading-anchor-permalink" href="#sampling-example" title="Permalink"></a></h2><p>Say you want to trace a large ensemble of particles, and that those particles should be a representative sample of a fluid. Then their initial volocities should be Maxwell-Boltzmann distributed and their initial positions should reflect the particle density of the fluid. <code>TraceParticles.jl</code> provides samplers and custom <code>prob_func</code>s (to be passed as a keyword argument to an <a href="https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/"><code>EnsembleProblem</code></a>) to achieve this. In this example we use the <a href="../api/#statistics-api"><code>MHDSampler</code></a> to draw positions using importance sampling, and velocities from a Maxwellian distribution with the temperature of the drawn position. In importance sampling, we draw samples from a <em>proposal</em> probability distribution function, but give the draws a statistical weight so that the <em>target</em> distribution can be recreated. Here, the target distribution is a uniform particle number density, and the proposal distribution is a bias towards two specific modes.</p><pre><code class="language-julia hljs">using TraceParticles:
+    proton_mass,
+    proton_charge,
+    MHDSampler,
+    lorentzforce!,
+    FullOrbitParams,
+    SampleFullOrbit,
+    binmap
+using OrdinaryDiffEq: ODEProblem
+using SciMLBase: EnsembleProblem, solve
+using LinearAlgebra: norm
+using CairoMakie
+
+emfield(x, y, z, t) = [0.0, 1e2, 0.0], [0.0, 0.0, 5e-4] # V/m, Tesla
+temperature(x, y, z, t) = 1e6 # Kelvin
+
+mass = proton_mass     # kg
+charge = proton_charge # Coloumb
+
+# Define the domain of the initial positions and time
+xmin, xmax = -1e6, 1e6  # meters
+ymin, ymax = -1e6, 1e6  # meters
+zmin, zmax = -1e6, 1e6  # meters
+tmin, tmax =  0.0, 1e-4 # seconds
+
+# A target probability density distribution that is uniform in spacetime
+# This function represent the particle number density of the fluid
+target_distribution(x, y, z, t) =
+    1 / prod([xmax - xmin, ymax - ymin, zmax - zmin, tmax - tmin])
+
+# A proposal probability density distribution that favours values in two
+# Gaussian modes in the xy-plane
+proposal_distribution(x_, y_, z, t; x=x_/1e6, y=y_/1e6) =
+    exp(-((x - 0.3)^2 + (y + 0.2)^2) / (2 * 0.15^2)) +
+    0.6exp(-((x + 0.5)^2 + (y - 0.4)^2) / (2 * 0.25^2))
+maxvalue = 1.05 # must be ≥ max(proposal) over the domain
+
+sampler = MHDSampler(
+    target_distribution,
+    proposal_distribution,
+    temperature,
+    xmin, xmax, ymin, ymax, zmin, zmax, tmin, tmax,
+    maxvalue,
+    Float64
 )
 
-sol = solve(
-    ensemble_prob,
-    alg,
-    EnsembleSerial();
-    reltol=3e-8,
-    abstol=1e0,
+prob = ODEProblem(
+    lorentzforce!,
+    zeros(6), # [x, y, z, vx, vy, vz]. Nonzero values are given by the prob_func
+    (tmin, tmax),
+    # A custom struct is needed to store statistical weight.
+    FullOrbitParams(
+        charge = charge,
+        mass = mass,
+        electromagneticfield = emfield
+    )
+)
+ensemble_prob = EnsembleProblem(prob;
+    prob_func = SampleFullOrbit(sampler, tmax),
+)
+sim = solve(ensemble_prob; trajectories = 100_000)
+
+x0 = [u.u[1][1] for u in sim.u] ./ 1e6 # Convert meters to megameters
+y0 = [u.u[1][2] for u in sim.u] ./ 1e6
+w = [u.prob.p.weight for u in sim.u] # the stastical weights
+v0 = [norm(u.u[1][4:6]) for u in sim.u]
+
+fig = Figure();
+
+ax = Axis(fig[1:2,1])
+edges, counts = binmap(x0, y0)
+heatmap!(ax, edges[1], edges[2], counts)
+contour!(edges[1], edges[2], (x, y) -&gt; proposal_distribution(1e6x, 1e6y,0,0);
+    color=:white, levels=6
+)
+ax.ylabel = &quot;x [Mm]&quot;
+ax.xlabel = &quot;y [Mm]&quot;
+ax.title =
+&quot;&quot;&quot;Histogram of initial positions
+(contours = proposal distribution)&quot;&quot;&quot;
+ax.aspect = DataAspect()
+
+ax = Axis(fig[1:2,2])
+edges, counts = binmap(x0, y0; weights=w)
+heatmap!(ax, edges[1], edges[2], counts)
+ax.xlabel = &quot;y [Mm]&quot;
+ax.title =
+&quot;&quot;&quot;Histogram of statistically
+weighted initial positions
+(target distribution is a constant)&quot;&quot;&quot;
+ax.aspect = DataAspect()
+
+ax = Axis(fig[3, 1:2])
+hist!(ax, v0 ./ 1e6; bins=100)
+ax.xlabel = &quot;Speed [Mm/s]&quot;
+ax.ylabel = &quot;Counts&quot;
+ax.title = &quot;Histogram of initial speed&quot;
+
+fig</code></pre><img src="5778bd96.png" alt="Example block output"/><h2 id="ensembles-example"><a class="docs-heading-anchor" href="#ensembles-example">Efficient storage of particle ensembles</a><a id="ensembles-example-1"></a><a class="docs-heading-anchor-permalink" href="#ensembles-example" title="Permalink"></a></h2><p>The data-footprint of the dense solutions to large particle ensembles can be a problem. <a href="https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts/">Common solver options</a> like <code>saveat</code> and <code>save_everystep</code> helps to reduce memory use during integration, but the use of <code>output_func</code>s and <code>reduction</code>s are most efficient to reduce data storage needs. TraceParticles.jl provides the reduction <a href="../api/#reduction-api"><code>SaveBatchAsHDF5</code></a> which stores the data from each particle batch in a <a href="https://juliaio.github.io/HDF5.jl/stable/">HDF5 group</a>. For the <code>SaveBatchAsHDF5</code> reduction to work, the <code>SciML.EnsembleProblem</code>&#39;s <code>output_func</code> needs to return an object that can be turnet into a data frame via <a href="https://dataframes.juliadata.org/stable/"><code>DataFrame(batch)</code></a>, e.g. a <code>NamedTuple</code>, or TraceParticles.jl&#39;s <a href="../api/#outputfunc-api">output functions</a>. These output functions discard all but the initial and final state of the particle, and those specialised towards the <a href="../api/#params-api">parameter containers</a> <code>FullOrbitParams</code>, <code>GCAParams</code>, and <code>HybridParams</code> stores relevant particle parameters in addition. TraceParticles.jl also provides functions for loading the data from the HDF5-files that <code>SaveBatchAsHDF5</code> creates, like <a href="../api/#io-api"><code>h5_getdataset</code></a> and <a href="../api/#io-api"><code>h5_getall</code></a>.</p><pre><code class="language-julia hljs">using TraceParticles
+using OrdinaryDiffEq: ODEProblem, remake
+using SciMLBase: EnsembleProblem, solve
+using Random: Xoshiro
+
+outdir = mktempdir()
+expname = &quot;demo&quot;
+mkpath(joinpath(outdir, expname))
+
+mass = electron_mass      # kg
+charge = electron_charge  # C
+B = 1e-3 # T
+E = 1e2  # V/m
+T_c = 2π * mass / abs(charge * B) # s
+temperature = 1e6 # K
+
+uniformfield(x, y, z, t) = [0.0, E, 0.0], [0.0, 0.0, B]
+
+x0 = 0.5
+y0 = 0.5
+z0 = 0.5
+t0 = 0.0
+rng = Xoshiro(0)
+vx0 = TraceParticles.maxwellianvelocitysample(rng, Float64, temperature, mass)
+vy0 = TraceParticles.maxwellianvelocitysample(rng, Float64, temperature, mass)
+vz0 = TraceParticles.maxwellianvelocitysample(rng, Float64, temperature, mass)
+E0, B0 = uniformfield(x0, y0, z0, t0)
+R0, vparal0, μ = get_guidingcentre(
+    [x0, y0, z0],
+    [vx0, vy0, vz0],
+    B0, E0, charge, mass
+)
+u0 = [R0..., vparal0]
+
+tspan = (0.0, 20_000T_c)
+npart = 5_000
+
+reduction = SaveBatchAsHDF5(
+    expdir=outdir,
+    expname=expname,
+    batchsize = npart,
+    nbatches=1,
+    verbose=true,
+)
+
+baseprob = ODEProblem(
+    guidingcentreapproximation!,
+    u0,
+    tspan,
+    GCAParams(
+        charge=charge,
+        mass=mass,
+        electromagneticfield=uniformfield,
+        magneticmoment=μ
+    ),
+)
+eprob = EnsembleProblem(baseprob;
+    output_func=output_func_lightweight_gca,
+    prob_func = (prob, ctx) -&gt; remake(prob;
+        u0 = [R0..., vparal0*randn(rng)],
+        p = GCAParams(
+            charge=prob.p.charge,
+            mass=prob.p.mass,
+            electromagneticfield=prob.p.electromagneticfield,
+            magneticmoment=prob.p.magneticmoment*rand(rng)
+        ),
+    ),
+    reduction=reduction
+)
+sim = solve(eprob;
     trajectories=npart,
-    maxiters=1e6,
-    callback=cbset,
-    batch_size=batch_size,
 )
 
-# Calculate and save `GCAState`s for the initial and final solution for each
-# particle. A `GCAState` includes more information than the solution, including
-# drifts, Larmor radius, electromagnetic fields etc. See the documentation for
-# more information.
-save_gcastates(get_filename(reduction), em_fields_itp)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../index_list/">« Index</a><a class="docs-footer-nextpage" href="../api/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Thursday 21 August 2025 11:53">Thursday 21 August 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+filename = get_filename(reduction)
+h5_getdataset(filename, [:xf, :yf, :zf, :vparalf, :magneticmoment])[1:10, :]</code></pre><div><div style = "float: left;"><span>10×5 DataFrame</span></div><div style = "clear: both;"></div></div><div class = "data-frame" style = "overflow-x: scroll;"><table class = "data-frame" style = "margin-bottom: 6px;"><thead><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;">Row</th><th style = "text-align: left;">xf</th><th style = "text-align: left;">yf</th><th style = "text-align: left;">zf</th><th style = "text-align: left;">vparalf</th><th style = "text-align: left;">magneticmoment</th></tr><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;"></th><th title = "Float64" style = "text-align: left;">Float64</th><th title = "Float64" style = "text-align: left;">Float64</th><th title = "Float64" style = "text-align: left;">Float64</th><th title = "Float64" style = "text-align: left;">Float64</th><th title = "Float64" style = "text-align: left;">Float64</th></tr></thead><tbody><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">526.094</td><td style = "text-align: right;">7.35635e5</td><td style = "text-align: right;">3.92487e-15</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">1323.24</td><td style = "text-align: right;">1.85134e6</td><td style = "text-align: right;">6.48905e-16</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">-4612.1</td><td style = "text-align: right;">-6.4559e6</td><td style = "text-align: right;">1.71745e-15</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">-341.379</td><td style = "text-align: right;">-4.78503e5</td><td style = "text-align: right;">3.19536e-15</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">-8742.5</td><td style = "text-align: right;">-1.22369e7</td><td style = "text-align: right;">1.53336e-15</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">-2033.26</td><td style = "text-align: right;">-2.84651e6</td><td style = "text-align: right;">2.51968e-15</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">7739.36</td><td style = "text-align: right;">1.08315e7</td><td style = "text-align: right;">4.41764e-15</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">1239.88</td><td style = "text-align: right;">1.73466e6</td><td style = "text-align: right;">3.41397e-15</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">-1820.5</td><td style = "text-align: right;">-2.54872e6</td><td style = "text-align: right;">9.9213e-17</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td><td style = "text-align: right;">71.9448</td><td style = "text-align: right;">0.520304</td><td style = "text-align: right;">-5136.84</td><td style = "text-align: right;">-7.19034e6</td><td style = "text-align: right;">3.77101e-15</td></tr></tbody></table></div><h2 id="interface-example"><a class="docs-heading-anchor" href="#interface-example">High-level interface</a><a id="interface-example-1"></a><a class="docs-heading-anchor-permalink" href="#interface-example" title="Permalink"></a></h2><h2 id="post-processing-example"><a class="docs-heading-anchor" href="#post-processing-example">Post-processing tools</a><a id="post-processing-example-1"></a><a class="docs-heading-anchor-permalink" href="#post-processing-example" title="Permalink"></a></h2></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../concepts/">« Concepts</a><a class="docs-footer-nextpage" href="../verification/">Verification gallery »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Sunday 27 September 2026 16:05">Sunday 27 September 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
