@@ -166,7 +166,7 @@ function determine_output_func(p::TraceParticlesParameters)
             output_func_lightweight_hybrid
     elseif p.eom == guidingcentreapproximation!
         return p.save_max_observables ?
-            output_func_max_lightweight : output_func_lightweight
+            output_func_max_lightweight : output_func_lightweight_gca
     elseif p.eom == lorentzforce!
         return output_func_lightweight_fo
     else

@@ -29,8 +29,8 @@ Providing single-precision input consistently gives a single-precision run.
 - `output_func`: The output the integrator is to save from each particle
    trajectory. If given it is directly passed as a keyword argument to the
    `SciMLBase.EnsembleProblem`. The default is to use
-   `output_func_lightweight` or `output_func_lightweight_hybrid` depending on
-   the equations of motion.
+   `output_func_lightweight_gca`, `output_func_lightweight_fo`, or
+   `output_func_lightweight_hybrid` depending on the equations of motion.
 - `reduction`: The data reduction of each batch of particles. The default is
    `SaveBatchAsHDF5`, which requires the batch to be transformable into a
    dataframe via `DataFrame(batch)`.

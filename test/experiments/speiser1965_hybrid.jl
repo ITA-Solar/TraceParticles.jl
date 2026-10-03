@@ -131,6 +131,7 @@ hprob = ODEProblem(
         mass=mass,
         electromagneticfield=emfields_itp,
         getphase=(integrator) -> π / 2,
+        initialeomid=EoMID.FullOrbit
     )
 )
 R, vparal, mu = get_guidingcentre(

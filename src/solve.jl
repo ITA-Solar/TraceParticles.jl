@@ -16,8 +16,8 @@ function SciMLBase.solve(
             create_paramsbackup(datadir, expname)
         end
         sim = solve(
-            prob,
-            alg;
+            prob;
+            alg=alg,
             trajectories=trajectories,
             batch_size=batch_size,
             abstol=abstol,

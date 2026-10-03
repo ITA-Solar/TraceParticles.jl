@@ -54,7 +54,7 @@ using TraceParticles:
     hybridgcafo!,
     init_probfunc,
     lorentzforce!,
-    output_func_lightweight,
+    output_func_lightweight_gca,
     output_func_lightweight_fo,
     output_func_lightweight_hybrid,
     output_func_max_lightweight
@@ -343,7 +343,7 @@ end
         @test determine_output_func(makeparams(eom=lorentzforce!)) ===
             output_func_lightweight_fo
         @test determine_output_func(makeparams(eom=guidingcentreapproximation!)) ===
-            output_func_lightweight
+            output_func_lightweight_gca
         @test determine_output_func(
             makeparams(eom=guidingcentreapproximation!, save_max_observables=true)
         ) === output_func_max_lightweight
@@ -356,7 +356,7 @@ end
         )
         @test withswitches ∉ (
             output_func_lightweight_hybrid,
-            output_func_lightweight,
+            output_func_lightweight_gca,
             output_func_lightweight_fo,
         )
 
