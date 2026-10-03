@@ -8,7 +8,7 @@ With TraceParticles.jl you can **trace** charged **particles**  in electromagnet
 The particles move independently of each other by solving the Lorentz force and they do not feed back to the electromagnetic field.
 This package builds on [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/), which provides solvers, dense output, callback and parallelism of ensembles of particles.
 
-## What TraceParticles.jl package provides
+## What the package provides
 | Tool | Description |
 | :--- | :--- |
 | [Equations of motion](@ref eom-api) | `lorentzforce!`, `guidingcentreapproximation!` and the hybrid `hybridgcafo!` |
