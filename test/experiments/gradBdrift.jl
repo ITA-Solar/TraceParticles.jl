@@ -18,39 +18,26 @@ be a multiple of the gyration period.
 using Interpolations
 using LinearAlgebra
 using OrdinaryDiffEq
+using StaticArrays
 using Test
 using TraceParticles
-import TraceParticles as TP
 
 include("../utils.jl")
 
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS
-#
 #-------------------------------------------------------------------------------
-# NUMBER OF PARTICLES, SIMULATION DURATION, TIMESTEP   |
-#......................................................|
-numparticles = 1  # Number of particles to simulate    |
-dt = 0.01         # Time step [s]                      |
-# Use a final time equal to 10 gyrations for the full  |
-# orbit, according to the parameters set (mass, charge,|
-# vel0, pos0, B0, a)                                   |
-tf = 10 * 1 / 1.7507  # End time of simulation [s]     |
-tspan = (0.0, tf)     # simulation time span           |
-#tf = 2.3 #n=10   # End time of simulation [s]         |
-#......................................................|
-
-#...............................................
-# PARTICLE TYPE
+# Use a final time equal to 10 gyrations for the full
+# orbit, according to the parameters set (mass, charge, vel0, pos0, B0, a)
+tf = 10 * 1 / 1.7507  # End time of simulation [s]
+tspan = (0.0, tf)     # simulation time span
 mass = 1
 charge = 1
 
-#...............................................
 # INITIAL CONDITIONS
 pos0 = [0.5, 0.5, 0.5]
 vel0 = [0.0, 0.1, 0.0]
 
-#...............................................
 # SPATIAL PARAMETERS (x, y, z)
 numdims = 3
 # Lower bounds of the three spatial axes
@@ -58,61 +45,35 @@ xi0 = (0.0, 0.0, 0.0)
 # Upper bound of the three spatial axes
 xif = (1.0, 1.0, 1.0)
 # Grid resolution of the axes
-#n = (10, 10, 2)
-ni = (100, 100, 2)
+nx, ny, nz = 100, 100, 2
+ni = (nx, ny, nz)
 
-#...............................................
 # MAGNETIC FIELD PARAMETERS
 a = 10.0 # gradient in magnetic field
 B0 = 6.0 # Additional constant
-function gradBfield(
-    y::Float64,
-)
-    return [0.0, 0.0, a * y + B0]
+function gradBfield(y)
+    return SVector(0.0, 0.0, a * y + B0)
 end
 
-#...............................................
 # ELECTRIC FIELD PARAMETERS
 # It will not exist
 Ex = 0.0
 Ey = 0.0
 
-#...............................................
-# SOLVER CONDITIONS
-# RK4 for GCA? Euler-Cromer for full orbit?
-
 #-------------------------------------------------------------------------------
 #                            RUN EXPERIMENT
-#
 #-------------------------------------------------------------------------------
+
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
 xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
-Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
-Efield = zeros(size(Bfield))
-Efield[1, :, :, :] .= Ex
-Efield[2, :, :, :] .= Ey
-#Efield[1,:,1:30,:] .= 0.0
-Bfield = stack(discretise((x, y, z) -> gradBfield(y), xx, yy, zz))
-# Create interpolation objects
-emfields = eachslice(vcat(Bfield, Efield), dims=(2, 3, 4))
-emfields_itp = linear_interpolation((xx, yy, zz), emfields,
-    extrapolation_bc=Flat()
-)
-emfields_itp = ElectromagneticFieldInterpolator(
-    StaticInterpolation(emfields_itp)
-)
+bfield = discretise3D((x, y, z) -> gradBfield(y), xx, yy, zz)
+# Create interpolation object
+bfield_itp = linear_interpolation((xx, yy, zz), bfield, extrapolation_bc=Flat())
+electromagneticfield(x, y, z, _) = SVector(Ex, Ey, 0), bfield_itp(x, y, z)
 
-#-------------------------------------------------------------------------------
-# SIMULATION DURATION
-#
-numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
-#println("Number of time steps = $numsteps.")
-
-#-------------------------------------------------------------------------------
 # PARTICLE CREATION
 # Set initial position and velocities
-#
-B_vec = emfields_itp(pos0...)[2]
+B_vec = electromagneticfield(pos0..., 0.0)[2]
 B = norm(B_vec)
 b̂ = B_vec / B
 v = norm(vel0)
@@ -120,31 +81,24 @@ vparal = vel0 ⋅ b̂
 vperp = √(v^2 - vparal^2)
 μ = mass * vperp^2 / (2B)
 
-#-------------------------------------------------------------------------------
 # CREATE PROBLEM
-# Non-relativisitc Euler-Cromer ?
 prob_FO = ODEProblem(
     lorentzforce!,
     [pos0; vel0],
     tspan,
-    (charge=charge, mass=mass, electromagneticfield=emfields_itp),
+    (charge=charge, mass=mass, electromagneticfield=electromagneticfield),
 )
 prob_GCA = ODEProblem(
     guidingcentreapproximation!,
     [pos0; vparal],
     tspan,
-    (charge=charge, mass=mass, magneticmoment=μ, electromagneticfield=emfields_itp)
+    (charge=charge, mass=mass, magneticmoment=μ, electromagneticfield=electromagneticfield)
 )
 
-#...............................................................................
 # RUN SIMULATION
 sol_FO = solve(prob_FO)
 sol_GCA = solve(prob_GCA)
 
-#...............................................................................
-
-
-#-------------------------------------------------------------------------------
 # TESTING
 # Initial gyrofrequency
 B = norm(gradBfield(pos0[2]))
@@ -157,7 +111,7 @@ posf_anal = tf * vdrift + pos0
 @testset verbose = true "GCA: Defualt alg." begin
     @test isapprox(posf_anal, sol_GCA.u[end][1:3], rtol=0.0001)
     @test isapprox(sol_FO.u[end][1:3], sol_GCA.u[end][1:3], rtol=0.001)
-end # testset GCA: Euler
+end
 @testset verbose = true "Full orbit: Defualt alg." begin
     @test isapprox(posf_anal, sol_FO.u[end][1:3], rtol=0.001)
-end # testset GCA: Euler
+end

@@ -545,144 +545,6 @@ end
 
 #____/\_____/\_________________________________________________________________
 #
-# Creating interpolation objects from Bifrost input (MHD snapshots)
-#
-"""
-    create_bifrost_itps(
-        brxp::BifrostExperiment,
-        snaps::Union{Integer,AbstractVector},
-        itp_type::Interpolations.InterpolationType,
-        itp_bc::Interpolations.BoundaryCondition,
-        variables::Vector{String};
-        units::String,
-        name=missing,
-        kwargs...
-    )
-Create interpolation objects from the MHD variables in a Bifrost snapshot
-and save them as JLD2-files.
-
-Pass `"BE"` in `variables` to get the 6-element electromagnetic field vector
-`[bx, by, bz, ex, ey, ez]` that `emfield_file` expects.
-
-Each file is named `<name>_t<snap0>-t<snapf>_<var>_<units>_<itp>.itp.jld2`,
-where `<itp>` is `linear` or `cubicspline`.
-
-### Keyword arguments
-- `units::String`: unit system the variables are converted to, e.g. `"si"`.
-- `name`: prefix of the generated filenames, including any directory. Omitted
-    from the name when left `missing`.
-- `normalise::Vector{Bool}`
-- `destagger::Vector{Bool}`
-- `xzinterpolation::Bool`: If true, wrap 2D interpolators in a struct that
-    allows it to be called with three coordinates, using only the first and
-    third coordinate. That is; itp(x,y,z) = itp(x,z).
-"""
-function create_bifrost_itps(
-    brxp::BifrostExperiment,
-    snaps::Union{Integer,AbstractVector},
-    itp_type::Interpolations.InterpolationType,
-    itp_bc::Union{
-        Interpolations.BoundaryCondition,
-        NTuple{N,Interpolations.BoundaryCondition} where N
-    },
-    variables;
-    units::String,
-    name=missing,
-    normalise=fill(false, length(variables)),
-    destagger=fill(false, length(variables)),
-    xzinterpolation=false,
-    deallocateafterwritten=false,
-    kwargs...
-)
-    if length(variables) != length(normalise) != length(destagger)
-        throw(ArgumentError(
-            "Length of `variables` and `normalise` and `destagger` must be equal."
-        ))
-    end
-    tstamp = length(snaps) == 1 ?
-             "t$snaps" : "t$(first(snaps))-t$(last(snaps))"
-    if length(snaps) == 1
-        if xzinterpolation
-            wrapper = StaticXZInterpolation
-        else
-            wrapper = StaticInterpolation
-        end
-    elseif xzinterpolation
-        wrapper = XZInterpolation
-    else
-        wrapper = nothing
-    end
-
-    itpstr =
-        if itp_type == BSpline(Linear())
-            "linear"
-        elseif itp_type == BSpline(Cubic())
-            "cubicspline"
-        else
-            missing
-        end
-    postfix = join(skipmissing([units, itpstr]), "_")*".itp.jld2"
-    prefix = join(skipmissing([name, tstamp]), "_")
-
-    # Create interpolator for the electromagnetic field
-    if "BE" ∈ variables
-        interpolator = get_br_emfield_vecof_interpolators(
-            brxp,
-            snaps;
-            itp_type=itp_type,
-            itp_bc=itp_bc,
-            units=units,
-            destagger=true,
-            kwargs...
-        )
-        if !isnothing(wrapper)
-            interpolator = [wrapper(itp) for itp in interpolator]
-        end
-        @save join([prefix, "BE", postfix], "_") interpolator
-        # Remove "BE" from the variables
-        mask = variables .!= "BE"
-        variables = variables[mask]
-        normalise = normalise[mask]
-        destagger = destagger[mask]
-        # For very large snapshots, it is a good idea to deallocate the
-        # `interpolator` variable after loading the electromangetic field.
-        # In this way, we do not eat up more memory when loading more
-        # variables.
-        if deallocateafterwritten
-            interpolator = nothing
-            GC.gc()
-        end
-    end
-
-    # Create interpolators for the variables
-    for (var, norm, dstgr) in zip(variables, normalise, destagger)
-        interpolator, _ = get_br_var_interpolator(
-            brxp,
-            snaps,
-            var;
-            itp_type=itp_type,
-            itp_bc=itp_bc,
-            units=units,
-            normalise=norm,
-            destagger=dstgr,
-            kwargs...
-        )
-        if !isnothing(wrapper)
-            interpolator = wrapper(interpolator)
-        end
-        @save join(skipmissing(
-            [prefix, var, norm ? "normalised" : missing, postfix]
-           ), "_"
-        ) interpolator
-        if deallocateafterwritten
-            interpolator = nothing
-            GC.gc()
-        end
-    end
-end
-
-#____/\_____/\_________________________________________________________________
-#
 # Creating `ODEProblem` arguments
 #
 """
@@ -826,4 +688,32 @@ function logger2fileandstderr(
             loglevel
         )
     )
+end
+
+"""
+    include_setup(setupfile::AbstractString)
+If the setup file is a Julia script, include it in a new namespace and expect
+that the returned variable is the electromagnetic field.
+"""
+function include_setup(setupfile::AbstractString)
+    if endswith(setupfile, ".jl")
+        # Create a new namespace with a module so that the current
+        # namespace is not polluted.
+        setupmodule = Module(:Setup) 
+        # The new module does not have the include-function. We must define
+        # it. This allows setup-files to use include.
+        Core.eval(
+            setupmodule,
+            :(include(file) = Base.include($setupmodule, file))
+        )
+        # Include the setupfile in the new module. Expect it to return the
+        # electromagnetic field.
+        result = Base.include(setupmodule, setupfile)
+        if isnothing(result)
+            error("Setup file $setupfile must return something.")
+        end
+        return result
+    else
+        error("Setup file $setupfile must be a Julia-scipt")
+    end
 end

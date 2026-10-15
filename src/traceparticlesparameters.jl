@@ -19,11 +19,12 @@ Providing single-precision input consistently gives a single-precision run.
 - `alg`: the `OrdinaryDiffEq` algorithm to integrate with,
 - `maxiters`, `reltol`, `abstol`: solver controls,
 - `expname`: experiment name; also the output subdirectory and file stem,
-- `emfield_file`: JLD2 file holding a 6-element vector of callables in the
+- `electromagneticfield`: the field with call signature `(x,y,z,y)`, or a
+   Julia-setup-script.
   order `bx, by, bz, ex, ey, ez`,
 - `prob_func`: how each particle gets its initial state. Either a specification
-  such as [`SampleICsFromMHD`](@ref) or [`ICsFromFile`](@ref), or any function
-  that `EnsembleProblem` can call as `(prob, ctx)`.
+   such as [`ICsFromFile`](@ref) or [`MHDSampler`](@ref), or any function
+   that `EnsembleProblem` can call as `(prob, ctx)`.
 
 # Optional fields (not a complete list)
 - `output_func`: The output the integrator is to save from each particle
@@ -59,13 +60,18 @@ params = TraceParticlesParameters(
     reltol = 3e-8,
     abstol = 1e0,
     expname = "myrun",
-    emfield_file = "BE.jld2",
-    prob_func = SampleICsFromMHD(
-        tg_file = "tg.jld2",
-        target_distr_file = "r.jld2",
-        xbounds = (1.58e7, 1.63e7),
-        ybounds = (1e6, 1e6),
-        zbounds = (-6.6e6, -6.1e6),
+    emfield = "setup_emfield.jl",
+    prob_func = MHDSampler(
+        tg_file = (x, y, z, t) -> 1e7,
+        target_distr_file = (x, y, z, t) -> 1.0,
+        xmin = 1.58e7,
+        xmax = 1.63e7,
+        ymin = 1e6,
+        ymax = 1e6,
+        zmin = -6.6e6,
+        zmax = -6.1e6,
+        tmin = 0.0,
+        tmax = 0.0,
     ),
     callback_specs = (
         OutOfBounds(x = (1.58e7, 1.63e7), z = (-6.6e6, -6.1e6)),
@@ -83,7 +89,7 @@ Base.@kwdef struct TraceParticlesParameters
     tf::Real
     mass::Real
     charge::Real
-    emfield_file::String
+    electromagneticfield::Any
     prob_func::Any
     alg::Union{SciMLBase.AbstractODEAlgorithm, Nothing}
     maxiters::Int
@@ -100,8 +106,6 @@ Base.@kwdef struct TraceParticlesParameters
     save_max_observables::Bool = false
     verbose::Bool = true
     loglevel::Logging.LogLevel = Logging.Info
-    static_itp_wrapper::Bool = false
-    xz_itp_wrapper::Bool = false
     seed::Int = 1
     compute_initial_and_final_energy::Bool = true
     #= Parameters for the hybrid GCA/full-orbit switch. Unlike the callback

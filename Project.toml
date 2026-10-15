@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["eilifso <e.s.oyre@astro.uio.no>"]
 
 [deps]
-BifrostTools = "526b3974-5bd8-47e8-be8d-381be867b53b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
@@ -50,9 +49,10 @@ julia = "1.12.6"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+BifrostTools = "526b3974-5bd8-47e8-be8d-381be867b53b"
 
 [targets]
-test = ["Test"]
+test = ["Test", "BifrostTools"]
 
 [workspace]
 projects = ["docs"]

@@ -223,8 +223,7 @@ end
     init_probfunc(
         probfunc_specifier,
         p::TraceParticlesParameters,
-        itp_wrapper,
-        fields_itp
+        electromagneticfield
     )
 
 Resolve `probfunc_specifier` into a `prob_func` that `EnsembleProblem` can call as
@@ -232,12 +231,12 @@ Resolve `probfunc_specifier` into a `prob_func` that `EnsembleProblem` can call 
 
 Anything that is not a recognised specification is returned unchanged, so a
 user-supplied problem function needs no method here.
-See [`SampleICsFromMHD`](@ref) and [`ICsFromFile`](@ref) examples of  specifications
+See [`Rerun`](@ref) and [`ICsFromFile`](@ref) examples of  specifications
 that are recognised.
 """
 function init_probfunc end
 
-init_probfunc(pfs::Any, _, _, _) = pfs
+init_probfunc(pfs::Any,  _, _) = pfs
 
 
 """
@@ -255,11 +254,11 @@ Base.@kwdef struct ICsFromFile
     ic_file::String
 end
 
-function init_probfunc(probfuncspec::ICsFromFile, params, _, fields_itp)
+function init_probfunc(probfuncspec::ICsFromFile, params, electromagneticfield)
     u0, tspans, odeparams = create_diffeq_ic(
         probfuncspec.ic_file,
         params.tf,
-        fields_itp;
+        electromagneticfield;
         f=params.eom
     )
     return PredefinedICs(u0, tspans, odeparams)
@@ -270,7 +269,7 @@ Base.@kwdef struct Rerun{T<:AbstractVector}
     idxs::T
 end
 
-function init_probfunc(pfs::Rerun, params, _, fields_itp)
+function init_probfunc(pfs::Rerun, params, electromagneticfield)
     x0 = h5_getdataset(pfs.datafile, "x0")
     y0 = h5_getdataset(pfs.datafile, "y0")
     z0 = h5_getdataset(pfs.datafile, "z0")
@@ -306,11 +305,11 @@ function init_probfunc(pfs::Rerun, params, _, fields_itp)
         @error "Cannot initialise `Rerun` problem function with uknown EoM:
             $(params.eom)"
     end
-    odeparamstype = typeof(define_parameters(params, fields_itp))
+    odeparamstype = typeof(define_parameters(params, electromagneticfield))
     odeparams = Vector{odeparamstype}(undef, length(pfs.idxs))
     for i in eachindex(pfs.idxs)
         odeparams[i] = define_parameters(
-            params, fields_itp; magneticmoment=mu0[i]
+            params, electromagneticfield; magneticmoment=mu0[i]
         )
     end
     return PredefinedICs(u0, tspans, odeparams)
@@ -318,104 +317,17 @@ end
 
 
 """
-    SampleICsFromMHD(;
-        tg_file::String,
-        target_distr_file::String,
-        xbounds, ybounds, zbounds,
-        t0bounds = (0.0, 0.0),
-        proposal_distr_file::String = "",
-    )
+    init_probfun(sampler::AbstractParticleSampler, p, _)
 
-Sample initial conditions from an MHD environment.
+Initialise a problem function which uses a `AbstractParticleSampler`.
 
-Positions and time are drawn from a proposal distr. by rejection sampling within
-the given bounds. The particles are given a statistical weigth that represents
-the ratio of probailities to be drawn from the target and proposal distribution,
-weight = P_target/P_proposal. The default  proposal distribution is the target
-distribution, giving particles weight=1.
+Depending on the equations of motion, constructs either a 
+[`SampleFullOrbit`](@ref), [`SampleGCA`](@ref) or [`SampleHybrid`](@ref),
+instance.
 
-Particle velocities are drawn from a Maxwellian distribution corresponding to
-the temperature of the drawn position. The temperature is given by the
-`tg_file`.
-
-Only filenames of the distributions are stored; the interpolators are loaded by
-when the problem is assembled in `TraceParticleProblem`, which is also where the
-equations of motion decide whether the resulting problem function is a
-[`SampleFullOrbit`](@ref), [`SampleGCA`](@ref) or [`SampleHybrid`](@ref).
+See also [`MHDSampler`](@ref)
 """
-struct SampleICsFromMHD
-    tg_file::String
-    target_distr_file::String
-    proposal_distr_file::String
-    xbounds
-    ybounds
-    zbounds
-    t0bounds
-    precision::DataType
-end
-function SampleICsFromMHD(
-    ;
-    tg_file::String,
-    target_distr_file::String,
-    xbounds::Tuple{Real,Real},
-    ybounds::Tuple{Real,Real},
-    zbounds::Tuple{Real,Real},
-    t0bounds::Tuple{Real,Real}=(0.0,0.0),
-    proposal_distr_file::String="",
-)
-    # Validate bounds
-    for (name, bound) in (
-        (:xbounds, xbounds), (:ybounds, ybounds),
-        (:zbounds, zbounds), (:t0bounds, t0bounds),
-    )
-        if bound[1] > bound[2]
-            throw(ArgumentError(
-                "`SampleICsFromMHD` $name has lower bound $(bound[1]) > upper bound "*
-                "$(bound[2])."
-            ))
-        end
-    end
-    # Sampler uses random numbers that must be given the correct floating point
-    # precision to not loose precision or promote samples incorrectly. Here we
-    # select the highest precision given by the bounds.
-    precision = float(promote_type(
-        typeof(xbounds[1]), typeof(xbounds[2]),
-        typeof(ybounds[1]), typeof(ybounds[2]),
-        typeof(zbounds[1]), typeof(zbounds[2]),
-        typeof(t0bounds[1]), typeof(t0bounds[2]),
-       ))
-    promote_bounds(bounds) = (precision(bounds[1]), precision(bounds[2]))
-    return SampleICsFromMHD(
-        tg_file,
-        target_distr_file,
-        proposal_distr_file,
-        promote_bounds(xbounds),
-        promote_bounds(ybounds),
-        promote_bounds(zbounds),
-        promote_bounds(t0bounds),
-        precision
-    )
-end
-
-function init_probfunc(pf::SampleICsFromMHD, p, itp_wrapper, _)
-    tg_itp = itp_wrapper(load_object(pf.tg_file))
-    target_distr = itp_wrapper(load_object(pf.target_distr_file))
-    proposal_distr = if isempty(pf.proposal_distr_file)
-        target_distr
-    else
-        itp_wrapper(load_object(pf.proposal_distr_file))
-    end
-    sampler = MHDSampler(
-        target_distr,
-        proposal_distr,
-        tg_itp,
-        pf.xbounds[1], pf.xbounds[2],
-        pf.ybounds[1], pf.ybounds[2],
-        pf.zbounds[1], pf.zbounds[2],
-        pf.t0bounds[1], pf.t0bounds[2],
-        maximum(proposal_distr),
-        pf.precision
-    )
+function init_probfunc(sampler::AbstractParticleSampler, p, _)
     if p.eom == lorentzforce!
         return SampleFullOrbit(sampler, p.tf)
     elseif p.eom == guidingcentreapproximation!
@@ -430,7 +342,6 @@ function init_probfunc(pf::SampleICsFromMHD, p, itp_wrapper, _)
         ))
     end
 end
-
 #-------------------------------------------------------------------------------
 # Functions for saving initial conditions to file
 #-------------------------------------------------------------------------------

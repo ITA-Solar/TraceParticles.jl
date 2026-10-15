@@ -15,7 +15,7 @@ function SciMLBase.solve(
         if params.paramsbackup
             create_paramsbackup(datadir, expname)
         end
-        sim = solve(
+        sim = invokelatest(solve,
             prob;
             alg=alg,
             trajectories=trajectories,
@@ -31,7 +31,7 @@ function SciMLBase.solve(
             if get_reductiontype(prob) <: SaveBatchAsHDF5
                 try
                     filename = get_filename(prob)
-                    time_taken = @timed save_energy(
+                    time_taken = @timed invokelatest(save_energy,
                         filename,
                         get_electromagneticfield(prob);
                         eom=get_eom(prob)
@@ -105,7 +105,7 @@ Reduction: $(typeof(get_reduction(prob)).name.name)
 Number of batches: $(get_nofbatches(prob))
 -----------------------------------------------------------------------------"""
 
-    time_taken = @timed sim = SciMLBase.solve(
+    time_taken = @timed sim = invokelatest(solve,
         ensemble_prob,
         alg,
         ensemble_algorithm

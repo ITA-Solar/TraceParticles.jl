@@ -21,37 +21,49 @@ using OrdinaryDiffEq
 using Interpolations
 using StaticArrays
 using Test
-using TraceParticles
-import TraceParticles as TP
+using TraceParticles:
+    EoMID,
+    get_guidingcentre,
+    get_observable,
+    guidingcentreapproximation!,
+    GCAParams,
+    hybridgcafo!,
+    HybridSwitchCondition,
+    HybridParamsWithDetection,
+    hybridswitchaffect_withdetection!,
+    lorentzforce!,
+    proton_mass,
+    proton_charge
 
 include("../utils.jl")
 
-#-------------------------------------------------------------------------------
-#                            EXPERIMENTAL PARAMETERS
-#
-#-------------------------------------------------------------------------------
-# NUMBER OF PARTICLES, SIMULATION DURATION, TIMESTEP   |
-#......................................................|
-numparticles = 1  # Number of particles to simulate    |
-dt = 0.2e-8        # Time step [s]                     |
-t0 = 0.0
-tf = 2e-4 #n=10   # End time of simulation [s]         |
-tspan = (t0, tf)   # timespan                           | 
-#......................................................|
+# MAGNETIC FIELD PARAMETERS
+η = 0.025 # Field component perpendicular to sheet
+d = 1e-4 # Current sheet width
+b = 1e-2  # Characteristic field strength
+function speiserBfield(x)
+    return SVector(b*η, -x * b / d, 0.0)
+end
 
-#...............................................
-# PARTICLE TYPE
-mass = TP.m_p
-charge = TP.e
+# ELECTRIC FIELD PARAMETERS
+v0 = 1e7
+a = 1e-2 * v0 * b
+Ez = -a
 
-#...............................................
+# PARTICLE Parameters
+mass = proton_mass
+charge = proton_charge
+# Speiser's analytical ejection time
+t_eject = π * mass / (charge * η * b)
+# End time of simulation [s]
+tf = 1.1 * t_eject
+tspan = (0, tf)   # timespan
+
 # INITIAL CONDITIONS
 L0 = 1e4 # m
 vel0 = [0.0, 0.0, 0.0] #478941.6577971818]
 pos0 = [1e-6, 1e-10, 1e-10] * L0
 
-
-#...............................................
 # SPATIAL PARAMETERS (x, y, z)
 numdims = 3
 # Lower bounds of the three spatial axes
@@ -59,68 +71,22 @@ xi0 = (-3e-6 * L0, -0.2 * L0, -0.2 * L0)
 # Upper bound of the three spatial axes
 xif = (3e-6 * L0, 0.2 * L0, 0.2 * L0)
 # Grid resolution of the axes
-#n = (10, 10, 2)
 ni = (100, 100, 100)
 
-#...............................................
-# MAGNETIC FIELD PARAMETERS
-η = 0.025  # guide field?
-d = 1e-4 # Current sheet width
-b = 1e-2  # Characteristic field strength
-if !isdefined(Main, :speiserBfield)
-    function speiserBfield(
-        x::Float64,
-    )
-        return [η, -x / d, 0.0] * b
-    end
-end
-
-t_eject = π * mass / (charge * η * b)
-tf = 1.1 * t_eject
-
-#...............................................
-# ELECTRIC FIELD PARAMETERS
-v0 = 1e7
-a = 1e-2 * v0 * b
-Ez = -a
-
-#-------------------------------------------------------------------------------
-#                            RUN EXPERIMENT
-#
-#-------------------------------------------------------------------------------
 # COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
 xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
-Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
-Efield = zeros(size(Bfield))
-Efield[3, :, :, :] .= Ez
-Bfield = stack(discretise(
-    (x, y, z) -> speiserBfield(x),
-    xx,
-    yy,
-    zz)
-)
-# Create interpolation objects
-emfields = eachslice(vcat(Bfield, Efield), dims=(2, 3, 4))
-emfields_itp = linear_interpolation((xx, yy, zz), emfields,
-    extrapolation_bc=Flat()
-)
-emfields_itp = ElectromagneticFieldInterpolator(
-    StaticInterpolation(emfields_itp)
-)
+bfield = discretise3D((x, y, z) -> speiserBfield(x), xx, yy,zz)
+# Create interpolation object
+bfield_itp = linear_interpolation((xx, yy, zz), bfield, extrapolation_bc=Flat())
+electromagneticfield(x, y, z, _) = SVector(0,0,Ez), bfield_itp(x, y, z)
 
-#-------------------------------------------------------------------------------
-# SIMULATION DURATION
-#
-numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
-
-#-------------------------------------------------------------------------------
 # CREATE PROBLEM
 # Set initial position and velocities
 prob = ODEProblem(
     lorentzforce!,
     [pos0; vel0],
     tspan,
-    (charge=charge, mass=mass, electromagneticfield=emfields_itp)
+    (charge=charge, mass=mass, electromagneticfield=electromagneticfield)
 )
 hprob = ODEProblem(
     hybridgcafo!,
@@ -129,7 +95,7 @@ hprob = ODEProblem(
     HybridParamsWithDetection(
         charge=charge,
         mass=mass,
-        electromagneticfield=emfields_itp,
+        electromagneticfield=electromagneticfield,
         getphase=(integrator) -> π / 2,
         initialeomid=EoMID.FullOrbit
     )
@@ -137,8 +103,8 @@ hprob = ODEProblem(
 R, vparal, mu = get_guidingcentre(
     pos0,
     vel0,
-    emfields_itp(pos0..., t0)[2],
-    emfields_itp(pos0..., t0)[1],
+    electromagneticfield(pos0..., 0)[2],
+    electromagneticfield(pos0..., 0)[1],
     charge,
     mass
 )
@@ -149,38 +115,32 @@ gcaprob = ODEProblem(
     GCAParams(
         charge=charge,
         mass=mass,
-        electromagneticfield=emfields_itp,
+        electromagneticfield=electromagneticfield,
         magneticmoment=mu,
     )
 )
 
 hcb = DiscreteCallback(
-    TP.HybridSwitchCondition(1e-2, 1e-2, Inf, 0.9),
-    TP.hybridswitchaffect_withdetection!
+    HybridSwitchCondition(1e-2, 1e-2, Inf, 0.9),
+    hybridswitchaffect_withdetection!
 )
-#...............................................................................
+
 # RUN SIMULATION
-fosol = solve(prob)
-hsol = solve(hprob, callback=hcb)
+fosol = solve(prob, Vern9(); reltol=1e-7)
+hsol = solve(hprob, Vern9(lazy=false); reltol=1e-7, callback=hcb)
 gcasol = solve(gcaprob)
-#...............................................................................
 
-
-#-------------------------------------------------------------------------------
 # TESTING
-times = collect(range(0.0, step=dt, length=numsteps + 1))
-indx = @. isapprox(fosol.t, t_eject, rtol=2e-5)
-velysimτ = fosol.u[indx][1][5]
 velyτ = -0.5 * 3.0 * a / (η * b)
-hindx = @. isapprox(hsol.t, t_eject, rtol=3e-5)
-hvelysimτ = hsol.u[hindx][1][5]
+velysimτ = fosol(t_eject)[5]
+hvelysimτ = hsol(t_eject)[5]
 foendpos = fosol.u[end][1:3]
 hsolendR = hsol.u[end][1:3]
 foendR, foendvparal, foendmu = get_guidingcentre(
     foendpos,
     fosol.u[end][4:6],
-    emfields_itp(foendpos..., tf)[2],
-    emfields_itp(foendpos..., tf)[1],
+    electromagneticfield(foendpos..., tf)[2],
+    electromagneticfield(foendpos..., tf)[1],
     charge,
     mass
 )
@@ -189,11 +149,11 @@ hef = get_observable(hsol, :energy, tf)
 
 @testset "Speiser 1965 - Hybrid solver" begin
     @testset verbose = true "Full orbit: Ejection-time" begin
-        @test isapprox(velysimτ, velyτ, atol=abs(5 * velyτ))
+        @test isapprox(velysimτ, velyτ, atol=abs(1 * velyτ))
     end # testset Full orbit: RK4
 
     @testset verbose = true "Hybrid: Ejection time and Nof. switches" begin
-        @test isapprox(hvelysimτ, velyτ, atol=abs(5 * velyτ))
+        @test isapprox(hvelysimτ, velyτ, atol=abs(1 * velyτ))
         @test hsol.prob.p.nswitches == 3
     end
     @testset verbose = true "Hybrid vs full orbit" begin

@@ -4,30 +4,23 @@
 #-------------------------------------------------------------------------------
 """
     testExBdrift.jl
-
-    This experiment tests numerical particle paths produced by the tp-code 
-against analytical solutions.
-    An electron and proton in a static and homogenous electromagnetic field.
+An electron and proton in a static and homogenous electromagnetic field.
 The electric field is normal to the magnetic field such that the particles will 
 experience an ExB-drift. The resulting numerical paths are compared to the
 analytic paths, which root mean square errors entails the test assertions. 
-
-    In practice, this experiment also tests dependent type-constructors and
-methods, such as:
-    ParticleSoA(pos::Matrix, vel::Matrix, species::Vector, numSteps::Integer)
-    Mesh(bField::Array{4},
-         eField::Array{4},
-         xx::Vector,
-         yy::Vector,
-         zz::Vector)
-    run!(patch:Patch)
-and the chosen numerical solver, scheme and interpolation chosen.
 """
 
 using OrdinaryDiffEq
 using Interpolations
+using StaticArrays
 using Test
-using TraceParticles
+using TraceParticles:
+    electron_charge,
+    electron_mass,
+    guidingcentreapproximation!,
+    lorentzforce!,
+    proton_charge,
+    proton_mass
 
 
 #-------------------------------------------------------------------------------
@@ -39,8 +32,6 @@ numParticles = 2  # Number of particles to simulae
 tf = 2 * 2π / (5.93096958e7) # s. End time of simulation
 tspan = (0, tf)
 #   multiple of electron (1eV) gyrofreq. at Bz=3.3e-4 G
-numSteps = 1000   # Number of timesteps in the simulation
-dt = tf / numSteps  # Size of timestep
 # The electromagnetic field is static and homogeneous. Hence the mesh only 
 # needs one cell, i.e. the boundary.
 Bx = 0.0  # magnetic field component only in the positive z-direction
@@ -51,10 +42,10 @@ Ey = 0.02Bz / tf  # Electric field component only in the positive y-direction
 Ez = 0.0
 
 # Particle conditions
-qe = -TraceParticles.e  # Electron charge
-qp = TraceParticles.e   # Proton charge
-me = TraceParticles.m_e # Electron mass
-mp = TraceParticles.m_p # Proton mass
+qe = electron_charge
+qp = proton_charge
+me = electron_mass
+mp = proton_mass
 # Set initial position and velocities
 vdriftx = Ey / Bz
 # Electron initial velocity
@@ -76,6 +67,7 @@ z0p = 0.0
 
 #-------------------------------------------------------------------------------
 # ANALYTICAL SOLUTION 
+numSteps = 1000
 times = LinRange(0, tf, numSteps + 1)
 
 # Gyrofrequency
@@ -127,25 +119,7 @@ analytic_pz = linear_interpolation(times, z(times, z0p, vzp, ωp, Ez, Bz))
 #-------------------------------------------------------------------------------
 # NUMERICAL SOLUTION 
 #-------------------------------------------------------------------------------
-# MESH CREATION
-B = zeros(Float64, numDims, 2, 2, 2)
-E = zeros(Float64, numDims, 2, 2, 2)
-B[3, :, :, :] .= Bz
-E[1, :, :, :] .= Ex
-E[2, :, :, :] .= Ey
-E[3, :, :, :] .= Ez
-# Create coordinates of cell
-xx = [-0.1, 1.1]
-yy = [-0.1, 1.1]
-zz = [-0.1, 1.1]
-# Create interpolation objects
-emfields = eachslice(vcat(B, E), dims=(2, 3, 4))
-emfields_itp = linear_interpolation((xx, yy, zz), emfields,
-    extrapolation_bc=Flat()
-)
-emfields_itp = ElectromagneticFieldInterpolator(
-    StaticInterpolation(emfields_itp)
-)
+electromagneticfield(x, y, z, _) = SVector(Ex, Ey, Ez), SVector(Bx, By, Bz)
 
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
@@ -155,9 +129,9 @@ pos = zeros(Float64, numDims, numParticles) # Position -> origin
 vel = zeros(Float64, numDims, numParticles) # Velocity
 ic_FO = [[x0e, y0e, z0e, vxe, vye, vze], [x0p, y0p, z0p, vxp, vyp, vzp]]
 params_FO = (
-    [-TraceParticles.e, TraceParticles.e],
-    [TraceParticles.m_e, TraceParticles.m_p],
-    emfields_itp
+    [electron_charge, proton_charge],
+    [electron_mass, proton_mass],
+    electromagneticfield,
 )
 
 # GCA particles
@@ -173,18 +147,11 @@ vperpp = √(vxp^2 + vyp^2)
 #  Create initial condition vector  and params
 ic_GCA = [[x0e, y0e, z0e, vze], [x0p, y0p, z0p, vzp]]
 params_GCA = (
-    [-TraceParticles.e, TraceParticles.e],
-    [TraceParticles.m_e, TraceParticles.m_p],
+    [electron_charge, proton_charge],
+    [electron_mass, proton_mass],
     [μₑ, μₚ],
-    emfields_itp
+    electromagneticfield
 )
-
-#-------------------------------------------------------------------------------
-# PUSHERS TO TEST:
-# Non-relativisitc Euler-Cromer
-# Relativistic Vay pusher
-# Relativistic Boris pusher
-# non-relativistic GCA
 
 #-------------------------------------------------------------------------------
 # RUN SIMULATION
@@ -261,5 +228,3 @@ end
     @test isapprox(sol_GCA.u[1].u[2][2], 0.00, atol=1e-15)
     @test isapprox(sol_GCA.u[1].u[2][3], 0.00, atol=1e-15)
 end
-
-

@@ -17,6 +17,7 @@ end
         include("unit_tests/test_physics.jl")
         include("unit_tests/test_callbacks.jl")
         include("unit_tests/test_callback_specifiers.jl")
+        include("unit_tests/test_problem_functions.jl")
         include("unit_tests/test_traceparticlesparameters.jl")
         include("unit_tests/test_traceparticlesproblem.jl")
         include("unit_tests/test_rerun.jl")

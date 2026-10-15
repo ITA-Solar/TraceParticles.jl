@@ -33,7 +33,7 @@ function rerun(
     datafile::String,
     params::TraceParticlesParameters;
     logger=current_logger(),
-    paramsbackup=true,
+    paramsbackup=false,
     otherparamchanges...
 )
     new_params = setparameters(params;

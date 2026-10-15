@@ -19,66 +19,42 @@ using OrdinaryDiffEq
 using StaticArrays
 using Test
 using TraceParticles
-import TraceParticles as TP
 
 include("../utils.jl")
 
 """
-    magneticmirrorfield(
-        x::Real,
-        y::Real,
-        z::Real,
-        B0::Real,
-        L ::Real
-        )
+    magneticmirrorfield(x, y, z, B0, L)
 Return the magnetic field at (`x`, `y`, `z`) in a magnetic mirror/bottle with
 length `L` and strength `B0`.
 
 B⃗(x, y, z) = -xzB₀/L² x̂  - yzB₀/L² ŷ  + (B₀ + zB₀/L²)ẑ
 """
-function magneticmirrorfield(
-    x::Real,
-    y::Real,
-    z::Real,
-    B0::Real,
-    L::Real,
-)
+function magneticmirrorfield(x, y, z, B0, L)
     a = B0 * z / L^2
-    return [-x * a, -y * a, B0 + z * a]
+    return SVector(-x * a, -y * a, B0 + z * a)
 end # mirroringfield
-
 
 #-------------------------------------------------------------------------------
 #                            EXPERIMENTAL PARAMETERS
 #
 #-------------------------------------------------------------------------------
-# NUMBER OF PARTICLES, SIMULATION DURATION, TIMESTEP   |
-#......................................................|
-numparticles = 1  # Number of particles to simulate    |
-dt = 1.e-3        # Time step [s]                      |
-tf = 300.0 #n=100   # End time of simulation [s]         |
+numparticles = 1  # Number of particles to simulate
+tf = 300.0        # End time of simulation [s]
 tspan = (0, tf)
-#tf = 2.3 #n=10   # End time of simulation [s]         |
-#......................................................|
 
-#...............................................
 # PARTICLE TYPE
 mass = 1
 charge = 1
 
-#...............................................
 # MAGNETIC FIELD PARAMETERS
-B0 = 10.0 # Magnetic field strenth parameter
+B0 = 10.0 # Magnetic field strength parameter
 L = 0.4 # Mirroring length
 
-#...............................................
 # INITIAL CONDITIONS
 vel0 = [0.0, 0.1, 0.1]
 rL = mass * √(vel0[1]^2 + vel0[2]^2) / (charge * B0)
 pos0 = [-1rL, 0.0, 0.0]
-#pos0 = [-100rL * charge / mass, 0.0, 0.0]
 
-#...............................................
 # SPATIAL PARAMETERS (x, y, z)
 numdims = 3
 # Lower bounds of the three spatial axes
@@ -87,60 +63,35 @@ xi0 = (-a, -a, -a)
 # Upper bound of the three spatial axes
 xif = (a, a, a)
 # Grid resolution of the axes
-#n = (10, 10, 2)
-ni = (20, 20, 20)
-#ni = (3, 3, 3)
-
-#...............................................
-# SOLVER CONDITIONS
-# RK4 for GCA? Euler-Cromer for full orbit?
-
-#-------------------------------------------------------------------------------
-#                            RUN EXPERIMENT
-#
-#-------------------------------------------------------------------------------
-# COMPUTING THE AXES, MAGNETIC FIELD AND ELECTRIC FIELD
+nx, ny, nz = 20, 20, 20
+ni = (nx, ny, nz)
 
 
-
+# CREATE ELECTROMAGNETIC FIELD
 analytical_field = false
 if analytical_field
-    emfields_itp = (x, y, z) -> (zeros(3), magneticmirrorfield(x, y, z, B0, L))
+    electromagneticfield(x, y, z, _) =
+        zeros(SVector{3}), magneticmirrorfield(x, y, z, B0, L)
 else
     xx, yy, zz, dx, dy, dz = create3Daxes(xi0, xif, ni)
-    Bfield = zeros(Float64, numdims, ni[1], ni[2], ni[3])
-    Efield = zeros(size(Bfield))
-    Bfield = stack(discretise(
+    Bfield = discretise3D(
         (x, y, z) -> magneticmirrorfield(x, y, z, B0, L),
         xx,
         yy,
         zz
     )
+    Bfield_itp = cubic_spline_interpolation(
+        (xx, yy, zz),
+        Bfield,
+        extrapolation_bc=Flat()
     )
-    #emfields = eachslice(vcat(Bfield, Efield), dims=(2,3,4))
-    fields = [Bfield; Efield]
-    emfields_itp = Vector{AbstractInterpolation}(undef, 6)
-    for i = 1:6
-        emfields_itp[i] = cubic_spline_interpolation(
-            (xx, yy, zz), fields[i, :, :, :],
-            extrapolation_bc=Flat()
-        )
-    end
-    emfields_itp = ElectromagneticFieldInterpolator(
-        [StaticInterpolation(itp) for itp in emfields_itp]
-    )
+    electromagneticfield(x, y, z, _) = zeros(SVector{3}), Bfield_itp(x, y, z)
 end
-#-------------------------------------------------------------------------------
-# SIMULATION DURATION
-#
-numsteps = trunc(Int64, tf / dt)   # Number of timesteps in the simulation
-#println("Number of time steps = $numsteps.")
 
-#-------------------------------------------------------------------------------
 # PARTICLE CREATION
 # Set initial position and velocities
-E, B = emfields_itp(pos0...)
-R0, vparal, μ = TP.get_guidingcentre(
+E, B = electromagneticfield(pos0..., 0.0)
+R0, vparal, μ = get_guidingcentre(
     pos0,
     vel0,
     B,
@@ -151,13 +102,13 @@ R0, vparal, μ = TP.get_guidingcentre(
 # To make R0 a vector instead of SVector which crashes the ODE solver with an
 # in-place EoM.
 R0 = [R0...]
-#-------------------------------------------------------------------------------
+
 # CREATE PROBLEM
 prob_FO = ODEProblem(
     lorentzforce!,
     [pos0; vel0],
     tspan,
-    (charge=charge, mass=mass, electromagneticfield=emfields_itp),
+    (charge=charge, mass=mass, electromagneticfield=electromagneticfield),
 )
 prob_GCA = ODEProblem(
     guidingcentreapproximation!,
@@ -167,7 +118,7 @@ prob_GCA = ODEProblem(
         charge=charge,
         mass=mass,
         magneticmoment=μ,
-        electromagneticfield=emfields_itp
+        electromagneticfield=electromagneticfield
     )
 )
 
@@ -178,11 +129,10 @@ sol_FO = solve(prob_FO, Tsit5();
 sol_GCA = solve(prob_GCA, Tsit5();
     reltol=1e-4, abstol=1e-9)
 
-#...............................................................................
-
-
 #-------------------------------------------------------------------------------
 # TESTING
+
+# Analytical solution: Z-position
 Bmax = B0 * norm(vel0)^2 / (vel0[1]^2 + vel0[2]^2)
 zmax = L * √(Bmax / B0 - 1)
 
@@ -192,6 +142,9 @@ function z(t, μ, mass, B0, L, A, ϕ)
 end
 ϕ = 0
 A = zmax
+
+dt = 1.e-3
+numsteps = trunc(Int64, tf / dt)
 times = collect(range(0.0, step=dt, length=numsteps + 1))
 z_anal_FO = z(sol_FO.t, μ, mass, B0, L, A, ϕ)
 z_anal_GCA = z(sol_GCA.t, μ, mass, B0, L, A, ϕ)
@@ -205,7 +158,7 @@ rmse_GCA = √(sum((z_anal_GCA .- z_GCA) .^ 2) / numsteps)
 rmse_FO = √(sum((z_anal_FO .- z_FO) .^ 2) / numsteps)
 @testset verbose = true "GCA: Default alg." begin
     @test isapprox(rmse_GCA, 0.0, atol=1e-5)
-end # testset GCA: Euler
+end
 @testset verbose = true "Full orbit: Default alg." begin
     @test isapprox(rmse_FO, 0.0, atol=3e-4)
-end # testset GCA: Euler
+end
