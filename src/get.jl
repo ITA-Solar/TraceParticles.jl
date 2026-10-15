@@ -534,7 +534,8 @@ function get_perpenergy(
     sol::ODESolution,
     t::Real;
 )
-    _, B = sol.prob.p.electromagneticfield(sol(t)[1:3]...)
+    x, y, z, _, _, _ = sol(t)
+    _, B = sol.prob.p.electromagneticfield(x, y, z, t)
     return norm(B) * sol.prob.p.magneticmoment * J2eV
 end
 

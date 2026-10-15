@@ -11,7 +11,6 @@ module TraceParticles
 #
 #____/\______/\_________________________________________________________________
 
-using BifrostTools
 using DataFrames
 using Dates
 using DiffEqCallbacks
@@ -47,7 +46,6 @@ include("callback_specifiers.jl")
 include("output_functions.jl")
 include("reduction_functions.jl")
 include("odeparameters.jl")
-include("bifrost.jl")
 include("io.jl")
 include("dataprocessing.jl")
 include("gcastate.jl")
@@ -74,12 +72,13 @@ export
 export EoMID
 # problem_functions.jl
 export
-    SampleICsFromMHD,
     ICsFromFile,
     PredefinedICs,
     SampleFullOrbit,
     SampleGCA,
-    SampleHybrid
+    SampleHybrid,
+    MHDSampler,
+    AbstractParticleSampler
 # output_functions.jl
 export
     output_func_lightweight_gca,

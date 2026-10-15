@@ -4,7 +4,7 @@ CurrentModule = TraceParticles
 
 # Concepts
 
-## The electromagnetic field
+## [The electromagnetic field](@id emfield)
 Every equation of motion (and some callback and physics functions) in TraceParticles.jl take the external electromagnetic field as a **callable**
 
 ```julia
@@ -140,20 +140,21 @@ sol = solve(
 )
 ```
 This high-level workflow is useful when producing multiple large ensemble simulations in a structured manner.
-The `TraceParticlesParameters`-struct defines the experiment, is easily adjustable and promotes reproducability.
-The possibly time consuming problem-building is outsourced to the `TraceParticlesProblem` constructor.
+The `TraceParticlesParameters`-struct defines the experiment, is easily adjustable, and promotes reproducability.
+The potentially time consuming problem-building is outsourced to the `TraceParticlesProblem` constructor.
 See below or the [high-level interface example](@ref interface-example).
 
-### The electromagnetic-field in a file
-`TraceParticlesProblem` expects the electromagnetic field to be stored in a [JLD2.jl](https://github.com/juliaio/jld2.jl)-file, defined by the parameter `emfield_file::String`.
+### The electromagnetic field
+The `electromagneticfield`-parameter can be either a callable as defined [above](@ref emfield), or the path to setup-file that gets included during the `TraceParticleProblem`-build.
+The setup file is expected to return the electromagnetic field as a callable.
 
 ### The `prob_func`-specifiers
-[`TraceParticlesParameters`](@ref) accepts any type for the `prob_func`-field.
-However, TraceParticles.jl provides `prob_func`-*specifiers* that `TraceParticlesProblem` automatically resolves.
-- [`SampleICsFromMHD`](@ref) for sampling initial conditions during the run, using the [`MHDSampler`](@ref).
-- [`ICsFromFile`](@ref) for reading initial conditions from disk.
+[`TraceParticlesParameters`](@ref) accepts any type for the `prob_func`-field that is a callable with call signature `(prob, ctx)` and return value `prob::ODEProblem`.
+It is the problem function that determines the initial state of each particle.
+Alternatively, the parameter can be a problem function *specifier*, such as [`ICsFromFile`](@ref) or [`MHDSampler`](@ref), that `TraceParticlesProblem` automatically resolves.
+It can also be the path to a setup-script that returns the problem function.
 
-### The `output_func` and `reduction` 
+### The `output_func` and `reduction`
 [`TraceParticlesParameters`](@ref) accepts any type for the `output_func`- and `reduction`-fields.
 If nothing is given, `TraceParticlesProblem` uses [`output_func_lightweight`](@ref outputfunc-api) and [`SaveBatchAsHDF5`](@ref), respectively.
 

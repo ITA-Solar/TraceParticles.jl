@@ -31,13 +31,14 @@ sol = rerun(1:100, "run.h5", runparams; alg=Vern9())
 function rerun(
     idxs::AbstractVector,
     datafile::String,
-    params::TraceParticlesParameters;
+    params::TraceParticlesParameters,
+    electromagneticfield::Any;
     logger=current_logger(),
-    paramsbackup=true,
+    paramsbackup=false,
     otherparamchanges...
 )
+    prob_func = Rerun(datafile, idxs)
     new_params = setparameters(params;
-        prob_func = Rerun(datafile, idxs),
         output_func = SciMLBase.DEFAULT_OUTPUT_FUNC,
         reduction = SciMLBase.DEFAULT_REDUCTION,
         expname = params.expname*"-rerun-"*string(now()),
@@ -49,6 +50,11 @@ function rerun(
         otherparamchanges...
     )
 
-    prob = TraceParticlesProblem(new_params; logger=logger)
+    prob = TraceParticlesProblem(
+        new_params,
+        electromagneticfield,
+        prob_func;
+        logger=logger
+    )
     return solve(prob, new_params)
 end

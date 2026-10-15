@@ -27,26 +27,14 @@ function create3Daxes(
 end # function createaxes
 
 
-"""
-    discretise(
-        func::Function,
-        xx  ::Vector{T} where {T<:Real},
-        yy  ::Vector{T} where {T<:Real},
-        zz  ::Vector{T} where {T<:Real},
-        args...
-        )
-Discretise a `func`tion onto a mesh with grid points given by
-`xx`, `yy` and `zz`.
-"""
-function discretise(
+function discretise3D(
     func::Function,
     xx::AbstractVector,
     yy::AbstractVector,
     zz::AbstractVector,
-    args...
 )
     f111 = func(xx[1], yy[1], zz[1])
-    field = Array{Vector{eltype(f111)},3}(
+    field = Array{typeof(f111)}(
         undef, length(xx), length(yy), length(zz)
     )
     for i in eachindex(xx)
@@ -57,4 +45,4 @@ function discretise(
         end
     end
     return field
-end # function discretise
+end

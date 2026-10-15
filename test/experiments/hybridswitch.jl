@@ -1,39 +1,45 @@
 using OrdinaryDiffEq
+import DiffEqCallbacks as CB
 using Interpolations
 using LinearAlgebra
 using Random
 using StaticArrays
 using Statistics
 using Test
-using TraceParticles
-import TraceParticles as TP
-import DiffEqCallbacks as CB
+using TraceParticles:
+    EoMID,
+    electron_charge,
+    electron_mass,
+    FullOrbitParams,
+    GCAParams,
+    get_guidingcentre,
+    guidingcentreapproximation!,
+    HybridParams,
+    hybridgcafo!,
+    HybridParams,
+    HybridSwitchCondition,
+    hybridswitchaffect!,
+    lorentzforce!,
+    TerminationCode
 
 #-------------------------------------------------------------------------------
 # EXPERIMENT PARAMTERS
-#
-numDims = 3       # Number of spatial dimensions
-numParticles = 1  # Number of particles to simulae
-#   (electron, proton)
-#tf = 2*2π/(5.93096958e7) # s. End time of simulation
 tf = 10 * 2 * 2π / (5.93096958e7) # s. End time of simulation
 tspan = (0, tf)
 #   multiple of electron (1eV) gyrofreq. at Bz=3.3e-4 G
-numSteps = 1000   # Number of timesteps in the simulation
-dt = tf / numSteps  # Size of timestep
 # The electromagnetic field is static and homogeneous. Hence the mesh only 
 # needs one cell, i.e. the boundary.
 Bx = 0.0  # magnetic field component only in the positive z-direction
 By = 0.0
 Bz = 3.37213e-4 # G (so that electron larmor radius is 1 cm)
 Ex = 0.0
-#Ey = 0.02Bz/tf  # Electric field component only in the positive y-direction
+# Electric field component only in the positive y-direction
 Ey = 0.02Bz / (tf / 10)
 Ez = 0.0
 
 # Particle conditions
-q = -TP.e  # Electron charge
-m = TP.m_e # Electron mass
+q = electron_charge
+m = electron_mass
 # Set initial position and velocities
 Evec = [Ex, Ey, Ez]
 Bvec = [Bx, By, Bz]
@@ -48,32 +54,7 @@ x0 = 0.0
 y0 = 0.0
 z0 = 0.0
 
-#-------------------------------------------------------------------------------
-# ANALYTICAL SOLUTION 
-times = LinRange(0, tf, numSteps + 1)
-
-#-------------------------------------------------------------------------------
-# NUMERICAL SOLUTION 
-#-------------------------------------------------------------------------------
-# MESH CREATION
-B = zeros(Float64, numDims, 2, 2, 2)
-E = zeros(Float64, numDims, 2, 2, 2)
-B[3, :, :, :] .= Bz
-E[1, :, :, :] .= Ex
-E[2, :, :, :] .= Ey
-E[3, :, :, :] .= Ez
-# Create coordinates of cell
-xx = [-0.1, 1.1]
-yy = [-0.1, 1.1]
-zz = [-0.1, 1.1]
-# Create interpolation objects
-emfields = eachslice(vcat(B, E), dims=(2, 3, 4))
-emfields_itp = linear_interpolation((xx, yy, zz), emfields,
-    extrapolation_bc=Flat()
-)
-emfields_itp = ElectromagneticFieldInterpolator(
-    StaticInterpolation(emfields_itp)
-)
+electromagneticfield(x, y, z, _) = SVector(Ex, Ey, Ez), SVector(Bx, By, Bz)
 
 #-------------------------------------------------------------------------------
 # PARTICLE CREATION
@@ -83,10 +64,10 @@ vperp = norm(gyrationvel)
 vparal = dot(vel, Bvec)
 # Magnetic moments of particles
 μ = m * vperp^2 / (2norm(Bvec))
-q = -TP.e  # Electron charge
-m = TP.m_e # Electron mass
+q = electron_charge
+m = electron_mass
 # Set initial position and velocities
-E, B = emfields_itp(x0, y0, z0)
+E, B = electromagneticfield(x0, y0, z0, 0)
 R, vparal, mu = get_guidingcentre([x0, y0, z0], [vx, vy, vz], B, E, q, m)
 ic = [
     [x0, y0, z0, vx, vy, vz],
@@ -103,7 +84,7 @@ eoms = [
 params = (
     charge=q,
     mass=m,
-    electromagneticfield=emfields_itp,
+    electromagneticfield=electromagneticfield,
     magneticmoment=ones(2) * μ,
     rng=[Xoshiro(1), Xoshiro(2)],
     getphase=(integrator) -> π / 2,
@@ -125,21 +106,8 @@ cb = CB.PresetTimeCallback(
         12period,
         16period,
     ],
-    TP.hybridswitchaffect!
+    hybridswitchaffect!
 )
-#cb = CB.PresetTimeCallback(
-#    [
-#        1 / 6 * tf,
-#        2 / 6 * tf,
-#        3 / 6 * tf,
-#        4 / 6 * tf,
-#        5 / 6 * tf,
-#    ],
-#    TP.switch_affect!
-#)
-#-------------------------------------------------------------------------------
-# RUN SIMULATION
-
 
 # Problem functions
 prob_func(prob, ctx) = begin
@@ -159,8 +127,9 @@ prob_func(prob, ctx) = begin
         )
     )
 end
-prob = ODEProblem(hybridgcafo!, zeros(6), tspan, params)
 
+# PROBLEMS
+prob = ODEProblem(hybridgcafo!, zeros(6), tspan, params)
 foprob = remake(
     prob,
     f=eoms[3],
@@ -197,21 +166,18 @@ sol = solve(
     trajectories=2,
     callback=cb,
     adaptive=true,
-    #dt=tf / 1000
 );
 fosol = solve(
     foprob,
     Tsit5();
     #reltol=1e-8,
     adaptive=true,
-    #dt=tf / 1000
 );
 gcasol = solve(
     gcaprob,
     Tsit5();
     #reltol=1e-8,
     adaptive=true,
-    #dt=tf / 1000
 );
 times = range(16period, tf, length=1000)
 switch1 = [sol.u[1](t, idxs=1:3) for t in times]

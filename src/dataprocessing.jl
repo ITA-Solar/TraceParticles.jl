@@ -406,40 +406,14 @@ observables of the test particle results stored in `fname_particles`.
 function save_observables(
     observables::AbstractVector,
     fname_particles::String,
-    fname_emfield::String,
-    fname_r::String,
-    fname_tg::String;
-    static=true,
-    xz=false,
+    emfield,
+    r,
+    tg;
 )
-    emfield = load_object(fname_emfield)
-    r_itp = load_object(fname_r)
-    tg_itp = load_object(fname_tg)
-    if static
-        emfield = ElectromagneticFieldInterpolator(
-            [StaticInterpolation(itp) for itp in emfield]
-        )
-        r_itp = StaticInterpolation(r_itp)
-        tg_itp = StaticInterpolation(tg_itp)
-    elseif static && xz
-        emfield = ElectromagneticFieldInterpolator(
-            [StaticXZInterpolation(itp) for itp in emfield]
-        )
-        r_itp = StaticXZInterpolation(r_itp)
-        tg_itp = StaticXZInterpolation(tg_itp)
-    elseif !static && xz
-        emfield = ElectromagneticFieldInterpolator(
-            [XZInterpolation(itp) for itp in emfield]
-        )
-        r_itp = XZInterpolation(r_itp)
-        tg_itp = XZInterpolation(tg_itp)
-    else
-        emfield = ElectromagneticFieldInterpolator(emfield)
-    end
     particledata = h5_getall(fname_particles)
     # Create number density itp. Assumes a gas dominated in mass by protons,
     # and that the number of electrons is the same as the number of protons.
-    n_itp(args...) = r_itp(args...) / TraceParticles.m_p
+    n(args...) = r(args...) / TraceParticles.m_p
     # Create function for evaluating the parallel electric field at an
     # arbitrary position
     eparal(args...) = begin
@@ -459,8 +433,8 @@ function save_observables(
     if any(in.(
         observables, [syms_demanding_n_tg_E for _ in eachindex(observables)])
     )
-        n = [n_itp(x0[i], y0[i], z0[i], t0[i]) for i in eachindex(x0)]
-        tg = [tg_itp(x0[i], y0[i], z0[i], t0[i]) for i in eachindex(x0)]
+        densities = [n(x0[i], y0[i], z0[i], t0[i]) for i in eachindex(x0)]
+        temperatures = [tg(x0[i], y0[i], z0[i], t0[i]) for i in eachindex(x0)]
         E = [abs(eparal(x0[i], y0[i], z0[i], t0[i])) for i in eachindex(x0)]
     end
     # Decleare the dict containing the observables
@@ -472,13 +446,13 @@ function save_observables(
                 observables_dict[:criticalvelocity] = criticalvelocity.(
                     abs.(particledata.charge),
                     particledata.mass,
-                    tg, n, E
+                    temperatures, densities, E
                 )
             elseif sym == :collisionaltime || sym == :spitzercollisionaltime
                 observables_dict[:spitzercollisionaltime] = spitzercollisionaltime.(
                     abs.(particledata.charge),
                     particledata.mass,
-                    tg, n,
+                    temperatures, densities
                 )
             else
                 observables_dict[sym] = get_observable(

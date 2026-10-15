@@ -105,7 +105,7 @@ Reduction: $(typeof(get_reduction(prob)).name.name)
 Number of batches: $(get_nofbatches(prob))
 -----------------------------------------------------------------------------"""
 
-    time_taken = @timed sim = SciMLBase.solve(
+    time_taken = @timed sim = solve(
         ensemble_prob,
         alg,
         ensemble_algorithm

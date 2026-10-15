@@ -1,5 +1,9 @@
 """
-    TraceParticlesProblem(p::TraceParticlesParameters; logger)
+    TraceParticlesProblem(
+        p::TraceParticlesParameters,
+        electromagneticfield,
+        prob_func; logger
+    )
 
 An assembled test-particle simulation, ready to be handed to `solve`.
 
@@ -18,6 +22,36 @@ the pieces `solve` needs alongside it.
 - `logger`: the logger the simulation writes to. Defaults to one that tees to
   `stderr` and to a log file in the experiment directory.
 
+# Constructor arguments
+- `p`: The experiment parameters as a `TraceParticlesParameters`-struct.
+- `electromagneticfield`: a callable with call signature `(x,y,z,t)` and return
+    value `(SVector(Ex, Ey, Ez), SVector(Bx, By, Bz))`.
+- `prob_func`: a callable with call signature `(prob, ctx)` and return
+    value `prob::ODEProblem`. This function determines how each particle gets
+    its initial state.
+    Alternatively it can be a problem function *specifier*, such as
+    [`ICsFromFile`](@ref) or [`MHDSampler`](@ref).
+- `logger=current_logger()`: Optional logger.
+
+# Example
+```julia
+TraceParticlesProblem(
+    params,
+    emfield = (x,y,z,t) -> SVector(0.0, 0.3, 0.0), SVector(0.0, 0.0, 1e-4),
+    prob_func = MHDSampler(
+        tg_file = (x, y, z, t) -> 1e7,
+        target_distr_file = (x, y, z, t) -> 1.0,
+        xmin = 1.58e7,
+        xmax = 1.63e7,
+        ymin = 1e6,
+        ymax = 1e6,
+        zmin = -6.6e6,
+        zmax = -6.1e6,
+        tmin = 0.0,
+        tmax = 0.0,
+    ),
+```
+
 See also [`TraceParticlesParameters`](@ref).
 """
 @kwdef struct TraceParticlesProblem{
@@ -35,98 +69,52 @@ See also [`TraceParticlesParameters`](@ref).
 end
 
 function TraceParticlesProblem(
-    p::TraceParticlesParameters;
+    p::TraceParticlesParameters,
+    electromagneticfield::Any,
+    prob_func::Any;
     logger=current_logger()
 )
     create_expdir(p.datadir, p.expname)
     logger = determine_logger(logger, p)
+
     with_logger(logger) do
-
-        # Construct a wrapper that wraps the interpolator in a function with a
-        # call signature (x, y, z, t)
-        itp_wrapper = construct_itpwrapper(p)
-
-        #=
-        Now load the electromagnetic field interpolation object.
-        This step assumes that the file `emfield_file` points to a JLD2-file containing
-        a vector of callable objects that each return a component of the electric
-        or magnetic vector field. Specifically it assumes the vector to contain the
-        components in the following order
-            vec[1] -> bx
-            vec[2] -> by
-            vec[3] -> bz
-            vec[4] -> ex
-            vec[5] -> ey
-            vec[6] -> ez
-        =#
-        time_taken = @timed fields_itp = ElectromagneticFieldInterpolator(
-            [itp_wrapper(component) for component in load_object(p.emfield_file)]
-        )
-        logtimed(time_taken, "EM-field loaded")
-
-        # Resolve `p.prob_func` into the function that gives each particle its
-        # initial state.
-        time_taken = @timed prob_func = init_probfunc(
-            p.prob_func, p, itp_wrapper, fields_itp
-        )
-        logtimed(time_taken, "prob_func constructed")
-
-        cbs = create_callbacks(p)
-        # Set batchsize to npart if the npart < batchsize
-        effective_batchsize = p.npart > p.batchsize ? p.batchsize : p.npart
-        # Determine output functions;
-        # the data footprint and format of output data for each particle
-        output_func = determine_output_func(p)
-        # Determine reduction
-        reduction = determine_reduction(p, effective_batchsize)
-        # Define the type of problem to solve
-        ## I think the important thing here is the type of the problem, not
-        ## the values because they will be overwritten by the problem function
-        ## passed to the EnsembleProblem.
-        odeprob = define_odeproblem(p, fields_itp)
-
-        ## Finally define the ensemble problem
-        ensemble_prob = EnsembleProblem(
-            odeprob;
-            prob_func = prob_func,
-            safetycopy = p.safetycopy,
-            output_func = output_func,
-            reduction = reduction
-        )
-
-        # Return the initialised problem
-        return TraceParticlesProblem(
-            ensemble_prob=ensemble_prob,
-            callbackset=CallbackSet(cbs...),
-            trajectories=p.npart,
-            batch_size=effective_batchsize,
-            logger=logger
-        )
+        prob_func = init_probfunc(prob_func, p, electromagneticfield)
+        return build_problem(p, logger, electromagneticfield, prob_func)
     end
 end
 
-"""
-    get_itpwrapper(p::TraceParticlesParams)
-Construct a function to wrap the interpolation objects into a new
-object with appropriate call signatures.
+function build_problem(
+    p::TraceParticlesParameters,
+    logger::AbstractLogger,
+    electromagneticfield::Any,
+    prob_func::Any
+)
+    cbs = create_callbacks(p)
+    # Determine output functions;
+    # the data footprint and format of output data for each particle
+    output_func = determine_output_func(p)
+    # Determine reduction
+    reduction, effective_batchsize = determine_reduction(p)
+    # Define the type of problem to solve
+    odeprob = define_odeproblem(p, electromagneticfield)
 
-E.g:
-An interpolation object with original call signature `(x, z)` should be
-wrapped in the `StaticXZInterpolation` struct such that it can be called with
-the signature `itp(x, y, z, t) -> itp(x, z)`.
-"""
-function construct_itpwrapper(p::TraceParticlesParameters)
-    if p.static_itp_wrapper
-        if p.xz_itp_wrapper
-            return (obj) -> StaticXZInterpolation(obj)
-        else
-            return (obj) -> StaticInterpolation(obj)
-        end
-    elseif p.xz_itp_wrapper
-        return (obj) -> XZInterpolation(obj)
-    else
-       return (obj) -> obj
-    end
+    ## Finally define the ensemble problem
+    ensemble_prob = EnsembleProblem(
+        odeprob;
+        prob_func = prob_func,
+        safetycopy = p.safetycopy,
+        output_func = output_func,
+        reduction = reduction
+    )
+
+    # Return the initialised problem
+    return TraceParticlesProblem(
+        ensemble_prob=ensemble_prob,
+        callbackset=CallbackSet(cbs...),
+        trajectories=p.npart,
+        batch_size=effective_batchsize,
+        logger=logger
+    )
 end
 
 """
@@ -162,7 +150,7 @@ function determine_output_func(p::TraceParticlesParameters)
     isnothing(p.output_func) || return p.output_func
     if p.eom == hybridgcafo!
         return p.save_switchinfo ?
-            output_func = (sol, ctx) -> (sol, false) :
+            (sol, _) -> (sol, false) :
             output_func_lightweight_hybrid
     elseif p.eom == guidingcentreapproximation!
         return p.save_max_observables ?
@@ -177,11 +165,13 @@ function determine_output_func(p::TraceParticlesParameters)
     end
 end
 
-function determine_reduction(p::TraceParticlesParameters, effective_batchsize)
-    isnothing(p.reduction) || return p.reduction
+function determine_reduction(p::TraceParticlesParameters)
+    # Set batchsize to npart if the npart < batchsize
+    effective_batchsize = p.npart > p.batchsize ? p.batchsize : p.npart
+    isnothing(p.reduction) || return p.reduction, effective_batchsize
     nbatches = ceil(Int, p.npart / effective_batchsize)
-    return (p.eom == hybridgcafo! && p.save_switchinfo) ?
-        (u, data, I) -> (append!(u, data), false) :
+    reduction = (p.eom == hybridgcafo! && p.save_switchinfo) ?
+        (u, data, _) -> (append!(u, data), false) :
         SaveBatchAsHDF5(
             expdir=p.datadir,
             expname=p.expname,
@@ -189,30 +179,31 @@ function determine_reduction(p::TraceParticlesParameters, effective_batchsize)
             nbatches=nbatches,
             verbose=p.verbose
         )
+    return reduction, effective_batchsize
 end
 
 function define_parameters(
-    p::TraceParticlesParameters, fields_itp;
+    p::TraceParticlesParameters, electromagneticfield;
     magneticmoment=zero(p.mass)
 )
     if p.eom == guidingcentreapproximation!
         return GCAParams(
             charge=p.charge,
             mass=p.mass,
-            electromagneticfield=fields_itp,
+            electromagneticfield=electromagneticfield,
             magneticmoment = magneticmoment
         )
     elseif p.eom == lorentzforce!
         return FullOrbitParams(
            charge=p.charge,
            mass=p.mass,
-           electromagneticfield=fields_itp,
+           electromagneticfield=electromagneticfield,
         )
     elseif p.eom == hybridgcafo! && p.save_switchinfo
         return HybridParamsWithDetection(
             charge=p.charge,
             mass=p.mass,
-            electromagneticfield=fields_itp,
+            electromagneticfield=electromagneticfield,
             magneticmoment = magneticmoment,
             initialeomid=p.initialeomid
         )
@@ -220,7 +211,7 @@ function define_parameters(
         return HybridParams(
             charge=p.charge,
             mass=p.mass,
-            electromagneticfield=fields_itp,
+            electromagneticfield=electromagneticfield,
             magneticmoment = magneticmoment,
             initialeomid=p.initialeomid
         )
@@ -229,10 +220,13 @@ function define_parameters(
     end
 end
 
-function define_odeproblem(p::TraceParticlesParameters, fields_itp)
-    odeparams = define_parameters(p, fields_itp)
+function define_odeproblem(p::TraceParticlesParameters, electromagneticfield)
+    odeparams = define_parameters(p, electromagneticfield)
     ## Define the type of ODEProblem
-    odeprob = ODEProblem(
+    ## I think the important thing here is the type of the problem, not
+    ## the values because they will be overwritten by the problem function
+    ## passed to the EnsembleProblem.
+    return ODEProblem(
         p.eom,
         # Only the type of the time span matters here; `prob_func` overwrites
         # the values with each particle's own initial time.

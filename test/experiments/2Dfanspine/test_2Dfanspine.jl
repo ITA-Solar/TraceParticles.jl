@@ -23,10 +23,7 @@ All output is written to a temporary directory, which is removed when the
 process exits.
 """
 
-using BifrostTools
 using DataFrames
-using Interpolations
-using JLD2
 using LinearAlgebra
 using Logging
 using OrdinaryDiffEq
@@ -40,31 +37,10 @@ import TraceParticles as TP
 expdir = Base.source_dir()
 outdir = mktempdir()
 
-#-------------------------------------------------------------------------------
-# Create interpolation objects from the Bifrost snapshot.
-brxp = BifrostExperiment("testsnap", expdir)
-TP.create_bifrost_itps(
-    brxp,
-    1,
-    BSpline(Cubic()),
-    Flat(),
-    ["BE", "tg", "r"];
-    name=joinpath(outdir, "test"),
-    units="si",
-    normalise=[false, false, false],
-    destagger=[true, false, false],
-    xzinterpolation=true,
-)
-
-emfield_file = joinpath(outdir, "test_t1_BE_si_cubicspline.itp.jld2")
-tg_file = joinpath(outdir, "test_t1_tg_si_cubicspline.itp.jld2")
-target_distr_file = joinpath(outdir, "test_t1_r_si_cubicspline.itp.jld2")
-
 # Bounds of the snapshot, except a 40 km edge on both sides.
 xbounds = (1.5822270393371582e7, 1.6318359375e7)
 zbounds = (-6.598462104797363e6, -6.102306842803955e6)
 ypos = 1e6
-ybounds = (ypos, ypos)
 
 # All particles start at `t0` and are integrated until `tf`. 
 t0 = 0.0
@@ -73,18 +49,21 @@ tf = 1e-2 * 100 # dtsnap is hs
 relativisticfraction = 0.02
 gradienttolerance = 0.001
 
+include("setup_emfield.jl")
+emfield = setup_emfield()
+
+# Initial conditions: sampled from the snapshot during the run.
+# TraceParticlesProblem resolves the sampler into a problem function
+include("setup_mhdsampler.jl")
+sampler = setup_mhdsampler()
+
 """
     fanspineparameters(expname; seed)
 Parameters of the fan-spine experiment, writing its results to the group
 `expname` in the temporary output directory.
 """
 fanspineparameters(expname; seed=5) = TraceParticlesParameters(
-    emfield_file=emfield_file,
-    # The JLD2 files already contain StaticXZInterpolation-objects
-    static_itp_wrapper=false,
-    xz_itp_wrapper=false,
     tf=tf,
-
     # Particle parameters
     charge=TP.electron_charge,
     mass=TP.electron_mass,
@@ -107,17 +86,6 @@ fanspineparameters(expname; seed=5) = TraceParticlesParameters(
         save_idxs = [1,2,3,4], # Just for testing, this is the default
         save_everystep=true    # Just for testing, this is the default
     ),
-
-    # Initial conditions: sampled from the snapshot during the run.
-    prob_func=SampleICsFromMHD(
-        tg_file=tg_file,
-        target_distr_file=target_distr_file,
-        xbounds=xbounds,
-        ybounds=ybounds,
-        zbounds=zbounds,
-        t0bounds=(t0, t0),
-    ),
-
     # Termination criteria
     callback_specs=(
         OutOfBounds(x=xbounds, z=zbounds, save_positions=(true, true)),
@@ -136,7 +104,12 @@ Construct and solve the fan-spine problem and return the problem together with
 the filename of its results.
 """
 function runexperiment(params::TraceParticlesParameters)
-    tpprob = TraceParticlesProblem(params; logger=current_logger())
+    tpprob = TraceParticlesProblem(
+        params,
+        emfield,
+        sampler;
+        logger=current_logger()
+    )
     solve(tpprob, params)
     fname = joinpath(outdir, params.expname, params.expname * ".h5")
     return tpprob, fname
@@ -144,8 +117,11 @@ end
 
 params = fanspineparameters("testresults")
 tpprob, fname = runexperiment(params)
-electromagneticfield = tpprob.ensemble_prob.prob.p.electromagneticfield
-TraceParticles.save_gcastates(fname, electromagneticfield)
+
+TraceParticles.save_gcastates(
+    fname,
+    tpprob.ensemble_prob.prob.p.electromagneticfield
+)
 
 # The results of the ensemble, and the initial and final energies in eV.
 df = h5_getall(fname)
@@ -172,13 +148,9 @@ isinsidedomain(x, z) =
 #                                   TESTS
 #-------------------------------------------------------------------------------
 @testset "Field interpolators" begin
-    @test isfile(emfield_file)
-    @test isfile(tg_file)
-    @test isfile(target_distr_file)
-
     # A point in the middle of the snapshot
     x, z = sum(xbounds) / 2, sum(zbounds) / 2
-    E, B = electromagneticfield(x, ypos, z, t0)
+    E, B = emfield(x, ypos, z, t0)
     @test length(E) == length(B) == 3
     @test all(isfinite, E)
     @test all(isfinite, B)
@@ -188,15 +160,15 @@ isinsidedomain(x, z) =
     # field out of the plane
     @test all(iszero, [E[1:2:3]; B[2]])
     # The snapshot is a 2D (x, z) slice, so the field must be independent of y
-    @test electromagneticfield(x, 2ypos, z, t0) == (E, B)
+    @test emfield(x, 2ypos, z, t0) == (E, B)
 
     # Temperature and mass density are positive definite
-    @test load_object(tg_file)(x, ypos, z, t0) > 0
-    @test load_object(target_distr_file)(x, ypos, z, t0) > 0
+    @test tpprob.ensemble_prob.prob_func.sampler.temperature(x, ypos, z, t0) > 0
+    @test tpprob.ensemble_prob.prob_func.sampler.target_distr(x, ypos, z, t0) > 0
 end
 
 @testset "Initial condition sampling" begin
-    # `SampleICsFromMHD` resolves into a `SampleGCA` problem function, which
+    # The parameters resolve into a `SampleGCA` problem function, which
     # only uses the random number generator of the ensemble context, so it can
     # be called directly with a given generator.
     prob = tpprob.ensemble_prob.prob
@@ -222,7 +194,7 @@ end
     x, y, z, vparal = particle.u0
     r_L = TraceParticles.larmorradius(
         SVector(x, y, z), t0, particle.p.magneticmoment,
-        params.charge, params.mass, electromagneticfield
+        params.charge, params.mass, emfield
     )
     # The particles are sampled in the plane y = `ypos`, so the offset of the
     # guiding centre from that plane is the y-component of the Larmor radius
@@ -315,7 +287,7 @@ end
         ratio = [
             TraceParticles.scalesratio(
                 SVector(df.xf[i], df.yf[i], df.zf[i]), df.tf[i], df.mass[i],
-                df.charge[i], df.magneticmoment[i], electromagneticfield
+                df.charge[i], df.magneticmoment[i], emfield
             ) for i in findall(m)
         ]
         @test all(>=(gradienttolerance), ratio)
@@ -360,7 +332,7 @@ end
     @test gcastates.L_B ≈ TraceParticles.characteristicfieldlength.(
         [SVector(df.x0[i], df.y0[i], df.z0[i]) for i in 1:nrow(df)],
         df.t0,
-        Ref(electromagneticfield)
+        Ref(emfield)
     )
     # The cosine of the pitch angle
     @test all(@. -1 <= gcastates.β <= 1)
@@ -402,7 +374,7 @@ end
             charge=params.charge,
             mass=params.mass,
             magneticmoment=mu[i],
-            electromagneticfield=electromagneticfield
+            electromagneticfield=emfield
         ) for i in eachindex(u0)
     ]
     prob = EnsembleProblem(
@@ -458,3 +430,4 @@ end
         end
     end
 end
+

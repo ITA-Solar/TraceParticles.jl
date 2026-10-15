@@ -14,13 +14,13 @@
             include("experiments/mirroring.jl")
         end # testset mirroring
 
-        @testset verbose = verbose ≥ 4 "Speiser (1965)" begin
-            include("experiments/speiser1965.jl")
-        end # testset Speiser 1965
-
         @testset verbose = verbose ≥ 4 "Hybrid switch" begin
             include("experiments/hybridswitch.jl")
         end # testset Hybrid switch
+
+        @testset verbose = verbose ≥ 4 "Speiser (1965)" begin
+            include("experiments/speiser1965.jl")
+        end # testset Speiser 1965
 
         @testset verbose = verbose ≥ 4 "Speiser (1965) w/ hybrid" begin
             include("experiments/speiser1965_hybrid.jl")

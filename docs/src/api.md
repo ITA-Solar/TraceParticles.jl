@@ -125,7 +125,6 @@ solve
 ### `prob_func`-specifications
 `prob_func`-specifications resolves into one of the [problem functions above](@ref probfunc-api) via `init_probfunc`.
 ```@docs
-SampleICsFromMHD
 ICsFromFile
 init_probfunc
 ```

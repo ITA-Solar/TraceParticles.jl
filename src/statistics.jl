@@ -174,6 +174,8 @@ function mhdsample(
     return x, y, z, vx, vy, vz, t, weight, nrejections
 end
 
+abstract type AbstractParticleSampler end
+
 """
     MHDSampler(
         target_distr
@@ -192,11 +194,33 @@ environment.
 # Methods
     (::MHDSampler)(mass, rng)
 Return an `mhdsample`; `(x, y, z, vx, vy, vz, t, weight, nrejections)`.
+
+# Constructors
+## Validating constuctor
+```julia
+MHDSampler(;
+    temperature,
+    target_distr,
+    proposal_distr,
+    maxval,
+    xbounds, ybounds, zbounds, t0bounds,
+)
+```
+Validates that the lower bounds are smaller or equal to the upper bounds.
+Allows different precision on the bounds, promoting all to the highest
+floating point precision among them.
 """
-struct MHDSampler{T1,T2,T3,T4<:AbstractFloat,T5<:Real,T6<:DataType}
+struct MHDSampler{
+    T1,
+    T2,
+    T3,
+    T4<:AbstractFloat,
+    T5<:Real,
+    T6<:DataType
+} <: AbstractParticleSampler
     target_distr::T1
     proposal_distr::T2
-    tg_itp::T3
+    temperature::T3
     xmin::T4
     xmax::T4
     ymin::T4
@@ -214,13 +238,59 @@ function (self::MHDSampler)(mass, rng)
         rng,
         self.proposal_distr,
         self.target_distr,
-        self.tg_itp,
+        self.temperature,
         self.xmin, self.xmax,
         self.ymin, self.ymax,
         self.zmin, self.zmax,
         self.tmin, self.tmax,
         self.max_value;
         precision=self.precision
+    )
+end
+function MHDSampler(
+    ;
+    target_distr::Any,
+    proposal_distr::Any=target_distr,
+    maxval::Real,
+    temperature::Any,
+    xmin::Real,
+    xmax::Real,
+    ymin::Real,
+    ymax::Real,
+    zmin::Real,
+    zmax::Real,
+    tmin::Real,
+    tmax::Real,
+)
+    # Validate bounds
+    if xmin > xmax || ymin > ymax || zmin > zmax || tmin > tmax
+        throw(ArgumentError(
+            "MHDSample bounds is not valid. Min must be smaller or equal to max."
+        ))
+    end
+    # Sampler uses random numbers that must be given the correct floating point
+    # precision to not loose precision or promote samples incorrectly. Here we
+    # select the highest precision given by the bounds.
+    precision = float(promote_type(
+        typeof(xmin), typeof(xmax),
+        typeof(ymin), typeof(ymax),
+        typeof(zmin), typeof(zmax),
+        typeof(tmin), typeof(tmax),
+       ))
+    return MHDSampler(
+        target_distr,
+        proposal_distr,
+        temperature,
+        precision(xmin),
+        precision(xmax),
+        precision(ymin),
+        precision(ymax),
+        precision(zmin),
+        precision(zmax),
+        precision(tmin),
+        precision(tmax),
+        maxval,
+        precision
     )
 end
 

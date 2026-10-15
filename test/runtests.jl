@@ -1,4 +1,3 @@
-using BifrostTools
 using DataFrames
 using DiffEqCallbacks
 using Interpolations
